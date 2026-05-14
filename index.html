@@ -124,7 +124,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .rev-empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center}
-.modal{background:var(--surface);border-radius:var(--radius);padding:20px;width:580px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:var(--radius);padding:20px;overflow-x:hidden;width:min(580px,95vw);max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
 .modal h2{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)}
 .modal-section{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
 .modal-section h3{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
@@ -267,6 +267,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div class="info-item"><span class="info-label">Horas/dia</span><span class="info-val">6h20min</span></div>
       <div class="info-item"><span class="info-label">Dias restantes</span><span class="info-val" id="st-rest">–</span></div>
       <div class="info-item"><span class="info-label">Progresso</span><span class="info-val" id="st-pct">–</span></div>
+      <div class="info-item"><span class="info-label">Total de horas estudadas</span><span class="info-val" id="st-total-time">0h</span></div>
     </div>
   </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
@@ -340,7 +341,8 @@ function addDays(ds,n){const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);
 function dtStr(dt){return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
 function fmtHMS(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h>0)return h+'h'+String(m).padStart(2,'0')+'m';return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 function fmtFull(s){return Math.floor(s/3600)+':'+String(Math.floor((s%3600)/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
-function parseTimeInput(v){v=v.trim();const p=v.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return parseInt(v)||0;}
+function parseTimeInput(v){v=v.trim();const p=v.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*3600+p[1]*60;return parseInt(v)*3600||0;}
+function fmtHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 function chkIcon(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>`;}
 function badgeStyle(d){const c=CORES[d]||'#555';return`background:${c}22;color:${c};border:1px solid ${c}55`;}
 function groupByDay(){const d={};for(const i of AGENDA){if(!d[i.data])d[i.data]=[];d[i.data].push(i);}return d;}
@@ -370,7 +372,7 @@ function buildTimerEditList(containerId){
     return`<div class="edit-time-card">
       <label style="color:${c}" title="${disc}">${disc} <span style="font-weight:400;color:var(--muted)">${tStr}</span></label>
       <div class="edit-time-card-bottom">
-        <input class="edit-time-input" id="${safeId}" value="${fmtFull(secs)}">
+        <input class="edit-time-input" id="${safeId}" value="${fmtHM(secs)}" placeholder="hh:mm">
         <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓ Ok</button>
       </div>
     </div>`;
@@ -411,7 +413,7 @@ function openTimerEdit(){
   if(!disc)return;
   document.getElementById('timed-disc-name').textContent=disc;
   document.getElementById('timed-disc-current').textContent=fmtHMS(timerSt.timeByDisc[disc]||0)||'0s';
-  document.getElementById('timed-disc-input').value=fmtFull(timerSt.timeByDisc[disc]||0);
+  document.getElementById('timed-disc-input').value=fmtHM(timerSt.timeByDisc[disc]||0);
   document.getElementById('timer-edit-modal').classList.remove('hidden');
 }
 function closeTimerEdit(){document.getElementById('timer-edit-modal').classList.add('hidden');}
@@ -544,19 +546,26 @@ function renderStats(){
   const srest=document.getElementById('st-rest');if(srest)srest.textContent=Math.ceil(AGENDA.filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
   const spct=document.getElementById('st-pct');if(spct)spct.textContent=pct+'%';
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
+  const totalSecs=Object.values(timerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
+  const totalEl=document.getElementById('st-total-time');
+  if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
     const di=AGENDA.filter(i=>i.disc===disc&&!i.port);
     const total=di.length,done=di.filter(i=>isDone(i.id)).length;
     const p=total>0?Math.round(done/total*100):0;
     const c=CORES[disc]||'#888';
     const secs=timerSt.timeByDisc[disc]||0;
-    const tStr=secs>=60?fmtHMS(secs):secs>0?secs+'s':'–';
-    return`<div class="disc-row">
+    const tStr=secs>=60?fmtHM(secs):secs>0?Math.round(secs/60)+'min':'–';
+    const pctTime=totalSecs>0?Math.round(secs/totalSecs*100):0;
+    return`<div class="disc-row" style="flex-wrap:wrap;gap:4px 8px;padding:8px 0">
       <div class="disc-dot" style="background:${c}"></div>
       <span class="disc-name" title="${disc}">${disc}</span>
       <span class="disc-prog">${disc==='Língua Portuguesa'?'diário':done+'/'+total}</span>
-      <span class="disc-time">${tStr}</span>
-      <div class="disc-bar-wrap"><div class="disc-bar" style="width:${disc==='Língua Portuguesa'?100:p}%;background:${c}"></div></div>
+      <span class="disc-time" style="${secs>0?'color:'+c+';font-weight:600':''}">${tStr}</span>
+      <div style="width:100%;display:flex;align-items:center;gap:6px;padding-left:18px">
+        <div class="disc-bar-wrap" style="flex:1"><div class="disc-bar" style="width:${disc==='Língua Portuguesa'?100:p}%;background:${c}"></div></div>
+        ${secs>0?`<div style="width:70px;height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pctTime}%;background:${c};border-radius:99px"></div></div><span style="font-size:10px;color:var(--muted)">${pctTime}% do tempo</span>`:''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -771,7 +780,7 @@ populateDiscSelect();updateTimerUI();loadAll();loadCustomTopics();
     <p style="font-size:12px;color:var(--muted);margin:8px 0 14px">Tempo atual: <strong id="timed-disc-current"></strong></p>
     <div class="modal-row">
       <label>Novo tempo</label>
-      <input id="timed-disc-input" type="text" placeholder="hh:mm:ss ou mm:ss">
+      <input id="timed-disc-input" type="text" placeholder="hh:mm">
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeTimerEdit()">Cancelar</button>
