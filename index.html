@@ -349,7 +349,9 @@ function getBlocoLabel(orig){if(!customBlocos)return orig;const idx=DEFAULT_BLOC
 
 function buildTimerEditList(containerId){
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
-  document.getElementById(containerId).innerHTML=discNames.map(disc=>{
+  const containerEl=document.getElementById(containerId);
+  if(!containerEl)return;
+  containerEl.innerHTML=discNames.map(disc=>{
     const secs=timerSt.timeByDisc[disc]||0;
     const tStr=secs>0?fmtHMS(secs):'0s';
     const c=CORES[disc]||'#888';
@@ -366,9 +368,12 @@ function buildTimerEditList(containerId){
 
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
-  ['b1','b2','b3','b4'].forEach((k,i)=>document.getElementById('cfg-'+k).value=b[i]||DEFAULT_BLOCOS[i]);
-  buildTimerEditList('timer-edit-list');
+  ['b1','b2','b3','b4'].forEach((k,i)=>{
+    const el=document.getElementById('cfg-'+k);
+    if(el)el.value=b[i]||DEFAULT_BLOCOS[i];
+  });
   document.getElementById('settings-modal').classList.remove('hidden');
+  buildTimerEditList('timer-edit-list');
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 function saveSettings(){
