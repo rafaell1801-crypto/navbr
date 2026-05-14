@@ -278,7 +278,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
     <div class="modal-section">
       <h3>Zerar tempo por disciplina</h3>
-      <div id="timer-reset-list"></div>
+      <div id="timer-edit-list"></div>
     </div>
 
     <div class="modal-btns">
@@ -368,7 +368,7 @@ function buildTimerEditList(containerId){
 
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
-  ['b1','b2','b3','b4'].forEach((k,i)=>{
+  ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const el=document.getElementById('cfg-'+k);
     if(el)el.value=b[i]||DEFAULT_BLOCOS[i];
   });
@@ -377,7 +377,10 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 function saveSettings(){
-  customBlocos=['b1','b2','b3','b4'].map((k,i)=>document.getElementById('cfg-'+k).value.trim()||DEFAULT_BLOCOS[i]);
+  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>{
+    const el=document.getElementById('cfg-'+k);
+    return el?el.value.trim()||DEFAULT_BLOCOS[i]:DEFAULT_BLOCOS[i];
+  });
   localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
   closeSettings();render();
 }
