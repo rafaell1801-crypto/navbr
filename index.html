@@ -535,13 +535,16 @@ function buildDayHTML(dateStr,days){
   const blocos=items.map(item=>{
     const done=isDone(item.id),late=isPast(item.data)&&!done;
     let rc='bloco-row';if(done)rc+=' done';else if(late)rc+=' late-row';if(item.port)rc+=' port-row';
-    return`<div class="${rc}">
-      <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
-      <div class="bloco-info">
-        ${discBadgeHTML(item.disc)}
-        <div class="topico-name">${item.topico}</div>
+    return`<div class="bloco-wrapper">
+      <div class="${rc}">
+        <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
+        <div class="bloco-info">
+          ${discBadgeHTML(item.disc)}
+          <div class="topico-name">${item.topico}</div>
+        </div>
+        <div class="bloco-time">${getBlocoLabel(item.bloco)}</div>
       </div>
-      <div class="bloco-time">${getBlocoLabel(item.bloco)}</div>
+      ${cadernoInputHTML(item.id)}
     </div>`;
   }).join('');
   return`<div class="${cls}">
