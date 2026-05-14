@@ -252,7 +252,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <h3>Visão geral</h3>
     <div class="info-grid">
       <div class="info-item"><span class="info-label">Início</span><span class="info-val">14/05/2026</span></div>
-      <div class="info-item"><span class="info-label">Conclusão prevista</span><span class="info-val">15/06/2026</span></div>
+      <div class="info-item"><span class="info-label">Conclusão prevista</span><span class="info-val" id="st-fim">–</span></div>
       <div class="info-item"><span class="info-label">Dias de estudo</span><span class="info-val">33</span></div>
       <div class="info-item"><span class="info-label">Horas/dia</span><span class="info-val">6h20min</span></div>
       <div class="info-item"><span class="info-label">Dias restantes</span><span class="info-val" id="st-rest">–</span></div>
@@ -529,9 +529,9 @@ function renderStats(){
   const mainItems=AGENDA.filter(i=>!i.port);
   const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
-  document.getElementById('st-fim').textContent=calcDeadline();
-  document.getElementById('st-rest').textContent=Math.ceil(AGENDA.filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
-  document.getElementById('st-pct').textContent=pct+'%';
+  const sfim=document.getElementById('st-fim');if(sfim)sfim.textContent=calcDeadline();
+  const srest=document.getElementById('st-rest');if(srest)srest.textContent=Math.ceil(AGENDA.filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
+  const spct=document.getElementById('st-pct');if(spct)spct.textContent=pct+'%';
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
     const di=AGENDA.filter(i=>i.disc===disc&&!i.port);
