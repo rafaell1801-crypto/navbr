@@ -124,7 +124,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .rev-empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center}
-.modal{background:var(--surface);border-radius:var(--radius);padding:20px;width:360px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:var(--radius);padding:20px;width:580px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto}
 .modal h2{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)}
 .modal-section{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
 .modal-section h3{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
@@ -165,6 +165,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .content-save-btn{padding:7px 20px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:var(--accent);color:#fff}
 .content-reset-btn{padding:7px 14px;font-size:12px;font-weight:500;border-radius:8px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted)}
 .content-save-note{font-size:11px;color:var(--muted);flex:1}
+
+.timer-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.edit-time-card{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fafafa;transition:border-color .15s}
+.edit-time-card:hover{border-color:var(--accent)}
+.edit-time-card label{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edit-time-card-bottom{display:flex;align-items:center;gap:6px}
+.edit-time-card-bottom .edit-time-input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:var(--surface)}
+.edit-time-card-bottom .edit-time-input:focus{border-color:var(--accent);outline:none}
+.edit-time-card-bottom .edit-time-btn{padding:4px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:1.5px solid var(--accent);color:var(--accent);background:transparent;white-space:nowrap}
+.edit-time-card-bottom .edit-time-btn:hover{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -342,7 +352,7 @@ function calcDeadline(){
   return dtStr(dl);
 }
 
-const DEFAULT_BLOCOS=['08:00–09:20','09:30–10:50','11:00–12:20','Português · 1h'];
+const DEFAULT_BLOCOS=['08:00–09:20','09:30–10:50','11:00–12:20','13:40–15:00','Português · 1h'];
 let customBlocos=null;
 function loadSettings(){try{customBlocos=JSON.parse(localStorage.getItem('nav_blocos_v2'))||null;}catch{customBlocos=null;}}
 function getBlocoLabel(orig){if(!customBlocos)return orig;const idx=DEFAULT_BLOCOS.indexOf(orig);return idx>=0&&customBlocos[idx]?customBlocos[idx]:orig;}
@@ -351,26 +361,27 @@ function buildTimerEditList(containerId){
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
   const containerEl=document.getElementById(containerId);
   if(!containerEl)return;
-  containerEl.innerHTML=discNames.map(disc=>{
+  containerEl.innerHTML='<div class="timer-edit-grid">'+discNames.map(disc=>{
     const secs=timerSt.timeByDisc[disc]||0;
     const tStr=secs>0?fmtHMS(secs):'0s';
     const c=CORES[disc]||'#888';
     const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
-    const safeDisc=disc.replace(/'/g,"\\'");
-    return`<div class="edit-time-row">
-      <label style="color:${c}" title="${disc}">${disc}</label>
-      <span style="font-size:11px;color:var(--muted);width:48px;text-align:right">${tStr}</span>
-      <input class="edit-time-input" id="${safeId}" value="${fmtFull(secs)}">
-      <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓</button>
+    const safeDisc=disc.replace(/'/g,"\'");
+    return`<div class="edit-time-card">
+      <label style="color:${c}" title="${disc}">${disc} <span style="font-weight:400;color:var(--muted)">${tStr}</span></label>
+      <div class="edit-time-card-bottom">
+        <input class="edit-time-input" id="${safeId}" value="${fmtFull(secs)}">
+        <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓ Ok</button>
+      </div>
     </div>`;
-  }).join('');
+  }).join('')+'</div>';
 }
 
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const el=document.getElementById('cfg-'+k);
-    if(el)el.value=b[i]||DEFAULT_BLOCOS[i];
+    if(el)el.value=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
   });
   document.getElementById('settings-modal').classList.remove('hidden');
   buildTimerEditList('timer-edit-list');
