@@ -67,7 +67,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .day-meta{font-size:11px;color:var(--muted);margin-left:auto}
 .day-check-all{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
 .blocos-list{display:flex;flex-direction:column}
-.bloco-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s}
+.bloco-row{display:grid;grid-template-columns:auto 1fr 180px auto 90px auto;align-items:center;gap:8px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s}
 .bloco-row:last-child{border-bottom:none}
 .bloco-row.done{background:var(--done-bg)}.bloco-row.done .topico-name{text-decoration:line-through;color:var(--muted)}
 .bloco-row.late-row{background:#fff7ed}.bloco-row.port-row{background:#fff8f0}
@@ -78,7 +78,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .bloco-info{min-width:0}
 .disc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px}
 .topico-name{font-size:13px;font-weight:500;line-height:1.3}
-.bloco-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.bloco-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;text-align:right}
 /* MOTIVAÇÃO */
 .motiv-box{margin:8px 14px 4px;padding:10px 12px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-left:3px solid var(--accent);border-radius:6px;cursor:pointer}
 .motiv-quote{font-size:12px;font-style:italic;color:#1e40af;line-height:1.4;font-weight:500}
@@ -180,15 +180,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .disc-badge-link:hover{opacity:.75;text-decoration:underline}
 
 /* CADERNO DE QUESTÕES */
-.caderno-row{display:flex;align-items:center;gap:6px;padding:5px 14px 8px;background:#f8faff}
-.caderno-input{flex:1;padding:4px 8px;border:1px solid #c7d7f0;border-radius:6px;font-size:11px;color:var(--text);background:var(--surface);transition:border-color .15s}
+.caderno-input{width:100%;min-width:0;padding:4px 6px;border:1px solid #c7d7f0;border-radius:6px;font-size:11px;color:var(--text);background:var(--surface);transition:border-color .15s;overflow:hidden;text-overflow:ellipsis}
 .caderno-input:focus{border-color:var(--accent);outline:none}
-.caderno-input::placeholder{color:#aab4c8}
-.caderno-save-btn{padding:3px 10px;font-size:11px;font-weight:600;border-radius:6px;border:1.5px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.caderno-input::placeholder{color:#aab4c8;font-size:10px}
+.caderno-save-btn{padding:3px 8px;font-size:11px;font-weight:600;border-radius:6px;border:1.5px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .caderno-save-btn:hover{background:var(--accent);color:#fff}
-.caderno-link-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;background:#e8f0fe;color:#1d5fa8;text-decoration:none;border:1px solid #c5d8fa;white-space:nowrap;flex-shrink:0}
+.caderno-link-btn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#e8f0fe;color:#1d5fa8;text-decoration:none;border:1px solid #c5d8fa;white-space:nowrap;flex-shrink:0}
 .caderno-link-btn:hover{background:#1d5fa8;color:#fff}
-.bloco-wrapper{display:flex;flex-direction:column;border-bottom:.5px solid var(--border)}.bloco-wrapper:last-child{border-bottom:none}.bloco-wrapper .bloco-row{border-bottom:none}
 </style>
 </head>
 <body>
@@ -337,22 +335,14 @@ async function saveCaderno(itemId, url) {
   if (document.getElementById('tab-rev') && !document.getElementById('tab-rev').classList.contains('hidden')) renderRev();
 }
 
-function cadernoInputHTML(itemId) {
+function cadernoInputHTML(itemId, timeLabel) {
   const url = cadernosState[itemId] || '';
   const safeId = 'cad-'+itemId;
-  if (url) {
-    return `<div class="caderno-row">
-      <span style="font-size:10px;color:var(--muted);flex-shrink:0">📎</span>
-      <input class="caderno-input" id="${safeId}" value="${url.replace(/"/g,'&quot;')}" placeholder="Link do caderno de questões...">
-      <button class="caderno-save-btn" onclick="saveCaderno(${itemId}, document.getElementById('${safeId}').value.trim())">Salvar</button>
-      <a href="${url}" target="_blank" rel="noopener" class="caderno-link-btn">Abrir ↗</a>
-    </div>`;
-  }
-  return `<div class="caderno-row">
-    <span style="font-size:10px;color:var(--muted);flex-shrink:0">📎</span>
-    <input class="caderno-input" id="${safeId}" placeholder="Cole aqui o link do caderno de questões...">
-    <button class="caderno-save-btn" onclick="saveCaderno(${itemId}, document.getElementById('${safeId}').value.trim())">Salvar</button>
-  </div>`;
+  const inputEl = `<input class="caderno-input" id="${safeId}" value="${url.replace(/"/g,'&quot;')}" placeholder="📎 link questões...">`;
+  const saveBtn = `<button class="caderno-save-btn" onclick="saveCaderno(${itemId}, document.getElementById('${safeId}').value.trim())">Salvar</button>`;
+  const timeEl = `<div class="bloco-time">${timeLabel||''}</div>`;
+  const openBtn = url ? `<a href="${url}" target="_blank" rel="noopener" class="caderno-link-btn">Abrir ↗</a>` : `<span style="min-width:56px"></span>`;
+  return inputEl + saveBtn + timeEl + openBtn;
 }
 
 const DISC_LINKS={"Língua Portuguesa": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383548/aulas", "Raciocínio Lógico Matemático": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384114/aulas", "Noções de Direito Administrativo": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383399/aulas", "Noções de Direito Constitucional": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383414/aulas", "Noções de Ética e Integridade": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383560/aulas", "Administração": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384352/aulas", "Gestão de Suprimentos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383401/aulas", "Orçamento Público e Análise Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383411/aulas", "Teoria Econômica Aplicada": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384586/aulas", "Licitações e Contratos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383576/aulas", "Matemática Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384115/aulas"};
@@ -535,16 +525,13 @@ function buildDayHTML(dateStr,days){
   const blocos=items.map(item=>{
     const done=isDone(item.id),late=isPast(item.data)&&!done;
     let rc='bloco-row';if(done)rc+=' done';else if(late)rc+=' late-row';if(item.port)rc+=' port-row';
-    return`<div class="bloco-wrapper">
-      <div class="${rc}">
-        <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
-        <div class="bloco-info">
-          ${discBadgeHTML(item.disc)}
-          <div class="topico-name">${item.topico}</div>
-        </div>
-        <div class="bloco-time">${getBlocoLabel(item.bloco)}</div>
+    return`<div class="${rc}">
+      <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
+      <div class="bloco-info">
+        ${discBadgeHTML(item.disc)}
+        <div class="topico-name">${item.topico}</div>
       </div>
-      ${cadernoInputHTML(item.id)}
+      ${cadernoInputHTML(item.id, getBlocoLabel(item.bloco))}
     </div>`;
   }).join('');
   return`<div class="${cls}">
