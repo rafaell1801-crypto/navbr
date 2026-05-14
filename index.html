@@ -135,6 +135,36 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .modal-btns button{padding:6px 16px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;border:1.5px solid}
 .btn-save{background:var(--accent);color:#fff;border-color:var(--accent)}
 .btn-cancel{background:transparent;color:var(--muted);border-color:var(--border)}
+
+/* CONTEÚDO */
+.content-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px}
+.content-search{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text)}
+.content-disc-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.content-disc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.content-disc-header.open{border-bottom:1px solid var(--border)}
+.content-disc-title{font-size:13px;font-weight:700;flex:1}
+.content-disc-meta{font-size:11px;color:var(--muted)}
+.content-disc-chevron{font-size:12px;color:var(--muted);transition:transform .2s}
+.content-disc-chevron.open{transform:rotate(180deg)}
+.content-disc-body{display:none;flex-direction:column}
+.content-disc-body.open{display:flex}
+.content-topic-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:.5px solid var(--border)}
+.content-topic-row:last-child{border-bottom:none}
+.content-topic-row.deleted{opacity:.4}
+.content-topic-input{flex:1;padding:4px 8px;border:1px solid transparent;border-radius:5px;font-size:12px;background:transparent;color:var(--text)}
+.content-topic-input:focus{border-color:var(--accent);background:var(--surface);outline:none}
+.content-topic-input.deleted{text-decoration:line-through;color:var(--muted)}
+.ct-btn{width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:transparent}
+.ct-del{color:#ef4444}.ct-del:hover{background:#fee2e2}
+.ct-restore{color:#15803d}.ct-restore:hover{background:#dcfce7}
+.ct-drag{color:var(--muted);cursor:grab}.ct-drag:active{cursor:grabbing}
+.content-add-row{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--border);background:#fafafa}
+.content-add-input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface)}
+.content-add-btn{padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;border:none;background:var(--accent);color:#fff}
+.content-save-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;gap:10px;align-items:center;z-index:10}
+.content-save-btn{padding:7px 20px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:var(--accent);color:#fff}
+.content-reset-btn{padding:7px 14px;font-size:12px;font-weight:500;border-radius:8px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted)}
+.content-save-note{font-size:11px;color:var(--muted);flex:1}
 </style>
 </head>
 <body>
@@ -150,6 +180,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <button class="tab active" onclick="showTab('ciclo')">📅 Ciclo</button>
   <button class="tab" onclick="showTab('rev')">🔁 Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">📊 Estatísticas</button>
+  <button class="tab" onclick="showTab('content')">📝 Conteúdo</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações">⚙️</button>
 </div>
 
@@ -171,7 +202,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
   <button class="timer-btn tbtn-start" id="btn-start" onclick="timerStart()">Iniciar</button>
   <button class="timer-btn tbtn-pause hidden" id="btn-pause" onclick="timerPause()">Pausar</button>
   <button class="timer-btn tbtn-stop hidden" id="btn-stop" onclick="timerStop()">Zerar</button>
-  <button class="timer-btn tbtn-reset hidden" id="btn-reset-disc" onclick="timerResetDisc()">Zerar matéria</button>
+  <button class="timer-btn tbtn-reset hidden" id="btn-reset-disc" onclick="openTimerEdit()">Editar tempo</button>
 </div>
 
 <!-- TAB CICLO -->
@@ -258,112 +289,128 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </div>
 
 <script>
-const SB_URL = 'https://oxqmjulnvpthbjwbsgoe.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94cW1qdWxudnB0aGJqd2JzZ29lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2Njg5OTksImV4cCI6MjA5NDI0NDk5OX0.1FLjyIEamjvwzXfu4LRTcrgAgnLTd_V6dgBJ7AxOHkk';
-const AGENDA = [{"id": 0, "data": "14/05/2026", "dia_idx": 0, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Estruturas Lógicas I", "grupo": 0, "port": false}, {"id": 1, "data": "14/05/2026", "dia_idx": 0, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Princípios básicos da administração", "grupo": 1, "port": false}, {"id": 2, "data": "14/05/2026", "dia_idx": 0, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Funções administrativas", "grupo": 2, "port": false}, {"id": 3, "data": "14/05/2026", "dia_idx": 0, "bloco": "13:40–15:00", "disc": "Noções de Ética e Integridade", "topico": "Ética no Serviço Público", "grupo": 3, "port": false}, {"id": 4, "data": "15/05/2026", "dia_idx": 1, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Oferta e demanda", "grupo": 4, "port": false}, {"id": 5, "data": "15/05/2026", "dia_idx": 1, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Estruturas Lógicas II", "grupo": 0, "port": false}, {"id": 6, "data": "15/05/2026", "dia_idx": 1, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Estado, Governo e Administração Pública", "grupo": 1, "port": false}, {"id": 7, "data": "15/05/2026", "dia_idx": 1, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Fundamentos da Administração", "grupo": 2, "port": false}, {"id": 8, "data": "16/05/2026", "dia_idx": 2, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Ética pública e ética profissional", "grupo": 3, "port": false}, {"id": 9, "data": "16/05/2026", "dia_idx": 2, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Elasticidades", "grupo": 4, "port": false}, {"id": 10, "data": "16/05/2026", "dia_idx": 2, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Equivalências e Negações Lógicas", "grupo": 0, "port": false}, {"id": 11, "data": "16/05/2026", "dia_idx": 2, "bloco": "13:40–15:00", "disc": "Noções de Direito Administrativo", "topico": "Poderes Administrativos", "grupo": 1, "port": false}, {"id": 12, "data": "17/05/2026", "dia_idx": 3, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Planejamento estratégico - Parte 1", "grupo": 2, "port": false}, {"id": 13, "data": "17/05/2026", "dia_idx": 3, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Liderança", "grupo": 3, "port": false}, {"id": 14, "data": "17/05/2026", "dia_idx": 3, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Teoria do consumidor", "grupo": 4, "port": false}, {"id": 15, "data": "17/05/2026", "dia_idx": 3, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Diagramas Lógicos", "grupo": 0, "port": false}, {"id": 16, "data": "18/05/2026", "dia_idx": 4, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Atos Administrativos", "grupo": 1, "port": false}, {"id": 17, "data": "18/05/2026", "dia_idx": 4, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Planejamento estratégico - Parte 2", "grupo": 2, "port": false}, {"id": 18, "data": "18/05/2026", "dia_idx": 4, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Motivação", "grupo": 3, "port": false}, {"id": 19, "data": "18/05/2026", "dia_idx": 4, "bloco": "13:40–15:00", "disc": "Teoria Econômica Aplicada", "topico": "Teoria da firma - Produção", "grupo": 4, "port": false}, {"id": 20, "data": "19/05/2026", "dia_idx": 5, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Lógica de Primeira Ordem", "grupo": 0, "port": false}, {"id": 21, "data": "19/05/2026", "dia_idx": 5, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Organização administrativa", "grupo": 1, "port": false}, {"id": 22, "data": "19/05/2026", "dia_idx": 5, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Organização", "grupo": 2, "port": false}, {"id": 23, "data": "19/05/2026", "dia_idx": 5, "bloco": "13:40–15:00", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Comunicação", "grupo": 3, "port": false}, {"id": 24, "data": "20/05/2026", "dia_idx": 6, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Teoria da firma - Custos", "grupo": 4, "port": false}, {"id": 25, "data": "20/05/2026", "dia_idx": 6, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Lógica de Argumentação", "grupo": 0, "port": false}, {"id": 26, "data": "20/05/2026", "dia_idx": 6, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Noções da Lei no 13.303/2016", "grupo": 1, "port": false}, {"id": 27, "data": "20/05/2026", "dia_idx": 6, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Direção e Liderança", "grupo": 2, "port": false}, {"id": 28, "data": "21/05/2026", "dia_idx": 7, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Trabalho em equipe", "grupo": 3, "port": false}, {"id": 29, "data": "21/05/2026", "dia_idx": 7, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Concorrência perfeita", "grupo": 4, "port": false}, {"id": 30, "data": "21/05/2026", "dia_idx": 7, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Raciocínio Sequencial", "grupo": 0, "port": false}, {"id": 31, "data": "21/05/2026", "dia_idx": 7, "bloco": "13:40–15:00", "disc": "Noções de Direito Administrativo", "topico": "Licitações - parte I", "grupo": 1, "port": false}, {"id": 32, "data": "22/05/2026", "dia_idx": 8, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Motivação e Engajamento organizacional", "grupo": 2, "port": false}, {"id": 33, "data": "22/05/2026", "dia_idx": 8, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Gestão de conflitos", "grupo": 3, "port": false}, {"id": 34, "data": "22/05/2026", "dia_idx": 8, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Monopólio", "grupo": 4, "port": false}, {"id": 35, "data": "22/05/2026", "dia_idx": 8, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Problemas de Lógica I", "grupo": 0, "port": false}, {"id": 36, "data": "23/05/2026", "dia_idx": 9, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Licitações - parte II", "grupo": 1, "port": false}, {"id": 37, "data": "23/05/2026", "dia_idx": 9, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Comunicação organizacional", "grupo": 2, "port": false}, {"id": 38, "data": "23/05/2026", "dia_idx": 9, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Negociação", "grupo": 3, "port": false}, {"id": 39, "data": "23/05/2026", "dia_idx": 9, "bloco": "13:40–15:00", "disc": "Teoria Econômica Aplicada", "topico": "Oligopólio", "grupo": 4, "port": false}, {"id": 40, "data": "24/05/2026", "dia_idx": 10, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Problemas de Lógica II", "grupo": 0, "port": false}, {"id": 41, "data": "24/05/2026", "dia_idx": 10, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Contrato administrativo", "grupo": 1, "port": false}, {"id": 42, "data": "24/05/2026", "dia_idx": 10, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Controle e Gestão do desempenho", "grupo": 2, "port": false}, {"id": 43, "data": "24/05/2026", "dia_idx": 10, "bloco": "13:40–15:00", "disc": "Noções de Ética e Integridade", "topico": "Improbidade administrativa", "grupo": 3, "port": false}, {"id": 44, "data": "25/05/2026", "dia_idx": 11, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Falhas de mercado e regulação", "grupo": 4, "port": false}, {"id": 45, "data": "25/05/2026", "dia_idx": 11, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Teoria dos Conjuntos", "grupo": 0, "port": false}, {"id": 46, "data": "25/05/2026", "dia_idx": 11, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Responsabilidade da Administração Pública", "grupo": 1, "port": false}, {"id": 47, "data": "25/05/2026", "dia_idx": 11, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Cultura e clima organizacional", "grupo": 2, "port": false}, {"id": 48, "data": "26/05/2026", "dia_idx": 12, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Transparência e Acesso à Informação", "grupo": 3, "port": false}, {"id": 49, "data": "26/05/2026", "dia_idx": 12, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Macroeconomia: PIB, inflação, desemprego", "grupo": 4, "port": false}, {"id": 50, "data": "26/05/2026", "dia_idx": 12, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Conjuntos Numéricos", "grupo": 0, "port": false}, {"id": 51, "data": "26/05/2026", "dia_idx": 12, "bloco": "13:40–15:00", "disc": "Noções de Direito Administrativo", "topico": "Controle da Administração Pública", "grupo": 1, "port": false}, {"id": 52, "data": "27/05/2026", "dia_idx": 13, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Gestão da mudança organizacional", "grupo": 2, "port": false}, {"id": 53, "data": "27/05/2026", "dia_idx": 13, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Lei Anticorrupção (Lei no 12.846/2013)", "grupo": 3, "port": false}, {"id": 54, "data": "27/05/2026", "dia_idx": 13, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Modelo clássico de determinação da renda", "grupo": 4, "port": false}, {"id": 55, "data": "27/05/2026", "dia_idx": 13, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Operações Básicas; Potenciação e Radiciação", "grupo": 0, "port": false}, {"id": 56, "data": "28/05/2026", "dia_idx": 14, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Transparência e Acesso à Informação", "grupo": 1, "port": false}, {"id": 57, "data": "28/05/2026", "dia_idx": 14, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Gestão por processos", "grupo": 2, "port": false}, {"id": 58, "data": "28/05/2026", "dia_idx": 14, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Responsabilidade Ética e Profissional", "grupo": 3, "port": false}, {"id": 59, "data": "28/05/2026", "dia_idx": 14, "bloco": "13:40–15:00", "disc": "Teoria Econômica Aplicada", "topico": "Modelo keynesiano de determinação da renda", "grupo": 4, "port": false}, {"id": 60, "data": "29/05/2026", "dia_idx": 15, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Unidades de Medida", "grupo": 0, "port": false}, {"id": 61, "data": "29/05/2026", "dia_idx": 15, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Responsabilidade do servidor", "grupo": 1, "port": false}, {"id": 62, "data": "29/05/2026", "dia_idx": 15, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Melhoria contínua: PDCA e Seis Sigma", "grupo": 2, "port": false}, {"id": 63, "data": "29/05/2026", "dia_idx": 15, "bloco": "13:40–15:00", "disc": "Noções de Ética e Integridade", "topico": "Decreto nº 8.945/2016", "grupo": 3, "port": false}, {"id": 64, "data": "30/05/2026", "dia_idx": 16, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Política monetária, fiscal e cambial (IS-LM)", "grupo": 4, "port": false}, {"id": 65, "data": "30/05/2026", "dia_idx": 16, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Frações; Razão e Proporção; Proporcionalidade", "grupo": 0, "port": false}, {"id": 66, "data": "30/05/2026", "dia_idx": 16, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Controle da Adm. Pública (revisão)", "grupo": 1, "port": false}, {"id": 67, "data": "30/05/2026", "dia_idx": 16, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Trabalho em equipe", "grupo": 2, "port": false}, {"id": 68, "data": "31/05/2026", "dia_idx": 17, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Regulamento Interno de Licitação - Parte 1", "grupo": 3, "port": false}, {"id": 69, "data": "31/05/2026", "dia_idx": 17, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Inflação e crescimento", "grupo": 4, "port": false}, {"id": 70, "data": "31/05/2026", "dia_idx": 17, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Regra de Três Simples e Composta", "grupo": 0, "port": false}, {"id": 71, "data": "31/05/2026", "dia_idx": 17, "bloco": "13:40–15:00", "disc": "Noções de Direito Constitucional", "topico": "Constituição da República Federativa do Brasil de 1988", "grupo": 1, "port": false}, {"id": 72, "data": "01/06/2026", "dia_idx": 18, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Governança pública e corporativa", "grupo": 2, "port": false}, {"id": 73, "data": "01/06/2026", "dia_idx": 18, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Regulamento Interno de Licitação - Parte 2", "grupo": 3, "port": false}, {"id": 74, "data": "01/06/2026", "dia_idx": 18, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Crescimento Econômico", "grupo": 4, "port": false}, {"id": 75, "data": "01/06/2026", "dia_idx": 18, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Porcentagem", "grupo": 0, "port": false}, {"id": 76, "data": "02/06/2026", "dia_idx": 19, "bloco": "08:00–09:20", "disc": "Noções de Direito Constitucional", "topico": "Princípios fundamentais da Constituição", "grupo": 1, "port": false}, {"id": 77, "data": "02/06/2026", "dia_idx": 19, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Gestão de pessoas no setor público", "grupo": 2, "port": false}, {"id": 78, "data": "02/06/2026", "dia_idx": 19, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Desenvolvimento Econômico", "grupo": 4, "port": false}, {"id": 79, "data": "02/06/2026", "dia_idx": 19, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Juros Simples", "grupo": 0, "port": false}, {"id": 80, "data": "03/06/2026", "dia_idx": 20, "bloco": "08:00–09:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos e Garantias Fundamentais - Parte 1", "grupo": 1, "port": false}, {"id": 81, "data": "03/06/2026", "dia_idx": 20, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Avaliação de desempenho", "grupo": 2, "port": false}, {"id": 82, "data": "03/06/2026", "dia_idx": 20, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Juros Compostos", "grupo": 0, "port": false}, {"id": 83, "data": "03/06/2026", "dia_idx": 20, "bloco": "13:40–15:00", "disc": "Noções de Direito Constitucional", "topico": "Direitos e Garantias Fundamentais - Parte 2", "grupo": 1, "port": false}, {"id": 84, "data": "04/06/2026", "dia_idx": 21, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Recrutamento e seleção", "grupo": 2, "port": false}, {"id": 85, "data": "04/06/2026", "dia_idx": 21, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Geometria Plana", "grupo": 0, "port": false}, {"id": 86, "data": "04/06/2026", "dia_idx": 21, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos sociais", "grupo": 1, "port": false}, {"id": 87, "data": "04/06/2026", "dia_idx": 21, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Capacitação e desenvolvimento", "grupo": 2, "port": false}, {"id": 88, "data": "05/06/2026", "dia_idx": 22, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Geometria Espacial", "grupo": 0, "port": false}, {"id": 89, "data": "05/06/2026", "dia_idx": 22, "bloco": "09:30–10:50", "disc": "Noções de Direito Constitucional", "topico": "Competências da União", "grupo": 1, "port": false}, {"id": 90, "data": "05/06/2026", "dia_idx": 22, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Qualidade de vida no trabalho", "grupo": 2, "port": false}, {"id": 91, "data": "05/06/2026", "dia_idx": 22, "bloco": "13:40–15:00", "disc": "Raciocínio Lógico Matemático", "topico": "Plano Cartesiano e Pontos", "grupo": 0, "port": false}, {"id": 92, "data": "06/06/2026", "dia_idx": 23, "bloco": "08:00–09:20", "disc": "Noções de Direito Constitucional", "topico": "Princípios Constitucionais da Adm. Pública", "grupo": 1, "port": false}, {"id": 93, "data": "06/06/2026", "dia_idx": 23, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Governança em empresas estatais", "grupo": 2, "port": false}, {"id": 94, "data": "06/06/2026", "dia_idx": 23, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Apresentação de Dados", "grupo": 0, "port": false}, {"id": 95, "data": "06/06/2026", "dia_idx": 23, "bloco": "13:40–15:00", "disc": "Noções de Direito Constitucional", "topico": "Atuação do Estado na ordem econômica", "grupo": 1, "port": false}, {"id": 96, "data": "07/06/2026", "dia_idx": 24, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Desenvolvimento sustentável. ESG", "grupo": 2, "port": false}, {"id": 97, "data": "07/06/2026", "dia_idx": 24, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Análise Combinatória", "grupo": 0, "port": false}, {"id": 98, "data": "07/06/2026", "dia_idx": 24, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Controle de constitucionalidade", "grupo": 1, "port": false}, {"id": 99, "data": "07/06/2026", "dia_idx": 24, "bloco": "13:40–15:00", "disc": "Administração", "topico": "Gestão de Risco, Controle e Compliance", "grupo": 2, "port": false}, {"id": 100, "data": "08/06/2026", "dia_idx": 25, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Probabilidade", "grupo": 0, "port": false}, {"id": 101, "data": "08/06/2026", "dia_idx": 25, "bloco": "09:30–10:50", "disc": "Noções de Direito Constitucional", "topico": "Regime jurídico das empresas estatais", "grupo": 1, "port": false}, {"id": 102, "data": "08/06/2026", "dia_idx": 25, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Políticas de sustentabilidade", "grupo": 2, "port": false}, {"id": 103, "data": "08/06/2026", "dia_idx": 25, "bloco": "13:40–15:00", "disc": "Matemática Financeira", "topico": "Taxas", "grupo": 0, "port": false}, {"id": 104, "data": "09/06/2026", "dia_idx": 26, "bloco": "08:00–09:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos fundamentais no ambiente de trabalho", "grupo": 1, "port": false}, {"id": 105, "data": "09/06/2026", "dia_idx": 26, "bloco": "09:30–10:50", "disc": "Gestão de Suprimentos", "topico": "Administração de Recursos Materiais", "grupo": 2, "port": false}, {"id": 106, "data": "09/06/2026", "dia_idx": 26, "bloco": "11:00–12:20", "disc": "Matemática Financeira", "topico": "Equivalência de Capitais", "grupo": 0, "port": false}, {"id": 107, "data": "09/06/2026", "dia_idx": 26, "bloco": "13:40–15:00", "disc": "Licitações e Contratos", "topico": "Licitações à luz da lei 14.133/2021 - Parte 1", "grupo": 1, "port": false}, {"id": 108, "data": "10/06/2026", "dia_idx": 27, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Classificação de Materiais", "grupo": 2, "port": false}, {"id": 109, "data": "10/06/2026", "dia_idx": 27, "bloco": "09:30–10:50", "disc": "Matemática Financeira", "topico": "Séries de Pagamentos", "grupo": 0, "port": false}, {"id": 110, "data": "10/06/2026", "dia_idx": 27, "bloco": "11:00–12:20", "disc": "Licitações e Contratos", "topico": "Licitações à luz da lei 14.133/2021 - Parte 2", "grupo": 1, "port": false}, {"id": 111, "data": "10/06/2026", "dia_idx": 27, "bloco": "13:40–15:00", "disc": "Gestão de Suprimentos", "topico": "Compras", "grupo": 2, "port": false}, {"id": 112, "data": "11/06/2026", "dia_idx": 28, "bloco": "08:00–09:20", "disc": "Matemática Financeira", "topico": "Sistemas de Amortização", "grupo": 0, "port": false}, {"id": 113, "data": "11/06/2026", "dia_idx": 28, "bloco": "09:30–10:50", "disc": "Licitações e Contratos", "topico": "Contrato administrativo", "grupo": 1, "port": false}, {"id": 114, "data": "11/06/2026", "dia_idx": 28, "bloco": "11:00–12:20", "disc": "Gestão de Suprimentos", "topico": "Conceitos de Estoques", "grupo": 2, "port": false}, {"id": 115, "data": "11/06/2026", "dia_idx": 28, "bloco": "13:40–15:00", "disc": "Gestão de Suprimentos", "topico": "Gestão de Estoques", "grupo": 2, "port": false}, {"id": 116, "data": "12/06/2026", "dia_idx": 29, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Armazenagem e Movimentação", "grupo": 2, "port": false}, {"id": 117, "data": "12/06/2026", "dia_idx": 29, "bloco": "09:30–10:50", "disc": "Gestão de Suprimentos", "topico": "Transportes e Distribuição", "grupo": 2, "port": false}, {"id": 118, "data": "12/06/2026", "dia_idx": 29, "bloco": "11:00–12:20", "disc": "Gestão de Suprimentos", "topico": "Logística e Supply Chain Management", "grupo": 2, "port": false}, {"id": 119, "data": "12/06/2026", "dia_idx": 29, "bloco": "13:40–15:00", "disc": "Gestão de Suprimentos", "topico": "Pegadinhas de Adm. de Materiais!", "grupo": 2, "port": false}, {"id": 120, "data": "13/06/2026", "dia_idx": 30, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "O orçamento público no Brasil", "grupo": 2, "port": false}, {"id": 121, "data": "13/06/2026", "dia_idx": 30, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Princípios orçamentários", "grupo": 2, "port": false}, {"id": 122, "data": "13/06/2026", "dia_idx": 30, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Créditos ordinários e adicionais", "grupo": 2, "port": false}, {"id": 123, "data": "13/06/2026", "dia_idx": 30, "bloco": "13:40–15:00", "disc": "Orçamento Público e Análise Financeira", "topico": "Ciclo orçamentário", "grupo": 2, "port": false}, {"id": 124, "data": "14/06/2026", "dia_idx": 31, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Orçamento público - Conceito", "grupo": 2, "port": false}, {"id": 125, "data": "14/06/2026", "dia_idx": 31, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Receita pública - Classificações e Fontes", "grupo": 2, "port": false}, {"id": 126, "data": "14/06/2026", "dia_idx": 31, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Dívida ativa", "grupo": 2, "port": false}, {"id": 127, "data": "14/06/2026", "dia_idx": 31, "bloco": "13:40–15:00", "disc": "Orçamento Público e Análise Financeira", "topico": "Despesa pública - Conceito e classificações", "grupo": 2, "port": false}, {"id": 128, "data": "15/06/2026", "dia_idx": 32, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Classificações orçamentárias", "grupo": 2, "port": false}, {"id": 129, "data": "15/06/2026", "dia_idx": 32, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Estágios da Receita e da Despesa", "grupo": 2, "port": false}, {"id": 130, "data": "15/06/2026", "dia_idx": 32, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Restos a pagar e DEA. Suprimento de fundos", "grupo": 2, "port": false}, {"id": 131, "data": "14/05/2026", "dia_idx": 0, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 132, "data": "15/05/2026", "dia_idx": 1, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 133, "data": "16/05/2026", "dia_idx": 2, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 134, "data": "17/05/2026", "dia_idx": 3, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 135, "data": "18/05/2026", "dia_idx": 4, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 136, "data": "19/05/2026", "dia_idx": 5, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 137, "data": "20/05/2026", "dia_idx": 6, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 138, "data": "21/05/2026", "dia_idx": 7, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 139, "data": "22/05/2026", "dia_idx": 8, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 140, "data": "23/05/2026", "dia_idx": 9, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 141, "data": "24/05/2026", "dia_idx": 10, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 142, "data": "25/05/2026", "dia_idx": 11, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 143, "data": "26/05/2026", "dia_idx": 12, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 144, "data": "27/05/2026", "dia_idx": 13, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 145, "data": "28/05/2026", "dia_idx": 14, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 146, "data": "29/05/2026", "dia_idx": 15, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 147, "data": "30/05/2026", "dia_idx": 16, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 148, "data": "31/05/2026", "dia_idx": 17, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 149, "data": "01/06/2026", "dia_idx": 18, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 150, "data": "02/06/2026", "dia_idx": 19, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 151, "data": "03/06/2026", "dia_idx": 20, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 152, "data": "04/06/2026", "dia_idx": 21, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 153, "data": "05/06/2026", "dia_idx": 22, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 154, "data": "06/06/2026", "dia_idx": 23, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 155, "data": "07/06/2026", "dia_idx": 24, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 156, "data": "08/06/2026", "dia_idx": 25, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 157, "data": "09/06/2026", "dia_idx": 26, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 158, "data": "10/06/2026", "dia_idx": 27, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 159, "data": "11/06/2026", "dia_idx": 28, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 160, "data": "12/06/2026", "dia_idx": 29, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 161, "data": "13/06/2026", "dia_idx": 30, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 162, "data": "14/06/2026", "dia_idx": 31, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 163, "data": "15/06/2026", "dia_idx": 32, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}];
-const CORES  = {"Raciocínio Lógico Matemático": "#1d5fa8", "Noções de Direito Administrativo": "#a63200", "Noções de Direito Constitucional": "#2d6e1e", "Noções de Ética e Integridade": "#6b2fa0", "Administração": "#0e6fa0", "Gestão de Suprimentos": "#8a4a00", "Orçamento Público e Análise Financeira": "#1a5c72", "Teoria Econômica Aplicada": "#3b278a", "Licitações e Contratos": "#8c1a14", "Matemática Financeira": "#145a32", "Língua Portuguesa": "#b5460f"};
-const TOTAL_MAIN = 131;
-const TOTAL_IDS  = 164;
-const TOTAL_DIAS = 33;
-const BLOCK_SECS = 4800;
-const REV_INTERVALS = [1,3,5,10,14,20,28,30,60,90,120];
-const REV_LIMIT = new Date(2026,7,2);
 
-// Motivação cache
-const motivCache = {};
+const SB_URL='https://oxqmjulnvpthbjwbsgoe.supabase.co', SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94cW1qdWxudnB0aGJqd2JzZ29lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2Njg5OTksImV4cCI6MjA5NDI0NDk5OX0.1FLjyIEamjvwzXfu4LRTcrgAgnLTd_V6dgBJ7AxOHkk';
+const AGENDA=[{"id": 0, "data": "14/05/2026", "dia_idx": 0, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Estruturas Lógicas I", "grupo": 0, "port": false}, {"id": 1, "data": "14/05/2026", "dia_idx": 0, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Princípios básicos da administração", "grupo": 1, "port": false}, {"id": 2, "data": "14/05/2026", "dia_idx": 0, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Funções administrativas", "grupo": 2, "port": false}, {"id": 3, "data": "15/05/2026", "dia_idx": 1, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Ética no Serviço Público", "grupo": 3, "port": false}, {"id": 4, "data": "15/05/2026", "dia_idx": 1, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Oferta e demanda", "grupo": 4, "port": false}, {"id": 5, "data": "15/05/2026", "dia_idx": 1, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Estruturas Lógicas II", "grupo": 0, "port": false}, {"id": 6, "data": "16/05/2026", "dia_idx": 2, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Estado, Governo e Administração Pública", "grupo": 1, "port": false}, {"id": 7, "data": "16/05/2026", "dia_idx": 2, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Fundamentos da Administração", "grupo": 2, "port": false}, {"id": 8, "data": "16/05/2026", "dia_idx": 2, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Ética pública e ética profissional", "grupo": 3, "port": false}, {"id": 9, "data": "17/05/2026", "dia_idx": 3, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Elasticidades", "grupo": 4, "port": false}, {"id": 10, "data": "17/05/2026", "dia_idx": 3, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Equivalências e Negações Lógicas", "grupo": 0, "port": false}, {"id": 11, "data": "17/05/2026", "dia_idx": 3, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Poderes Administrativos", "grupo": 1, "port": false}, {"id": 12, "data": "18/05/2026", "dia_idx": 4, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Planejamento estratégico - Parte 1", "grupo": 2, "port": false}, {"id": 13, "data": "18/05/2026", "dia_idx": 4, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Liderança", "grupo": 3, "port": false}, {"id": 14, "data": "18/05/2026", "dia_idx": 4, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Teoria do consumidor", "grupo": 4, "port": false}, {"id": 15, "data": "19/05/2026", "dia_idx": 5, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Diagramas Lógicos", "grupo": 0, "port": false}, {"id": 16, "data": "19/05/2026", "dia_idx": 5, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Atos Administrativos", "grupo": 1, "port": false}, {"id": 17, "data": "19/05/2026", "dia_idx": 5, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Planejamento estratégico - Parte 2", "grupo": 2, "port": false}, {"id": 18, "data": "20/05/2026", "dia_idx": 6, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Motivação", "grupo": 3, "port": false}, {"id": 19, "data": "20/05/2026", "dia_idx": 6, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Teoria da firma - Produção", "grupo": 4, "port": false}, {"id": 20, "data": "20/05/2026", "dia_idx": 6, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Lógica de Primeira Ordem", "grupo": 0, "port": false}, {"id": 21, "data": "21/05/2026", "dia_idx": 7, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Organização administrativa", "grupo": 1, "port": false}, {"id": 22, "data": "21/05/2026", "dia_idx": 7, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Organização", "grupo": 2, "port": false}, {"id": 23, "data": "21/05/2026", "dia_idx": 7, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Comunicação", "grupo": 3, "port": false}, {"id": 24, "data": "22/05/2026", "dia_idx": 8, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Teoria da firma - Custos", "grupo": 4, "port": false}, {"id": 25, "data": "22/05/2026", "dia_idx": 8, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Lógica de Argumentação", "grupo": 0, "port": false}, {"id": 26, "data": "22/05/2026", "dia_idx": 8, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Noções da Lei no 13.303/2016", "grupo": 1, "port": false}, {"id": 27, "data": "23/05/2026", "dia_idx": 9, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Direção e Liderança", "grupo": 2, "port": false}, {"id": 28, "data": "23/05/2026", "dia_idx": 9, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Trabalho em equipe", "grupo": 3, "port": false}, {"id": 29, "data": "23/05/2026", "dia_idx": 9, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Concorrência perfeita", "grupo": 4, "port": false}, {"id": 30, "data": "24/05/2026", "dia_idx": 10, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Raciocínio Sequencial", "grupo": 0, "port": false}, {"id": 31, "data": "24/05/2026", "dia_idx": 10, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Licitações - parte I", "grupo": 1, "port": false}, {"id": 32, "data": "24/05/2026", "dia_idx": 10, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Motivação e Engajamento organizacional", "grupo": 2, "port": false}, {"id": 33, "data": "25/05/2026", "dia_idx": 11, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Gestão de conflitos", "grupo": 3, "port": false}, {"id": 34, "data": "25/05/2026", "dia_idx": 11, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Monopólio", "grupo": 4, "port": false}, {"id": 35, "data": "25/05/2026", "dia_idx": 11, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Problemas de Lógica I", "grupo": 0, "port": false}, {"id": 36, "data": "26/05/2026", "dia_idx": 12, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Licitações - parte II", "grupo": 1, "port": false}, {"id": 37, "data": "26/05/2026", "dia_idx": 12, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Comunicação organizacional", "grupo": 2, "port": false}, {"id": 38, "data": "26/05/2026", "dia_idx": 12, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Rel. interpessoal - Negociação", "grupo": 3, "port": false}, {"id": 39, "data": "27/05/2026", "dia_idx": 13, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Oligopólio", "grupo": 4, "port": false}, {"id": 40, "data": "27/05/2026", "dia_idx": 13, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Problemas de Lógica II", "grupo": 0, "port": false}, {"id": 41, "data": "27/05/2026", "dia_idx": 13, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Contrato administrativo", "grupo": 1, "port": false}, {"id": 42, "data": "28/05/2026", "dia_idx": 14, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Controle e Gestão do desempenho", "grupo": 2, "port": false}, {"id": 43, "data": "28/05/2026", "dia_idx": 14, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Improbidade administrativa", "grupo": 3, "port": false}, {"id": 44, "data": "28/05/2026", "dia_idx": 14, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Falhas de mercado e regulação", "grupo": 4, "port": false}, {"id": 45, "data": "29/05/2026", "dia_idx": 15, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Teoria dos Conjuntos", "grupo": 0, "port": false}, {"id": 46, "data": "29/05/2026", "dia_idx": 15, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Responsabilidade da Administração Pública", "grupo": 1, "port": false}, {"id": 47, "data": "29/05/2026", "dia_idx": 15, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Cultura e clima organizacional", "grupo": 2, "port": false}, {"id": 48, "data": "30/05/2026", "dia_idx": 16, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Transparência e Acesso à Informação", "grupo": 3, "port": false}, {"id": 49, "data": "30/05/2026", "dia_idx": 16, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Macroeconomia: PIB, inflação, desemprego", "grupo": 4, "port": false}, {"id": 50, "data": "30/05/2026", "dia_idx": 16, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Conjuntos Numéricos", "grupo": 0, "port": false}, {"id": 51, "data": "31/05/2026", "dia_idx": 17, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Controle da Administração Pública", "grupo": 1, "port": false}, {"id": 52, "data": "31/05/2026", "dia_idx": 17, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Gestão da mudança organizacional", "grupo": 2, "port": false}, {"id": 53, "data": "31/05/2026", "dia_idx": 17, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Lei Anticorrupção (Lei no 12.846/2013)", "grupo": 3, "port": false}, {"id": 54, "data": "01/06/2026", "dia_idx": 18, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Modelo clássico de determinação da renda", "grupo": 4, "port": false}, {"id": 55, "data": "01/06/2026", "dia_idx": 18, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Operações Básicas; Potenciação e Radiciação", "grupo": 0, "port": false}, {"id": 56, "data": "01/06/2026", "dia_idx": 18, "bloco": "11:00–12:20", "disc": "Noções de Direito Administrativo", "topico": "Transparência e Acesso à Informação", "grupo": 1, "port": false}, {"id": 57, "data": "02/06/2026", "dia_idx": 19, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Gestão por processos", "grupo": 2, "port": false}, {"id": 58, "data": "02/06/2026", "dia_idx": 19, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Responsabilidade Ética e Profissional", "grupo": 3, "port": false}, {"id": 59, "data": "02/06/2026", "dia_idx": 19, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Modelo keynesiano de determinação da renda", "grupo": 4, "port": false}, {"id": 60, "data": "03/06/2026", "dia_idx": 20, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Unidades de Medida", "grupo": 0, "port": false}, {"id": 61, "data": "03/06/2026", "dia_idx": 20, "bloco": "09:30–10:50", "disc": "Noções de Direito Administrativo", "topico": "Responsabilidade do servidor", "grupo": 1, "port": false}, {"id": 62, "data": "03/06/2026", "dia_idx": 20, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Melhoria contínua: PDCA e Seis Sigma", "grupo": 2, "port": false}, {"id": 63, "data": "04/06/2026", "dia_idx": 21, "bloco": "08:00–09:20", "disc": "Noções de Ética e Integridade", "topico": "Decreto nº 8.945/2016", "grupo": 3, "port": false}, {"id": 64, "data": "04/06/2026", "dia_idx": 21, "bloco": "09:30–10:50", "disc": "Teoria Econômica Aplicada", "topico": "Política monetária, fiscal e cambial (IS-LM)", "grupo": 4, "port": false}, {"id": 65, "data": "04/06/2026", "dia_idx": 21, "bloco": "11:00–12:20", "disc": "Raciocínio Lógico Matemático", "topico": "Frações; Razão e Proporção; Proporcionalidade", "grupo": 0, "port": false}, {"id": 66, "data": "05/06/2026", "dia_idx": 22, "bloco": "08:00–09:20", "disc": "Noções de Direito Administrativo", "topico": "Controle da Adm. Pública (revisão)", "grupo": 1, "port": false}, {"id": 67, "data": "05/06/2026", "dia_idx": 22, "bloco": "09:30–10:50", "disc": "Administração", "topico": "Trabalho em equipe", "grupo": 2, "port": false}, {"id": 68, "data": "05/06/2026", "dia_idx": 22, "bloco": "11:00–12:20", "disc": "Noções de Ética e Integridade", "topico": "Regulamento Interno de Licitação - Parte 1", "grupo": 3, "port": false}, {"id": 69, "data": "06/06/2026", "dia_idx": 23, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Inflação e crescimento", "grupo": 4, "port": false}, {"id": 70, "data": "06/06/2026", "dia_idx": 23, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Regra de Três Simples e Composta", "grupo": 0, "port": false}, {"id": 71, "data": "06/06/2026", "dia_idx": 23, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Constituição da República Federativa do Brasil de 1988", "grupo": 1, "port": false}, {"id": 72, "data": "07/06/2026", "dia_idx": 24, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Governança pública e corporativa", "grupo": 2, "port": false}, {"id": 73, "data": "07/06/2026", "dia_idx": 24, "bloco": "09:30–10:50", "disc": "Noções de Ética e Integridade", "topico": "Regulamento Interno de Licitação - Parte 2", "grupo": 3, "port": false}, {"id": 74, "data": "07/06/2026", "dia_idx": 24, "bloco": "11:00–12:20", "disc": "Teoria Econômica Aplicada", "topico": "Crescimento Econômico", "grupo": 4, "port": false}, {"id": 75, "data": "08/06/2026", "dia_idx": 25, "bloco": "08:00–09:20", "disc": "Raciocínio Lógico Matemático", "topico": "Porcentagem", "grupo": 0, "port": false}, {"id": 76, "data": "08/06/2026", "dia_idx": 25, "bloco": "09:30–10:50", "disc": "Noções de Direito Constitucional", "topico": "Princípios fundamentais da Constituição", "grupo": 1, "port": false}, {"id": 77, "data": "08/06/2026", "dia_idx": 25, "bloco": "11:00–12:20", "disc": "Administração", "topico": "Gestão de pessoas no setor público", "grupo": 2, "port": false}, {"id": 78, "data": "09/06/2026", "dia_idx": 26, "bloco": "08:00–09:20", "disc": "Teoria Econômica Aplicada", "topico": "Desenvolvimento Econômico", "grupo": 4, "port": false}, {"id": 79, "data": "09/06/2026", "dia_idx": 26, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Juros Simples", "grupo": 0, "port": false}, {"id": 80, "data": "09/06/2026", "dia_idx": 26, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos e Garantias Fundamentais - Parte 1", "grupo": 1, "port": false}, {"id": 81, "data": "10/06/2026", "dia_idx": 27, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Avaliação de desempenho", "grupo": 2, "port": false}, {"id": 82, "data": "10/06/2026", "dia_idx": 27, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Juros Compostos", "grupo": 0, "port": false}, {"id": 83, "data": "10/06/2026", "dia_idx": 27, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos e Garantias Fundamentais - Parte 2", "grupo": 1, "port": false}, {"id": 84, "data": "11/06/2026", "dia_idx": 28, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Recrutamento e seleção", "grupo": 2, "port": false}, {"id": 85, "data": "11/06/2026", "dia_idx": 28, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Geometria Plana", "grupo": 0, "port": false}, {"id": 86, "data": "11/06/2026", "dia_idx": 28, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos sociais", "grupo": 1, "port": false}, {"id": 87, "data": "12/06/2026", "dia_idx": 29, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Capacitação e desenvolvimento", "grupo": 2, "port": false}, {"id": 88, "data": "12/06/2026", "dia_idx": 29, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Geometria Espacial", "grupo": 0, "port": false}, {"id": 89, "data": "12/06/2026", "dia_idx": 29, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Competências da União", "grupo": 1, "port": false}, {"id": 90, "data": "13/06/2026", "dia_idx": 30, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Qualidade de vida no trabalho", "grupo": 2, "port": false}, {"id": 91, "data": "13/06/2026", "dia_idx": 30, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Plano Cartesiano e Pontos", "grupo": 0, "port": false}, {"id": 92, "data": "13/06/2026", "dia_idx": 30, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Princípios Constitucionais da Adm. Pública", "grupo": 1, "port": false}, {"id": 93, "data": "14/06/2026", "dia_idx": 31, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Governança em empresas estatais", "grupo": 2, "port": false}, {"id": 94, "data": "14/06/2026", "dia_idx": 31, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Apresentação de Dados", "grupo": 0, "port": false}, {"id": 95, "data": "14/06/2026", "dia_idx": 31, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Atuação do Estado na ordem econômica", "grupo": 1, "port": false}, {"id": 96, "data": "15/06/2026", "dia_idx": 32, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Desenvolvimento sustentável. ESG", "grupo": 2, "port": false}, {"id": 97, "data": "15/06/2026", "dia_idx": 32, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Análise Combinatória", "grupo": 0, "port": false}, {"id": 98, "data": "15/06/2026", "dia_idx": 32, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Controle de constitucionalidade", "grupo": 1, "port": false}, {"id": 99, "data": "16/06/2026", "dia_idx": 33, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Gestão de Risco, Controle e Compliance", "grupo": 2, "port": false}, {"id": 100, "data": "16/06/2026", "dia_idx": 33, "bloco": "09:30–10:50", "disc": "Raciocínio Lógico Matemático", "topico": "Probabilidade", "grupo": 0, "port": false}, {"id": 101, "data": "16/06/2026", "dia_idx": 33, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Regime jurídico das empresas estatais", "grupo": 1, "port": false}, {"id": 102, "data": "17/06/2026", "dia_idx": 34, "bloco": "08:00–09:20", "disc": "Administração", "topico": "Políticas de sustentabilidade", "grupo": 2, "port": false}, {"id": 103, "data": "17/06/2026", "dia_idx": 34, "bloco": "09:30–10:50", "disc": "Matemática Financeira", "topico": "Taxas", "grupo": 0, "port": false}, {"id": 104, "data": "17/06/2026", "dia_idx": 34, "bloco": "11:00–12:20", "disc": "Noções de Direito Constitucional", "topico": "Direitos fundamentais no ambiente de trabalho", "grupo": 1, "port": false}, {"id": 105, "data": "18/06/2026", "dia_idx": 35, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Administração de Recursos Materiais", "grupo": 2, "port": false}, {"id": 106, "data": "18/06/2026", "dia_idx": 35, "bloco": "09:30–10:50", "disc": "Matemática Financeira", "topico": "Equivalência de Capitais", "grupo": 0, "port": false}, {"id": 107, "data": "18/06/2026", "dia_idx": 35, "bloco": "11:00–12:20", "disc": "Licitações e Contratos", "topico": "Licitações à luz da lei 14.133/2021 - Parte 1", "grupo": 1, "port": false}, {"id": 108, "data": "19/06/2026", "dia_idx": 36, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Classificação de Materiais", "grupo": 2, "port": false}, {"id": 109, "data": "19/06/2026", "dia_idx": 36, "bloco": "09:30–10:50", "disc": "Matemática Financeira", "topico": "Séries de Pagamentos", "grupo": 0, "port": false}, {"id": 110, "data": "19/06/2026", "dia_idx": 36, "bloco": "11:00–12:20", "disc": "Licitações e Contratos", "topico": "Licitações à luz da lei 14.133/2021 - Parte 2", "grupo": 1, "port": false}, {"id": 111, "data": "20/06/2026", "dia_idx": 37, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Compras", "grupo": 2, "port": false}, {"id": 112, "data": "20/06/2026", "dia_idx": 37, "bloco": "09:30–10:50", "disc": "Matemática Financeira", "topico": "Sistemas de Amortização", "grupo": 0, "port": false}, {"id": 113, "data": "20/06/2026", "dia_idx": 37, "bloco": "11:00–12:20", "disc": "Licitações e Contratos", "topico": "Contrato administrativo", "grupo": 1, "port": false}, {"id": 114, "data": "21/06/2026", "dia_idx": 38, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Conceitos de Estoques", "grupo": 2, "port": false}, {"id": 115, "data": "21/06/2026", "dia_idx": 38, "bloco": "09:30–10:50", "disc": "Gestão de Suprimentos", "topico": "Gestão de Estoques", "grupo": 2, "port": false}, {"id": 116, "data": "21/06/2026", "dia_idx": 38, "bloco": "11:00–12:20", "disc": "Gestão de Suprimentos", "topico": "Armazenagem e Movimentação", "grupo": 2, "port": false}, {"id": 117, "data": "22/06/2026", "dia_idx": 39, "bloco": "08:00–09:20", "disc": "Gestão de Suprimentos", "topico": "Transportes e Distribuição", "grupo": 2, "port": false}, {"id": 118, "data": "22/06/2026", "dia_idx": 39, "bloco": "09:30–10:50", "disc": "Gestão de Suprimentos", "topico": "Logística e Supply Chain Management", "grupo": 2, "port": false}, {"id": 119, "data": "22/06/2026", "dia_idx": 39, "bloco": "11:00–12:20", "disc": "Gestão de Suprimentos", "topico": "Pegadinhas de Adm. de Materiais!", "grupo": 2, "port": false}, {"id": 120, "data": "23/06/2026", "dia_idx": 40, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "O orçamento público no Brasil", "grupo": 2, "port": false}, {"id": 121, "data": "23/06/2026", "dia_idx": 40, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Princípios orçamentários", "grupo": 2, "port": false}, {"id": 122, "data": "23/06/2026", "dia_idx": 40, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Créditos ordinários e adicionais", "grupo": 2, "port": false}, {"id": 123, "data": "24/06/2026", "dia_idx": 41, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Ciclo orçamentário", "grupo": 2, "port": false}, {"id": 124, "data": "24/06/2026", "dia_idx": 41, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Orçamento público - Conceito", "grupo": 2, "port": false}, {"id": 125, "data": "24/06/2026", "dia_idx": 41, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Receita pública - Classificações e Fontes", "grupo": 2, "port": false}, {"id": 126, "data": "25/06/2026", "dia_idx": 42, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Dívida ativa", "grupo": 2, "port": false}, {"id": 127, "data": "25/06/2026", "dia_idx": 42, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Despesa pública - Conceito e classificações", "grupo": 2, "port": false}, {"id": 128, "data": "25/06/2026", "dia_idx": 42, "bloco": "11:00–12:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Classificações orçamentárias", "grupo": 2, "port": false}, {"id": 129, "data": "26/06/2026", "dia_idx": 43, "bloco": "08:00–09:20", "disc": "Orçamento Público e Análise Financeira", "topico": "Estágios da Receita e da Despesa", "grupo": 2, "port": false}, {"id": 130, "data": "26/06/2026", "dia_idx": 43, "bloco": "09:30–10:50", "disc": "Orçamento Público e Análise Financeira", "topico": "Restos a pagar e DEA. Suprimento de fundos", "grupo": 2, "port": false}, {"id": 131, "data": "14/05/2026", "dia_idx": 0, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 132, "data": "15/05/2026", "dia_idx": 1, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 133, "data": "16/05/2026", "dia_idx": 2, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 134, "data": "17/05/2026", "dia_idx": 3, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 135, "data": "18/05/2026", "dia_idx": 4, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 136, "data": "19/05/2026", "dia_idx": 5, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 137, "data": "20/05/2026", "dia_idx": 6, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 138, "data": "21/05/2026", "dia_idx": 7, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 139, "data": "22/05/2026", "dia_idx": 8, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 140, "data": "23/05/2026", "dia_idx": 9, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 141, "data": "24/05/2026", "dia_idx": 10, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 142, "data": "25/05/2026", "dia_idx": 11, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 143, "data": "26/05/2026", "dia_idx": 12, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 144, "data": "27/05/2026", "dia_idx": 13, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 145, "data": "28/05/2026", "dia_idx": 14, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 146, "data": "29/05/2026", "dia_idx": 15, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 147, "data": "30/05/2026", "dia_idx": 16, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 148, "data": "31/05/2026", "dia_idx": 17, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 149, "data": "01/06/2026", "dia_idx": 18, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 150, "data": "02/06/2026", "dia_idx": 19, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 151, "data": "03/06/2026", "dia_idx": 20, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 152, "data": "04/06/2026", "dia_idx": 21, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 153, "data": "05/06/2026", "dia_idx": 22, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 154, "data": "06/06/2026", "dia_idx": 23, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 155, "data": "07/06/2026", "dia_idx": 24, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 156, "data": "08/06/2026", "dia_idx": 25, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 157, "data": "09/06/2026", "dia_idx": 26, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 158, "data": "10/06/2026", "dia_idx": 27, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 159, "data": "11/06/2026", "dia_idx": 28, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 160, "data": "12/06/2026", "dia_idx": 29, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 161, "data": "13/06/2026", "dia_idx": 30, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 162, "data": "14/06/2026", "dia_idx": 31, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 163, "data": "15/06/2026", "dia_idx": 32, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 164, "data": "16/06/2026", "dia_idx": 33, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 165, "data": "17/06/2026", "dia_idx": 34, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 166, "data": "18/06/2026", "dia_idx": 35, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 167, "data": "19/06/2026", "dia_idx": 36, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 168, "data": "20/06/2026", "dia_idx": 37, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 169, "data": "21/06/2026", "dia_idx": 38, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 170, "data": "22/06/2026", "dia_idx": 39, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 171, "data": "23/06/2026", "dia_idx": 40, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 172, "data": "24/06/2026", "dia_idx": 41, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 173, "data": "25/06/2026", "dia_idx": 42, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}, {"id": 174, "data": "26/06/2026", "dia_idx": 43, "bloco": "Português · 1h", "disc": "Língua Portuguesa", "topico": "Aprofundamento", "grupo": 5, "port": true}];
+const CORES={"Raciocínio Lógico Matemático": "#1d5fa8", "Noções de Direito Administrativo": "#a63200", "Noções de Direito Constitucional": "#2d6e1e", "Noções de Ética e Integridade": "#6b2fa0", "Administração": "#0e6fa0", "Gestão de Suprimentos": "#8a4a00", "Orçamento Público e Análise Financeira": "#1a5c72", "Teoria Econômica Aplicada": "#3b278a", "Licitações e Contratos": "#8c1a14", "Matemática Financeira": "#145a32", "Língua Portuguesa": "#b5460f"};
+const MOTIVACOES={"0": {"frase": "\"O segredo para começar é parar de falar e começar a fazer.\" – Walt Disney", "mensagem": "Dia 1. Você não precisa estar motivado para começar — precisa começar para se motivar. Cada tópico marcado hoje é uma prova de que você é diferente de quem ainda está só planejando. Vá."}, "1": {"frase": "\"Você não precisa ser grande para começar, mas precisa começar para ser grande.\" – Zig Ziglar", "mensagem": "Ontem você escolheu agir. Hoje é a confirmação de que não foi por acaso. Quem procrastina espera o momento perfeito — quem vence sabe que o momento perfeito é agora."}, "2": {"frase": "\"Disciplina é a ponte entre metas e realizações.\" – Jim Rohn", "mensagem": "Três dias seguidos já te colocam à frente de 80% dos que desistiram na semana 1. A procrastinação mente dizendo que você vai fazer amanhã. Você já sabe que amanhã é hoje."}, "3": {"frase": "\"Não espere. O tempo nunca será exatamente certo.\" – Napoleon Hill", "mensagem": "A vontade de adiar é mais forte quando o resultado parece distante. Mas cada bloco estudado encurta essa distância de forma real. Você está mudando hoje quem você será amanhã."}, "4": {"frase": "\"O sucesso é a soma de pequenos esforços repetidos dia após dia.\" – Robert Collier", "mensagem": "Cinco dias. Isso não é sorte — é caráter sendo construído. A versão de você que vai passar na NAV Brasil está sendo esculpida agora, bloco a bloco, nessa rotina que você insiste em honrar."}, "5": {"frase": "\"Caia sete vezes, levante-se oito.\" – Provérbio japonês", "mensagem": "Pode ser que ontem não tenha sido perfeito. Não importa. O que importa é que hoje você está aqui de novo. Recomeçar é uma habilidade — e você está desenvolvendo ela."}, "6": {"frase": "\"A única pessoa que você deve tentar ser melhor é a pessoa que você foi ontem.\" – Anônimo", "mensagem": "Uma semana completa. Pare um segundo e reconheça isso. Você está honrando um compromisso com você mesmo em um nível que poucos conseguem. Isso é identidade sendo forjada."}, "7": {"frase": "\"Motivação te faz começar. Hábito te faz continuar.\" – Jim Ryun", "mensagem": "A procrastinação perde força quando o estudo vira rotina. Você já passou da fase mais difícil. Agora é deixar o hábito trabalhar por você. Apareça e deixe o processo fazer o resto."}, "8": {"frase": "\"Quem tem um porquê suporta qualquer como.\" – Friedrich Nietzsche", "mensagem": "Lembre hoje do porquê você quer ser aprovado na NAV Brasil. Não a resposta genérica — a verdadeira, a que te move por dentro. Deixe ela te conduzir pelos blocos de hoje."}, "9": {"frase": "\"Grandes realizações não são feitas por impulso, mas por uma soma de pequenas conquistas.\" – Vincent van Gogh", "mensagem": "Dez dias. Você está um terço do caminho. Cada tópico marcado é uma conquista real — não virtual, não futura. Real, agora, hoje. Continue somando."}, "10": {"frase": "\"O futuro pertence àqueles que acreditam na beleza de seus sonhos.\" – Eleanor Roosevelt", "mensagem": "A procrastinação rouba sonhos devagar, sem você perceber. Você percebeu. E decidiu não deixar. Cada dia que você abre esse plano é um ato de fé em quem você está se tornando."}, "11": {"frase": "\"Não é sobre ter tempo, é sobre fazer tempo.\" – Alan Lakein", "mensagem": "Ninguém encontra tempo para estudar — todo mundo que vence cria esse tempo. Você está criando. Isso é diferente de esperar a vida ficar mais fácil. É a decisão mais corajosa que existe."}, "12": {"frase": "\"A dificuldade é o que desperta o talento.\" – Horácio", "mensagem": "Os tópicos difíceis de hoje estão te tornando mais forte do que os fáceis de amanhã. Não fuja do que é pesado — é exatamente lá que acontece a transformação real."}, "13": {"frase": "\"Você é mais corajoso do que acredita, mais forte do que parece e mais inteligente do que pensa.\" – A.A. Milne", "mensagem": "Duas semanas. Metade do ciclo se aproxima. Você provou que consegue. Agora não é mais questão de conseguir — é questão de continuar. E você sabe fazer isso."}, "14": {"frase": "\"Não limite seus desafios. Desafie seus limites.\" – Jerry Dunn", "mensagem": "No meio do caminho a procrastinação volta com força — 'já fiz bastante', 'posso descansar um pouco mais'. Reconheça a voz. Não é descanso que ela quer — quer que você pare."}, "15": {"frase": "\"Uma jornada de mil milhas começa com um único passo.\" – Lao Tsé", "mensagem": "Você já deu muitos passos. Hoje é mais um. Simples assim. Não precisa ser o melhor dia de estudos da sua vida — precisa ser mais um dia em que você escolheu aparecer."}, "16": {"frase": "\"O sucesso não é definitivo, o fracasso não é fatal: é a coragem de continuar que conta.\" – Winston Churchill", "mensagem": "Dia 17. Você está no território onde a maioria das pessoas desistiu. Não por falta de capacidade — por falta de persistência. Você está exatamente aqui. Isso já é vitória."}, "17": {"frase": "\"Seja a mudança que você deseja ver no mundo.\" – Mahatma Gandhi", "mensagem": "Mudar de vida exige mudar de comportamento antes de mudar de circunstância. Você está mudando seu comportamento agora, com esse plano, nesse dia. A circunstância vem depois — e vem."}, "18": {"frase": "\"O talento vence jogos, mas o trabalho em equipe e a inteligência vencem campeonatos.\" – Michael Jordan", "mensagem": "Inteligência sem consistência não aprova ninguém. Consistência com dedicação aprova quase todos. Você tem os dois. Esteja aqui hoje e deixe o processo trabalhar."}, "19": {"frase": "\"Acredite que você pode e você já está no meio do caminho.\" – Theodore Roosevelt", "mensagem": "Vinte dias. Isso é real. Seu cérebro agora reconhece esse horário como hora de estudar — ele foi reprogramado por você. Não desperdice o que você mesmo construiu."}, "20": {"frase": "\"A persistência é o caminho do êxito.\" – Charles Chaplin", "mensagem": "Três semanas de ciclo. Você não é mais a pessoa que procrastinava — você é a pessoa que age. Essa identidade é sua agora. Defenda ela hoje."}, "21": {"frase": "\"O único lugar onde o sucesso vem antes do trabalho é no dicionário.\" – Vidal Sassoon", "mensagem": "Não existe atalho para a aprovação. Mas existe o caminho mais eficiente — e você está nele. Cada bloco de hoje é trabalho real sendo feito enquanto outros esperam."}, "22": {"frase": "\"Você não falha quando cai. Falha quando decide não se levantar.\" – Anônimo", "mensagem": "Se a semana foi difícil, se algum dia ficou para trás — não importa. O que importa é hoje. Levante e marque os blocos. Um por um. É assim que se reconstrói o ritmo."}, "23": {"frase": "\"Cada conquista começa com a decisão de tentar.\" – John F. Kennedy", "mensagem": "A aprovação na NAV Brasil não acontece no dia da prova — ela é construída em dias como esse, quando ninguém está olhando, quando só você sabe o esforço que está fazendo."}, "24": {"frase": "\"Sonhos não funcionam a menos que você trabalhe.\" – John C. Maxwell", "mensagem": "Dia 25. Você está entrando na reta final do ciclo. Isso não é hora de afrouxar — é hora de entender que chegou até aqui porque é capaz de ir até o fim. Vá."}, "25": {"frase": "\"A força não vem da capacidade física. Vem de uma vontade indomável.\" – Mahatma Gandhi", "mensagem": "Cansaço, rotina pesada, a vontade de desistir porque 'ainda falta tanto'? Sua força real está no desejo de pertencer a essa carreira. Alimente isso diariamente e o cansaço vira combustível."}, "26": {"frase": "\"Você foi criado para vencer. Mas para ser um vencedor você deve planejar vencer, preparar-se para vencer e esperar vencer.\" – Zig Ziglar", "mensagem": "Você não está estudando por acidente. Você planejou, começou e está executando. Isso é raro. Isso é o que separa candidatos aprovados de candidatos que tentaram."}, "27": {"frase": "\"A vitória pertence ao mais perseverante.\" – Napoleão Bonaparte", "mensagem": "Quatro semanas de ciclo. A prova vai chegar — e quando chegar, esse momento aqui, esse dia 28 em que você podia ter desistido e não desistiu, vai fazer diferença no gabarito."}, "28": {"frase": "\"Nada na vida é para ser temido, apenas para ser compreendido.\" – Marie Curie", "mensagem": "O conteúdo que parece impossível hoje se torna familiar amanhã. Você já viu isso acontecer antes nesse ciclo. Confie no processo que você mesmo construiu."}, "29": {"frase": "\"Você não pode voltar e mudar o começo, mas pode começar onde está e mudar o final.\" – C.S. Lewis", "mensagem": "Dia 30. Três meses de estudos consistentes mudam uma trajetória de vida. Você já está nesse processo. O final que você quer está sendo escrito agora, nesse momento."}, "30": {"frase": "\"A grandeza não é onde estamos, mas em que direção estamos nos movendo.\" – Oliver Wendell Holmes", "mensagem": "Dois dias para o fim do ciclo. Você está em movimento na direção certa. Não olhe para o quanto falta — olhe para o quanto você já construiu. E continue."}, "31": {"frase": "\"Sucesso é fazer o ordinário de forma extraordinariamente bem.\" – John W. Gardner", "mensagem": "Estudar todos os dias não é extraordinário em si — é ordinário feito com consistência extraordinária. É isso que você está entregando. Último impulso: não pare agora."}, "32": {"frase": "\"O começo é a parte mais importante de qualquer trabalho.\" – Platão", "mensagem": "Dia 33. Você completou o ciclo. Isso não é fim — é a prova definitiva de que você é capaz. Agora recomece, mais forte, mais focado, mais próximo de quem você nasceu para ser. Você merece essa aprovação."}, "33": {"frase": "\"O segredo para começar é parar de falar e começar a fazer.\" – Walt Disney", "mensagem": "Dia 1. Você não precisa estar motivado para começar — precisa começar para se motivar. Cada tópico marcado hoje é uma prova de que você é diferente de quem ainda está só planejando. Vá."}, "34": {"frase": "\"Você não precisa ser grande para começar, mas precisa começar para ser grande.\" – Zig Ziglar", "mensagem": "Ontem você escolheu agir. Hoje é a confirmação de que não foi por acaso. Quem procrastina espera o momento perfeito — quem vence sabe que o momento perfeito é agora."}, "35": {"frase": "\"Disciplina é a ponte entre metas e realizações.\" – Jim Rohn", "mensagem": "Três dias seguidos já te colocam à frente de 80% dos que desistiram na semana 1. A procrastinação mente dizendo que você vai fazer amanhã. Você já sabe que amanhã é hoje."}, "36": {"frase": "\"Não espere. O tempo nunca será exatamente certo.\" – Napoleon Hill", "mensagem": "A vontade de adiar é mais forte quando o resultado parece distante. Mas cada bloco estudado encurta essa distância de forma real. Você está mudando hoje quem você será amanhã."}, "37": {"frase": "\"O sucesso é a soma de pequenos esforços repetidos dia após dia.\" – Robert Collier", "mensagem": "Cinco dias. Isso não é sorte — é caráter sendo construído. A versão de você que vai passar na NAV Brasil está sendo esculpida agora, bloco a bloco, nessa rotina que você insiste em honrar."}, "38": {"frase": "\"Caia sete vezes, levante-se oito.\" – Provérbio japonês", "mensagem": "Pode ser que ontem não tenha sido perfeito. Não importa. O que importa é que hoje você está aqui de novo. Recomeçar é uma habilidade — e você está desenvolvendo ela."}, "39": {"frase": "\"A única pessoa que você deve tentar ser melhor é a pessoa que você foi ontem.\" – Anônimo", "mensagem": "Uma semana completa. Pare um segundo e reconheça isso. Você está honrando um compromisso com você mesmo em um nível que poucos conseguem. Isso é identidade sendo forjada."}, "40": {"frase": "\"Motivação te faz começar. Hábito te faz continuar.\" – Jim Ryun", "mensagem": "A procrastinação perde força quando o estudo vira rotina. Você já passou da fase mais difícil. Agora é deixar o hábito trabalhar por você. Apareça e deixe o processo fazer o resto."}, "41": {"frase": "\"Quem tem um porquê suporta qualquer como.\" – Friedrich Nietzsche", "mensagem": "Lembre hoje do porquê você quer ser aprovado na NAV Brasil. Não a resposta genérica — a verdadeira, a que te move por dentro. Deixe ela te conduzir pelos blocos de hoje."}, "42": {"frase": "\"Grandes realizações não são feitas por impulso, mas por uma soma de pequenas conquistas.\" – Vincent van Gogh", "mensagem": "Dez dias. Você está um terço do caminho. Cada tópico marcado é uma conquista real — não virtual, não futura. Real, agora, hoje. Continue somando."}, "43": {"frase": "\"O futuro pertence àqueles que acreditam na beleza de seus sonhos.\" – Eleanor Roosevelt", "mensagem": "A procrastinação rouba sonhos devagar, sem você perceber. Você percebeu. E decidiu não deixar. Cada dia que você abre esse plano é um ato de fé em quem você está se tornando."}};
+const TOTAL_MAIN=131, TOTAL_IDS=175, TOTAL_DIAS=44;
+const BLOCOS_DIA=3, BLOCK_SECS=4800;
+const REV_INTERVALS=[1,3,5,10,14,20,28,30,60,90,120];
+const REV_LIMIT=new Date(2026,7,2);
 
-// ── Supabase ──────────────────────────────────────────────────────────────────
-const sbH = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'};
-async function sbGet(table,q=''){ try{const r=await fetch(`${SB_URL}/rest/v1/${table}?${q}`,{headers:sbH});return r.ok?r.json():[];}catch{return[];} }
-async function sbUpsert(table,body){ try{await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(body)});}catch{} }
+const sbH={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'};
+async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():[];}catch{return[];}}
+async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let state={}, revState={}, timerSt={timeByDisc:{},remaining:BLOCK_SECS,running:false,interval:null,currentDisc:''};
+let state={},revState={},timerSt={timeByDisc:{},remaining:BLOCK_SECS,running:false,interval:null,currentDisc:''};
 let syncTimer=null;
 
-function showSync(type,msg){
-  const el=document.getElementById('sync-badge');
-  el.className='sync-indicator sync-'+type; el.textContent=msg; el.classList.remove('hidden');
-  if(type==='ok') setTimeout(()=>el.classList.add('hidden'),2000);
-}
+function showSync(type,msg){const el=document.getElementById('sync-badge');el.className='sync-indicator sync-'+type;el.textContent=msg;el.classList.remove('hidden');if(type==='ok')setTimeout(()=>el.classList.add('hidden'),2000);}
 
 async function loadAll(){
   showSync('saving','⟳ Carregando...');
   try{
-    const [prog,revs,timers]=await Promise.all([
-      sbGet('progresso','select=id,feito'),
-      sbGet('revisoes','select=item_id,done_date,completed_revs'),
-      sbGet('timer_disc','select=disc,segundos')
-    ]);
-    state={};for(const r of prog) state[r.id]=r.feito;
-    revState={};for(const r of revs) revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
-    timerSt.timeByDisc={};for(const r of timers) timerSt.timeByDisc[r.disc]=r.segundos;
+    const[prog,revs,timers]=await Promise.all([sbGet('progresso','select=id,feito'),sbGet('revisoes','select=item_id,done_date,completed_revs'),sbGet('timer_disc','select=disc,segundos')]);
+    state={};for(const r of prog)state[r.id]=r.feito;
+    revState={};for(const r of revs)revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
+    timerSt.timeByDisc={};for(const r of timers)timerSt.timeByDisc[r.disc]=r.segundos;
     showSync('ok','✓ Sincronizado');
-  }catch(e){showSync('error','✗ Offline');}
+  }catch{showSync('error','✗ Offline');}
   render();
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const isDone=id=>!!state[id];
 function todayStr(){const n=new Date();return String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear();}
 function parseDate(s){const[d,m,y]=s.split('/');return new Date(+y,+m-1,+d);}
-const TODAY=todayStr(), TODAY_D=parseDate(TODAY);
+const TODAY=todayStr(),TODAY_D=parseDate(TODAY);
 const isPast=ds=>parseDate(ds)<TODAY_D;
 const diffDays=dt=>{const n=new Date();n.setHours(0,0,0,0);return Math.round((dt-n)/86400000);};
 function addDays(ds,n){const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);dt.setDate(dt.getDate()+n);return dt;}
 function dtStr(dt){return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
 function fmtHMS(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h>0)return h+'h'+String(m).padStart(2,'0')+'m';return String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 function fmtFull(s){return Math.floor(s/3600)+':'+String(Math.floor((s%3600)/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function parseTimeInput(v){v=v.trim();const p=v.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return parseInt(v)||0;}
 function chkIcon(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>`;}
-function badgeStyle(disc){const c=CORES[disc]||'#555';return`background:${c}22;color:${c};border:1px solid ${c}55`;}
+function badgeStyle(d){const c=CORES[d]||'#555';return`background:${c}22;color:${c};border:1px solid ${c}55`;}
 function groupByDay(){const d={};for(const i of AGENDA){if(!d[i.data])d[i.data]=[];d[i.data].push(i);}return d;}
 
-// ── Settings ──────────────────────────────────────────────────────────────────
-const DEFAULT_BLOCOS=['08:00–09:20','09:30–10:50','11:00–12:20','13:40–15:00','Português · 1h'];
-let customBlocos=null;
-function loadSettings(){try{customBlocos=JSON.parse(localStorage.getItem('nav_blocos_v1'))||null;}catch{customBlocos=null;}}
-function getBlocoLabel(orig){
-  if(!customBlocos)return orig;
-  const idx=DEFAULT_BLOCOS.indexOf(orig);
-  return idx>=0&&customBlocos[idx]?customBlocos[idx]:orig;
+function calcDeadline(){
+  const pending=AGENDA.filter(i=>!i.port&&!isDone(i.id)).length;
+  const daysNeeded=Math.ceil(pending/BLOCOS_DIA);
+  const dl=new Date(TODAY_D);dl.setDate(dl.getDate()+daysNeeded-1);
+  return dtStr(dl);
 }
-function openSettings(){
-  const b=customBlocos||DEFAULT_BLOCOS;
-  ['b1','b2','b3','b4','b5'].forEach((k,i)=>document.getElementById('cfg-'+k).value=b[i]||DEFAULT_BLOCOS[i]);
-  // Build timer reset list
+
+const DEFAULT_BLOCOS=['08:00–09:20','09:30–10:50','11:00–12:20','Português · 1h'];
+let customBlocos=null;
+function loadSettings(){try{customBlocos=JSON.parse(localStorage.getItem('nav_blocos_v2'))||null;}catch{customBlocos=null;}}
+function getBlocoLabel(orig){if(!customBlocos)return orig;const idx=DEFAULT_BLOCOS.indexOf(orig);return idx>=0&&customBlocos[idx]?customBlocos[idx]:orig;}
+
+function buildTimerEditList(containerId){
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
-  document.getElementById('timer-reset-list').innerHTML=discNames.map(disc=>{
+  document.getElementById(containerId).innerHTML=discNames.map(disc=>{
     const secs=timerSt.timeByDisc[disc]||0;
-    const tStr=secs>=60?fmtHMS(secs):secs>0?secs+'s':'0s';
+    const tStr=secs>0?fmtHMS(secs):'0s';
     const c=CORES[disc]||'#888';
-    return`<div class="modal-row" style="margin-bottom:6px">
-      <label style="font-size:11px;color:${c};font-weight:600">${disc}</label>
-      <span style="font-size:12px;color:var(--muted);flex:1">${tStr}</span>
-      <button onclick="resetDiscTimer('${disc.replace(/'/g,"\\'")}')" style="padding:3px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;border:1.5px solid #ef4444;color:#ef4444;background:transparent">Zerar</button>
+    const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
+    const safeDisc=disc.replace(/\/g,'\\').replace(/'/g,"\'");
+    return`<div class="edit-time-row">
+      <label style="color:${c}" title="${disc}">${disc}</label>
+      <span style="font-size:11px;color:var(--muted);width:48px;text-align:right">${tStr}</span>
+      <input class="edit-time-input" id="${safeId}" value="${fmtFull(secs)}">
+      <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓</button>
     </div>`;
   }).join('');
+}
+
+function openSettings(){
+  const b=customBlocos||DEFAULT_BLOCOS;
+  ['b1','b2','b3','b4'].forEach((k,i)=>document.getElementById('cfg-'+k).value=b[i]||DEFAULT_BLOCOS[i]);
+  buildTimerEditList('timer-edit-list');
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 function saveSettings(){
-  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>document.getElementById('cfg-'+k).value.trim()||DEFAULT_BLOCOS[i]);
-  localStorage.setItem('nav_blocos_v1',JSON.stringify(customBlocos));
-  closeSettings(); render();
+  customBlocos=['b1','b2','b3','b4'].map((k,i)=>document.getElementById('cfg-'+k).value.trim()||DEFAULT_BLOCOS[i]);
+  localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
+  closeSettings();render();
 }
-async function resetDiscTimer(disc){
-  if(!confirm('Zerar o tempo acumulado de "'+disc+'"?'))return;
-  timerSt.timeByDisc[disc]=0;
-  await sbUpsert('timer_disc',{disc,segundos:0});
-  openSettings();
+async function applyTimerEdit(disc){
+  const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
+  const el=document.getElementById(safeId);if(!el)return;
+  const secs=parseTimeInput(el.value);
+  timerSt.timeByDisc[disc]=secs;
+  await sbUpsert('timer_disc',{disc,segundos:secs});
+  showSync('ok','✓ Tempo atualizado');
+  buildTimerEditList('timer-edit-list');
   renderStats();
+}
+
+function openTimerEdit(){
+  const disc=timerSt.currentDisc||document.getElementById('timer-disc').value;
+  if(!disc)return;
+  document.getElementById('timed-disc-name').textContent=disc;
+  document.getElementById('timed-disc-current').textContent=fmtHMS(timerSt.timeByDisc[disc]||0)||'0s';
+  document.getElementById('timed-disc-input').value=fmtFull(timerSt.timeByDisc[disc]||0);
+  document.getElementById('timer-edit-modal').classList.remove('hidden');
+}
+function closeTimerEdit(){document.getElementById('timer-edit-modal').classList.add('hidden');}
+async function saveTimerEdit(){
+  const disc=timerSt.currentDisc||document.getElementById('timer-disc').value;
+  if(!disc)return;
+  const secs=parseTimeInput(document.getElementById('timed-disc-input').value);
+  timerSt.timeByDisc[disc]=secs;
+  await sbUpsert('timer_disc',{disc,segundos:secs});
+  showSync('ok','✓ Tempo atualizado');
+  closeTimerEdit();renderStats();
 }
 loadSettings();
 
-// ── Tab / Subtab ──────────────────────────────────────────────────────────────
 function showTab(t){
-  ['ciclo','rev','stats'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats'][i]===t));
-  if(t==='rev')renderRev();if(t==='stats')renderStats();
+  ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content'][i]===t));
+  if(t==='rev')renderRev();if(t==='stats')renderStats();if(t==='content')renderContent();
 }
 let currentSubtab='pending';
 function showSubtab(s){
@@ -375,64 +422,21 @@ function showSubtab(s){
 }
 function toggleLate(){document.getElementById('late-body').classList.toggle('hidden');}
 
-// ── Toggle ────────────────────────────────────────────────────────────────────
 async function toggleItem(id){
   state[id]=!state[id];
   if(isDone(id)&&!revState[id]){revState[id]={doneDate:TODAY,completedRevs:[]};sbUpsert('revisoes',{item_id:id,done_date:TODAY,completed_revs:[]});}
   render();
-  await sbUpsert('progresso',{id,feito:!!state[id]});
-  showSync('ok','✓ Salvo');
+  await sbUpsert('progresso',{id,feito:!!state[id]});showSync('ok','✓ Salvo');
 }
 async function markDayAll(dateStr,val){
   const days=groupByDay(),items=days[dateStr]||[];
-  for(const item of items){
-    state[item.id]=val;
-    if(val&&!revState[item.id]){revState[item.id]={doneDate:TODAY,completedRevs:[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:[]});}
-  }
-  render();
-  showSync('saving','⟳ Salvando...');
+  for(const item of items){state[item.id]=val;if(val&&!revState[item.id]){revState[item.id]={doneDate:TODAY,completedRevs:[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:[]});}}
+  render();showSync('saving','⟳ Salvando...');
   await Promise.all(items.map(item=>sbUpsert('progresso',{id:item.id,feito:!!state[item.id]})));
   showSync('ok','✓ Salvo');
 }
 
-// ── Motivação (Claude API) ────────────────────────────────────────────────────
-async function getMotivacao(dateStr, diaIdx){
-  if(motivCache[dateStr]) return motivCache[dateStr];
-  const cached = localStorage.getItem('motiv_'+dateStr);
-  if(cached){ motivCache[dateStr]=JSON.parse(cached); return motivCache[dateStr]; }
-  try{
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:300,
-        system:'Você é um coach motivacional para concurseiros brasileiros. Responda APENAS com JSON no formato: {"frase":"<frase inspiradora com autor>","mensagem":"<mensagem motivacional de 2-3 frases curtas, direta, específica para quem estuda para concurso público, no contexto do dia '+diaIdx+' de 33>"}. Sem markdown, sem explicações, apenas o JSON.',
-        messages:[{role:'user',content:'Gere uma frase motivacional única e uma mensagem de encorajamento para o dia ${diaIdx} de 33 do ciclo de estudos para concurso NAV Brasil.'}]
-      })
-    });
-    const data = await resp.json();
-    const txt = data.content?.[0]?.text||'';
-    const parsed = JSON.parse(txt.replace(/```json|```/g,'').trim());
-    motivCache[dateStr]=parsed;
-    localStorage.setItem('motiv_'+dateStr, JSON.stringify(parsed));
-    return parsed;
-  }catch(e){
-    const fallback={frase:'"A força não vem da capacidade física. Vem de uma vontade indomável." – Gandhi',mensagem:'Cada tópico estudado é um passo a mais que seus concorrentes não deram. Continue!'};
-    motivCache[dateStr]=fallback; return fallback;
-  }
-}
-
-async function renderMotivacao(dateStr, diaIdx, containerId){
-  const el=document.getElementById(containerId);
-  if(!el)return;
-  el.innerHTML='<div class="motiv-loading">✨ Carregando mensagem do dia...</div>';
-  const m=await getMotivacao(dateStr, diaIdx);
-  el.innerHTML=`<div class="motiv-quote">${m.frase}</div><div class="motiv-msg">${m.mensagem}</div>`;
-}
-
-// ── Build day HTML ────────────────────────────────────────────────────────────
-function buildDayHTML(dateStr, days){
+function buildDayHTML(dateStr,days){
   const items=days[dateStr];
   const allDone=items.every(i=>isDone(i.id));
   const hasLate=items.some(i=>isPast(i.data)&&!isDone(i.id));
@@ -447,13 +451,11 @@ function buildDayHTML(dateStr, days){
   if(isToday)tag='<span class="day-tag tag-today">Hoje</span>';
   else if(allDone)tag='<span class="day-tag tag-done">✓ Concluído</span>';
   else if(hasLate)tag='<span class="day-tag tag-late">Atrasado</span>';
-  const diaIdx = items[0]?.dia_idx+1 || 1;
-  const motivId='motiv-'+dateStr.replace(/\//g,'-');
+  const diaIdx=items[0]?.dia_idx??0;
+  const motiv=MOTIVACOES[String(diaIdx)]||MOTIVACOES['0'];
   const blocos=items.map(item=>{
     const done=isDone(item.id),late=isPast(item.data)&&!done;
-    let rc='bloco-row';
-    if(done)rc+=' done';else if(late)rc+=' late-row';
-    if(item.port)rc+=' port-row';
+    let rc='bloco-row';if(done)rc+=' done';else if(late)rc+=' late-row';if(item.port)rc+=' port-row';
     return`<div class="${rc}">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
       <div class="bloco-info">
@@ -469,18 +471,18 @@ function buildDayHTML(dateStr, days){
       <span class="day-date">${dayName}, ${dateStr}</span>${tag}
       <span class="day-meta">${dayDone}/${items.length}</span>
     </div>
-    <div class="motiv-box" id="${motivId}" onclick="renderMotivacao('${dateStr}',${diaIdx},'${motivId}')">
-      <div class="motiv-loading">✨ Clique para ver a mensagem do dia ${diaIdx}</div>
+    <div class="motiv-box">
+      <div class="motiv-quote">${motiv.frase}</div>
+      <div class="motiv-msg">${motiv.mensagem}</div>
     </div>
     <div class="blocos-list">${blocos}</div>
   </div>`;
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 function render(){
   const days=groupByDay();
-  const allItems=AGENDA.filter(i=>!i.port);
-  const doneCount=allItems.filter(i=>isDone(i.id)).length;
+  const mainItems=AGENDA.filter(i=>!i.port);
+  const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const lateItems=AGENDA.filter(i=>!i.port&&isPast(i.data)&&!isDone(i.id));
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
   document.getElementById('s-total').textContent=TOTAL_MAIN;
@@ -489,7 +491,7 @@ function render(){
   document.getElementById('s-late').textContent=lateItems.length;
   document.getElementById('prog-bar').style.width=pct+'%';
   document.getElementById('prog-label').textContent=pct+'% concluído';
-  document.getElementById('subtitle').textContent=`${doneCount} de ${TOTAL_MAIN} tópicos · conclusão prevista: 15/06/2026`;
+  document.getElementById('subtitle').textContent=`${doneCount} de ${TOTAL_MAIN} tópicos · conclusão prevista: ${calcDeadline()}`;
   const lateSection=document.getElementById('late-section');
   document.getElementById('late-count').textContent=lateItems.length;
   if(lateItems.length>0){
@@ -498,7 +500,7 @@ function render(){
       <div class="late-item">
         <div class="check-btn ${isDone(item.id)?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
         <div><span class="disc-badge" style="${badgeStyle(item.disc)}">${item.disc}</span><br>
-          <span style="font-size:12px">${item.topico}</span></div>
+        <span style="font-size:12px">${item.topico}</span></div>
         <div style="font-size:11px;color:var(--muted);text-align:right">${item.data}<br>${getBlocoLabel(item.bloco)}</div>
       </div>`).join('');
   }else{lateSection.classList.add('hidden');}
@@ -511,30 +513,21 @@ function render(){
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
-  // Auto-load motivação do dia de hoje
-  if(pendingDays.includes(TODAY)){
-    const motivId='motiv-'+TODAY.replace(/\//g,'-');
-    renderMotivacao(TODAY,1,motivId);
-  }
-  const alertCount=AGENDA.filter(i=>{
-    if(!isDone(i.id))return false;
-    const rs=revState[i.id];if(!rs)return false;
-    return REV_INTERVALS.some(d=>{const dt=addDays(rs.doneDate,d);return dt<=REV_LIMIT&&diffDays(dt)<=0&&!(rs.completedRevs||[]).includes(d);});
-  }).length;
+  const alertCount=AGENDA.filter(i=>{if(!isDone(i.id))return false;const rs=revState[i.id];if(!rs)return false;return REV_INTERVALS.some(d=>{const dt=addDays(rs.doneDate,d);return dt<=REV_LIMIT&&diffDays(dt)<=0&&!(rs.completedRevs||[]).includes(d);});}).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
 function renderStats(){
-  const allItems=AGENDA.filter(i=>!i.port);
-  const doneCount=allItems.filter(i=>isDone(i.id)).length;
+  const mainItems=AGENDA.filter(i=>!i.port);
+  const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
-  document.getElementById('st-rest').textContent=Math.max(0,TOTAL_DIAS-Math.floor(doneCount/4))+' dias';
+  document.getElementById('st-fim').textContent=calcDeadline();
+  document.getElementById('st-rest').textContent=Math.ceil(AGENDA.filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
   document.getElementById('st-pct').textContent=pct+'%';
   const discNames=[...new Set(AGENDA.map(i=>i.disc))];
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
-    const discItems=AGENDA.filter(i=>i.disc===disc&&!i.port);
-    const total=discItems.length,done=discItems.filter(i=>isDone(i.id)).length;
+    const di=AGENDA.filter(i=>i.disc===disc&&!i.port);
+    const total=di.length,done=di.filter(i=>isDone(i.id)).length;
     const p=total>0?Math.round(done/total*100):0;
     const c=CORES[disc]||'#888';
     const secs=timerSt.timeByDisc[disc]||0;
@@ -549,32 +542,18 @@ function renderStats(){
   }).join('');
 }
 
-// ── Revisões ──────────────────────────────────────────────────────────────────
 let revFilter='pending_today';
 function setRevFilter(f,el){revFilter=f;document.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderRev();}
-function getRevSchedule(itemId){
-  const rs=revState[itemId];if(!rs||!rs.doneDate)return[];
-  return REV_INTERVALS.map(d=>{const dt=addDays(rs.doneDate,d);if(dt>REV_LIMIT)return null;return{days:d,dt,done:(rs.completedRevs||[]).includes(d),diff:diffDays(dt)}}).filter(Boolean);
-}
-async function toggleRevCheck(itemId,days){
-  if(!revState[itemId])return;
-  const cr=revState[itemId].completedRevs||[];
-  const idx=cr.indexOf(days);if(idx>=0)cr.splice(idx,1);else cr.push(days);
-  revState[itemId].completedRevs=cr;
-  renderRev();
-  await sbUpsert('revisoes',{item_id:itemId,done_date:revState[itemId].doneDate,completed_revs:cr});
-}
+function getRevSchedule(itemId){const rs=revState[itemId];if(!rs||!rs.doneDate)return[];return REV_INTERVALS.map(d=>{const dt=addDays(rs.doneDate,d);if(dt>REV_LIMIT)return null;return{days:d,dt,done:(rs.completedRevs||[]).includes(d),diff:diffDays(dt)};}).filter(Boolean);}
+async function toggleRevCheck(itemId,days){if(!revState[itemId])return;const cr=revState[itemId].completedRevs||[];const idx=cr.indexOf(days);if(idx>=0)cr.splice(idx,1);else cr.push(days);revState[itemId].completedRevs=cr;renderRev();await sbUpsert('revisoes',{item_id:itemId,done_date:revState[itemId].doneDate,completed_revs:cr});}
 function labelInterval(d){if(d===30)return'+1 mês';if(d===60)return'+2 meses';if(d===90)return'+3 meses';if(d===120)return'+4 meses';return`+${d}d`;}
 function renderRev(){
   const doneItems=AGENDA.filter(i=>!i.port&&isDone(i.id));
-  let rows=[];
-  for(const item of doneItems)for(const rev of getRevSchedule(item.id))rows.push({item,rev});
+  let rows=[];for(const item of doneItems)for(const rev of getRevSchedule(item.id))rows.push({item,rev});
   const over=rows.filter(r=>!r.rev.done&&r.rev.diff<0).length;
   const todays=rows.filter(r=>!r.rev.done&&r.rev.diff===0).length;
   const week=rows.filter(r=>!r.rev.done&&r.rev.diff>0&&r.rev.diff<=7).length;
-  document.getElementById('rv-over').textContent=over;
-  document.getElementById('rv-today').textContent=todays;
-  document.getElementById('rv-week').textContent=week;
+  document.getElementById('rv-over').textContent=over;document.getElementById('rv-today').textContent=todays;document.getElementById('rv-week').textContent=week;
   if(revFilter==='pending_today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<=0);
   else if(revFilter==='overdue')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<0);
   else if(revFilter==='today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff===0);
@@ -583,42 +562,18 @@ function renderRev(){
   const list=document.getElementById('rev-list');
   if(!rows.length){list.innerHTML=`<div class="rev-empty">${revFilter==='pending_today'?'Nenhuma revisão pendente para hoje. Ótimo!':'Nenhuma revisão nessa categoria.'}</div>`;return;}
   const buckets={};
-  for(const row of rows){
-    const d=row.rev.diff;let key,label,cls;
-    if(d<0){key='over';label='Atrasadas';cls='overdue';}
-    else if(d===0){key='today';label='Hoje';cls='today';}
-    else if(d<=7){key='week';label='Esta semana';cls='upcoming';}
-    else if(d<=30){key='month';label='Este mês';cls='upcoming';}
-    else{key='f'+Math.floor(d/30);label='Em '+dtStr(row.rev.dt);cls='future';}
-    if(!buckets[key])buckets[key]={label,cls,rows:[]};
-    buckets[key].rows.push(row);
-  }
+  for(const row of rows){const d=row.rev.diff;let key,label,cls;if(d<0){key='over';label='Atrasadas';cls='overdue';}else if(d===0){key='today';label='Hoje';cls='today';}else if(d<=7){key='week';label='Esta semana';cls='upcoming';}else if(d<=30){key='month';label='Este mês';cls='upcoming';}else{key='f'+Math.floor(d/30);label='Em '+dtStr(row.rev.dt);cls='future';}if(!buckets[key])buckets[key]={label,cls,rows:[]};buckets[key].rows.push(row);}
   list.innerHTML=Object.values(buckets).map(bucket=>{
-    const items=bucket.rows.map(({item,rev})=>{
-      const c=CORES[item.disc]||'#888';
-      const diffLbl=rev.diff<0?`${Math.abs(rev.diff)}d atrás`:rev.diff===0?'Hoje':`em ${rev.diff}d`;
-      const bc=rev.diff<0?'c-over':rev.diff===0?'c-today':rev.diff<=7?'c-soon':'c-future';
-      return`<div class="rev-item ${rev.done?'rev-done-row':''}">
-        <div class="rev-check ${rev.done?'checked':''}" onclick="toggleRevCheck(${item.id},${rev.days})">${chkIcon()}</div>
-        <div class="rev-info"><div class="rev-disc" style="color:${c}">${item.disc}</div>
-          <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div></div>
-        <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
-          <div class="rev-date">${diffLbl}</div></div>
-      </div>`;
-    }).join('');
-    const n=bucket.rows.length;
-    return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}
-      <span style="margin-left:auto;font-weight:400;font-size:11px">${n} revis${n>1?'ões':'ão'}</span></div>${items}</div>`;
+    const items=bucket.rows.map(({item,rev})=>{const c=CORES[item.disc]||'#888';const diffLbl=rev.diff<0?`${Math.abs(rev.diff)}d atrás`:rev.diff===0?'Hoje':`em ${rev.diff}d`;const bc=rev.diff<0?'c-over':rev.diff===0?'c-today':rev.diff<=7?'c-soon':'c-future';return`<div class="rev-item ${rev.done?'rev-done-row':''}"><div class="rev-check ${rev.done?'checked':''}" onclick="toggleRevCheck(${item.id},${rev.days})">${chkIcon()}</div><div class="rev-info"><div class="rev-disc" style="color:${c}">${item.disc}</div><div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div></div><div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div><div class="rev-date">${diffLbl}</div></div></div>`;}).join('');
+    const n=bucket.rows.length;return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}<span style="margin-left:auto;font-weight:400;font-size:11px">${n} revis${n>1?'ões':'ão'}</span></div>${items}</div>`;
   }).join('');
 }
 
-// ── Timer ─────────────────────────────────────────────────────────────────────
 function updateTimerUI(){
   const rem=timerSt.remaining,CIRC=100.5;
   document.getElementById('timer-arc').setAttribute('stroke-dashoffset',(CIRC*(rem/BLOCK_SECS)).toFixed(2));
   document.getElementById('timer-arc').setAttribute('stroke',timerSt.running?'#1d5fa8':rem===0?'#15803d':'#94a3b8');
-  const disp=document.getElementById('timer-display');
-  disp.textContent=fmtFull(rem);
+  const disp=document.getElementById('timer-display');disp.textContent=fmtFull(rem);
   disp.className='timer-display'+(timerSt.running?' running':rem===0?' finished':'');
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':'Temporizador · 1h20';
 }
@@ -627,63 +582,183 @@ function populateDiscSelect(){
   sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+[...new Set(AGENDA.map(i=>i.disc))].map(d=>`<option value="${d}">${d}</option>`).join('');
 }
 function timerTick(){
-  if(timerSt.remaining>0){
-    timerSt.remaining--;
-    timerSt.timeByDisc[timerSt.currentDisc]=(timerSt.timeByDisc[timerSt.currentDisc]||0)+1;
-    clearTimeout(syncTimer);
-    syncTimer=setTimeout(()=>sbUpsert('timer_disc',{disc:timerSt.currentDisc,segundos:timerSt.timeByDisc[timerSt.currentDisc]}),3000);
-    updateTimerUI();
-  }else{timerFinish();}
+  if(timerSt.remaining>0){timerSt.remaining--;timerSt.timeByDisc[timerSt.currentDisc]=(timerSt.timeByDisc[timerSt.currentDisc]||0)+1;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sbUpsert('timer_disc',{disc:timerSt.currentDisc,segundos:timerSt.timeByDisc[timerSt.currentDisc]}),3000);updateTimerUI();}else{timerFinish();}
 }
 function timerStart(){
-  const sel=document.getElementById('timer-disc');
-  if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
+  const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
   timerSt.currentDisc=sel.value;timerSt.running=true;
   document.getElementById('btn-start').classList.add('hidden');
   ['btn-pause','btn-stop','btn-reset-disc'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
   document.getElementById('timer-disc').disabled=true;
-  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);
-  updateTimerUI();
+  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);updateTimerUI();
 }
-function timerPause(){
-  timerSt.running=false;clearInterval(timerSt.interval);
-  const btn=document.getElementById('btn-pause');
-  btn.textContent='Retomar';btn.className='timer-btn tbtn-start';btn.onclick=timerResume;
-  updateTimerUI();
-}
-function timerResume(){
-  timerSt.running=true;
-  const btn=document.getElementById('btn-pause');
-  btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;
-  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);
-  updateTimerUI();
-}
+function timerPause(){timerSt.running=false;clearInterval(timerSt.interval);const btn=document.getElementById('btn-pause');btn.textContent='Retomar';btn.className='timer-btn tbtn-start';btn.onclick=timerResume;updateTimerUI();}
+function timerResume(){timerSt.running=true;const btn=document.getElementById('btn-pause');btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);updateTimerUI();}
 function timerStop(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=BLOCK_SECS;
   document.getElementById('btn-start').classList.remove('hidden');
   ['btn-pause','btn-stop','btn-reset-disc'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  const btn=document.getElementById('btn-pause');
-  btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;
-  document.getElementById('timer-disc').disabled=false;
-  updateTimerUI();
+  const btn=document.getElementById('btn-pause');btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;
+  document.getElementById('timer-disc').disabled=false;updateTimerUI();
 }
-function timerFinish(){
-  clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=0;
-  document.getElementById('btn-pause').classList.add('hidden');
-  document.getElementById('btn-stop').textContent='Reiniciar';
-  updateTimerUI();
-}
-async function timerResetDisc(){
-  const disc=timerSt.currentDisc||document.getElementById('timer-disc').value;
-  if(!disc)return;
-  if(!confirm('Zerar o tempo acumulado de "'+disc+'"?'))return;
-  timerSt.timeByDisc[disc]=0;
-  await sbUpsert('timer_disc',{disc,segundos:0});
+function timerFinish(){clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=0;document.getElementById('btn-pause').classList.add('hidden');document.getElementById('btn-stop').textContent='Reiniciar';updateTimerUI();}
+
+// ── Conteúdo Programático ─────────────────────────────────────────────────────
+// customTopics: { discName: [ {id, topico, deleted} ] }
+let customTopics = null;
+
+function getDiscTopics(disc) {
+  if (customTopics && customTopics[disc]) return customTopics[disc];
+  // Build from AGENDA
+  return AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
 }
 
-populateDiscSelect();
-updateTimerUI();
-loadAll();
+async function loadCustomTopics() {
+  try {
+    const rows = await sbGet('conteudo', 'select=disc,topics');
+    if (rows && rows.length > 0) {
+      customTopics = {};
+      for (const r of rows) customTopics[r.disc] = r.topics;
+    }
+  } catch {}
+}
+
+function renderContent() {
+  const q = (document.getElementById('content-search')?.value || '').toLowerCase();
+  const discNames = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
+  const list = document.getElementById('content-disc-list');
+  if (!list) return;
+  list.innerHTML = discNames.map((disc, di) => {
+    const topics = getDiscTopics(disc);
+    const c = CORES[disc] || '#888';
+    const active = topics.filter(t => !t.deleted).length;
+    const filtered = q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : topics;
+    if (q && filtered.length === 0) return '';
+    const rows = filtered.map((t, ti) => {
+      const realIdx = topics.indexOf(t);
+      return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
+        <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
+        <input class="content-topic-input ${t.deleted?'deleted':''}" 
+          value="${t.topico.replace(/"/g,'&quot;')}" 
+          onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
+          ${t.deleted?'disabled':''}>
+        ${t.deleted
+          ? `<button class="ct-btn ct-restore" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Restaurar">↩</button>`
+          : `<button class="ct-btn ct-del" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Remover">✕</button>`
+        }
+      </div>`;
+    }).join('');
+    return `<div class="content-disc-block">
+      <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
+        <span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;flex-shrink:0"></span>
+        <span class="content-disc-title" style="color:${c}">${disc}</span>
+        <span class="content-disc-meta">${active} tópico${active!==1?'s':''}</span>
+        <span class="content-disc-chevron" id="chev-${di}">▾</span>
+      </div>
+      <div class="content-disc-body" id="cdb-${di}">
+        ${rows}
+        <div class="content-add-row">
+          <input class="content-add-input" id="add-inp-${di}" placeholder="+ Novo tópico..." 
+            onkeydown="if(event.key==='Enter')addTopic('${disc.replace(/'/g,"\'")}',${di})">
+          <button class="content-add-btn" onclick="addTopic('${disc.replace(/'/g,"\'")}',${di})">Adicionar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDiscBlock(di) {
+  const body = document.getElementById('cdb-'+di);
+  const chev = document.getElementById('chev-'+di);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+function ensureCustom(disc) {
+  if (!customTopics) customTopics = {};
+  if (!customTopics[disc]) {
+    customTopics[disc] = AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
+  }
+}
+
+function updateTopic(disc, idx, val) {
+  ensureCustom(disc);
+  customTopics[disc][idx].topico = val;
+}
+
+function toggleDeleteTopic(disc, idx) {
+  ensureCustom(disc);
+  customTopics[disc][idx].deleted = !customTopics[disc][idx].deleted;
+  renderContent();
+}
+
+let newTopicCounter = 10000;
+function addTopic(disc, di) {
+  const inp = document.getElementById('add-inp-'+di);
+  if (!inp || !inp.value.trim()) return;
+  ensureCustom(disc);
+  customTopics[disc].push({id: newTopicCounter++, topico: inp.value.trim(), deleted: false});
+  inp.value = '';
+  renderContent();
+  // Re-open the block
+  const body = document.getElementById('cdb-'+di);
+  const chev = document.getElementById('chev-'+di);
+  if (body) { body.classList.add('open'); chev?.classList.add('open'); }
+}
+
+async function saveContent() {
+  if (!customTopics) { document.getElementById('content-save-note').textContent = 'Nenhuma alteração para salvar.'; return; }
+  document.getElementById('content-save-note').textContent = '⟳ Salvando...';
+  showSync('saving', '⟳ Salvando conteúdo...');
+  try {
+    const promises = Object.entries(customTopics).map(([disc, topics]) =>
+      sbUpsert('conteudo', {disc, topics})
+    );
+    await Promise.all(promises);
+    showSync('ok', '✓ Conteúdo salvo');
+    document.getElementById('content-save-note').textContent = '✓ Salvo com sucesso! Recarregue a página para ver o novo ciclo.';
+  } catch {
+    document.getElementById('content-save-note').textContent = '✗ Erro ao salvar. Tente novamente.';
+  }
+}
+
+function resetContent() {
+  if (!confirm('Restaurar o conteúdo original de todas as disciplinas? Suas alterações serão perdidas.')) return;
+  customTopics = null;
+  renderContent();
+  document.getElementById('content-save-note').textContent = 'Conteúdo restaurado para o original.';
+}
+
+populateDiscSelect();updateTimerUI();loadAll();loadCustomTopics();
+
 </script>
+
+<!-- TAB CONTEÚDO -->
+<div id="tab-content" class="hidden content-page">
+  <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
+  <div id="content-disc-list"></div>
+  <div class="content-save-bar">
+    <button class="content-save-btn" onclick="saveContent()">💾 Salvar alterações</button>
+    <button class="content-reset-btn" onclick="resetContent()">↩ Restaurar original</button>
+    <span class="content-save-note" id="content-save-note">Alterações são salvas no Supabase e sincronizadas em todos os dispositivos.</span>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TEMPO RÁPIDO -->
+<div id="timer-edit-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2>✏️ Editar tempo — <span id="timed-disc-name"></span></h2>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 14px">Tempo atual: <strong id="timed-disc-current"></strong></p>
+    <div class="modal-row">
+      <label>Novo tempo</label>
+      <input id="timed-disc-input" type="text" placeholder="hh:mm:ss ou mm:ss">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeTimerEdit()">Cancelar</button>
+      <button class="btn-save" onclick="saveTimerEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
