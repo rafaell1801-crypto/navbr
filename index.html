@@ -354,7 +354,7 @@ function buildTimerEditList(containerId){
     const tStr=secs>0?fmtHMS(secs):'0s';
     const c=CORES[disc]||'#888';
     const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
-    const safeDisc=disc.replace(/\/g,'\\').replace(/'/g,"\'");
+    const safeDisc=disc.replace(/'/g,"\\'");
     return`<div class="edit-time-row">
       <label style="color:${c}" title="${disc}">${disc}</label>
       <span style="font-size:11px;color:var(--muted);width:48px;text-align:right">${tStr}</span>
