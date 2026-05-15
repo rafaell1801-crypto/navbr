@@ -802,7 +802,7 @@ function updateTimerUI(){
 function getActiveDiscs(){
   const base=[...new Set(AGENDA.map(i=>i.disc))];
   const deleted=customTopics?Object.keys(customTopics).filter(d=>customTopics[d]===null):[];
-  const custom=customTopics?Object.keys(customTopics).filter(d=>!base.includes(d)&&customTopics[d]!==null):[];
+  const custom=customTopics?Object.keys(customTopics).filter(d=>!base.includes(d)&&customTopics[d]!==null&&d!=='__colors__'):[];
   return [...base.filter(d=>!deleted.includes(d)),...custom];
 }
 function populateDiscSelect(){
@@ -848,9 +848,19 @@ async function loadCustomTopics() {
     const rows = await sbGet('conteudo', 'select=disc,topics');
     if (rows && rows.length > 0) {
       customTopics = {};
-      for (const r of rows) customTopics[r.disc] = r.topics;
+      for (const r of rows) {
+        if (r.disc === '__colors__') {
+          if (r.topics && typeof r.topics === 'object' && !Array.isArray(r.topics))
+            Object.assign(CORES, r.topics);
+        } else {
+          customTopics[r.disc] = r.topics;
+        }
+      }
     }
   } catch {}
+  render();
+  populateDiscSelect();
+  populateBulkDiscSelect();
 }
 
 function renderContent() {
@@ -858,7 +868,7 @@ function renderContent() {
   const allBase = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
   // oculta discs excluídas (null) da lista
   const baseDiscs = allBase.filter(d => !customTopics || customTopics[d] !== null);
-  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null) : [];
+  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null && d !== '__colors__') : [];
   const discNames = [...baseDiscs, ...customDiscs];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
@@ -1035,9 +1045,17 @@ async function saveContent() {
   document.getElementById('content-save-note').textContent = '⟳ Salvando...';
   showSync('saving', '⟳ Salvando conteúdo...');
   try {
+    const baseDiscSet = new Set(AGENDA.map(i => i.disc));
+    const customColors = {};
+    for (const disc of Object.keys(customTopics)) {
+      if (!baseDiscSet.has(disc) && disc !== '__colors__' && CORES[disc])
+        customColors[disc] = CORES[disc];
+    }
     const promises = Object.entries(customTopics).map(([disc, topics]) =>
       sbUpsert('conteudo', {disc, topics})
     );
+    if (Object.keys(customColors).length > 0)
+      promises.push(sbUpsert('conteudo', {disc: '__colors__', topics: customColors}));
     await Promise.all(promises);
     showSync('ok', '✓ Conteúdo salvo');
     document.getElementById('content-save-note').textContent = '✓ Salvo! O ciclo foi atualizado automaticamente.';
@@ -1170,7 +1188,7 @@ function getEffectiveAgenda() {
 populateDiscSelect();updateTimerUI();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics().then(()=>populateBulkDiscSelect());loadCadernos();loadResumos();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
 
 </script>
 
