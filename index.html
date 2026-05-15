@@ -799,9 +799,16 @@ function updateTimerUI(){
   disp.className='timer-display'+(timerSt.running?' running':rem===0?' finished':'');
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':'Temporizador · 1h20';
 }
+function getActiveDiscs(){
+  const base=[...new Set(AGENDA.map(i=>i.disc))];
+  const deleted=customTopics?Object.keys(customTopics).filter(d=>customTopics[d]===null):[];
+  const custom=customTopics?Object.keys(customTopics).filter(d=>!base.includes(d)&&customTopics[d]!==null):[];
+  return [...base.filter(d=>!deleted.includes(d)),...custom];
+}
 function populateDiscSelect(){
   const sel=document.getElementById('timer-disc');
-  sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+[...new Set(AGENDA.map(i=>i.disc))].map(d=>`<option value="${d}">${d}</option>`).join('');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+getActiveDiscs().map(d=>`<option value="${d}"${d===prev?' selected':''}>${d}</option>`).join('');
 }
 function timerTick(){
   if(timerSt.remaining>0){timerSt.remaining--;timerSt.timeByDisc[timerSt.currentDisc]=(timerSt.timeByDisc[timerSt.currentDisc]||0)+1;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sbUpsert('timer_disc',{disc:timerSt.currentDisc,segundos:timerSt.timeByDisc[timerSt.currentDisc]}),3000);updateTimerUI();}else{timerFinish();}
@@ -915,12 +922,9 @@ function applyBulk(disc, di) {
 function populateBulkDiscSelect() {
   const sel = document.getElementById('bulk-disc-select');
   if (!sel) return;
-  const baseDiscs = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
-  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !baseDiscs.includes(d)) : [];
-  const all = [...baseDiscs, ...customDiscs];
   const prev = sel.value;
   sel.innerHTML = '<option value="">-- Selecione a disciplina --</option>' +
-    all.map(d => `<option value="${d.replace(/"/g,'&quot;')}"${d===prev?' selected':''}>${d}</option>`).join('');
+    getActiveDiscs().map(d => `<option value="${d.replace(/"/g,'&quot;')}"${d===prev?' selected':''}>${d}</option>`).join('');
 }
 
 function loadCurrentTopicsIntoTextarea() {
@@ -966,6 +970,8 @@ function addNewDisc() {
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
   renderContent();
+  populateDiscSelect();
+  populateBulkDiscSelect();
 }
 
 function deleteDisc(disc) {
@@ -975,6 +981,8 @@ function deleteDisc(disc) {
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
   renderContent();
+  populateDiscSelect();
+  populateBulkDiscSelect();
 }
 
 function toggleDiscBlock(di) {
