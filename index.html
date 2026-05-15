@@ -500,7 +500,7 @@ function loadSettings(){try{customBlocos=JSON.parse(localStorage.getItem('nav_bl
 function getBlocoLabel(orig){if(!customBlocos)return orig;const idx=DEFAULT_BLOCOS.indexOf(orig);return idx>=0&&customBlocos[idx]?customBlocos[idx]:orig;}
 
 function buildTimerEditList(containerId){
-  const discNames=[...new Set(AGENDA.map(i=>i.disc))];
+  const discNames=getActiveDiscs();
   const containerEl=document.getElementById(containerId);
   if(!containerEl)return;
   containerEl.innerHTML='<div class="timer-edit-grid">'+discNames.map(disc=>{
@@ -713,14 +713,14 @@ function render(){
 }
 
 function renderStats(){
-  const mainItems=AGENDA.filter(i=>!i.port);
+  const mainItems=getEffectiveAgenda().filter(i=>!i.port);
   const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
   const sfim=document.getElementById('st-fim');if(sfim)sfim.textContent=calcDeadline();
   const sdias=document.getElementById('st-dias-total');if(sdias){const start=new Date(2026,4,14);const now=new Date();now.setHours(0,0,0,0);const elapsed=Math.floor((now-start)/86400000);sdias.textContent=Math.max(0,elapsed)+' dias desde o início';}
-  const srest=document.getElementById('st-rest');if(srest)srest.textContent=Math.ceil(AGENDA.filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
+  const srest=document.getElementById('st-rest');if(srest)srest.textContent=Math.ceil(getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
   const spct=document.getElementById('st-pct');if(spct)spct.textContent=pct+'%';
-  const discNames=[...new Set(AGENDA.map(i=>i.disc))];
+  const discNames=getActiveDiscs();
   const totalSecs=Object.values(timerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
   const totalEl=document.getElementById('st-total-time');
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
