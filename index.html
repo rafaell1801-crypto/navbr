@@ -100,7 +100,18 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .disc-name{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c8e6f0}
 .disc-prog{font-size:11px;color:#7fb3c8;white-space:nowrap}
 .disc-time{font-size:11px;color:#ffffff;font-weight:600;white-space:nowrap;margin-left:2px}
-.disc-bar-wrap{width:80px;height:6px;background:#1e3f5c;border-radius:99px;overflow:hidden;flex-shrink:0}
+.disc-bar-wrap{height:6px;background:#1e3f5c;border-radius:99px;overflow:hidden}
+
+/* COMPACT LINKS (bloco-row) */
+.compact-link-input{width:110px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:10px;background:var(--surface2);color:var(--text);transition:border-color .15s}
+.compact-link-input:focus{border-color:var(--accent);outline:none}
+.compact-link-input::placeholder{color:#5a7a8a;font-size:9px}
+.compact-save-btn{padding:2px 6px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0}
+.compact-save-btn:hover{border-color:var(--accent);color:var(--accent)}
+.compact-open-btn{font-size:10px;padding:2px 5px;border-radius:5px;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.bloco-disc-name{font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:1px}
+.bloco-topic-name{font-size:13px;font-weight:500;line-height:1.3;color:#c8e6f0}
+.bloco-topic-name.done-text{text-decoration:line-through;color:var(--muted)}
 .disc-bar{height:100%;border-radius:99px;transition:width .4s}
 /* REVISÕES */
 .rev-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px}
@@ -494,12 +505,16 @@ function buildTimerEditList(containerId){
   if(!containerEl)return;
   containerEl.innerHTML='<div class="timer-edit-grid">'+discNames.map(disc=>{
     const secs=timerSt.timeByDisc[disc]||0;
-    const tStr=secs>0?fmtHMS(secs):'0s';
+    const tStr=secs>0?fmtHMS(secs):'–';
     const c=CORES[disc]||'#888';
     const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
     const safeDisc=disc.replace(/'/g,"\'");
-    return`<div class="edit-time-card" style="border-color:${c}55">
-      <label style="color:${c}" title="${disc}">${disc} <span style="font-weight:600;color:#ffffff">${tStr}</span></label>
+    return`<div class="edit-time-card" style="border-color:${c}44;background:${c}08">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>
+        <span style="font-size:12px;font-weight:700;color:${c};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${disc}">${disc}</span>
+        <span style="font-size:11px;font-weight:600;color:${secs>0?'#ffffff':'var(--muted)'};white-space:nowrap">${tStr}</span>
+      </div>
       <div class="edit-time-card-bottom">
         <input class="edit-time-input" id="${safeId}" value="${fmtHM(secs)}" placeholder="hh:mm">
         <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓ Ok</button>
@@ -589,6 +604,22 @@ async function markDayAll(dateStr,val){
   showSync('ok','✓ Salvo');
 }
 
+function compactResumoHTML(itemId) {
+  const url = resumosState[itemId] || '';
+  const sid = 'res-'+itemId;
+  const sv = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const open = url ? `<a href="${url}" target="_blank" rel="noopener" class="compact-open-btn" style="background:#0f2535;border:1px solid #3eb5c8;color:#7dd3e8" title="Abrir resumo">📄↗</a>` : '';
+  return `<input class="compact-link-input" id="${sid}" value="${sv}" placeholder="📄 resumo..." style="border-color:#2a5c7a"><button class="compact-save-btn" onclick="saveResumo(${itemId},document.getElementById('${sid}').value.trim())" title="Salvar resumo">💾</button>${open}`;
+}
+
+function compactCadernoHTML(itemId) {
+  const url = cadernosState[itemId] || '';
+  const sid = 'cad-'+itemId;
+  const sv = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const open = url ? `<a href="${url}" target="_blank" rel="noopener" class="compact-open-btn" style="background:#e8f0fe;border:1px solid #c5d8fa;color:#1d5fa8" title="Abrir questões">📎↗</a>` : '';
+  return `<input class="compact-link-input" id="${sid}" value="${sv}" placeholder="📎 questões..."><button class="compact-save-btn" onclick="saveCaderno(${itemId},document.getElementById('${sid}').value.trim())" title="Salvar questões">💾</button>${open}`;
+}
+
 function buildDayHTML(dateStr,days){
   const items=days[dateStr];
   const allDone=items.every(i=>isDone(i.id));
@@ -609,14 +640,23 @@ function buildDayHTML(dateStr,days){
   const blocos=items.map(item=>{
     const done=isDone(item.id),late=isPast(item.data)&&!done;
     let rc='bloco-row';if(done)rc+=' done';else if(late)rc+=' late-row';if(item.port)rc+=' port-row';
-    return`<div class="${rc}">
-      <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
-      <div class="bloco-info">
-        ${discBadgeHTML(item.disc)}
-        <div class="topico-name">${item.topico}</div>
+    const c=CORES[item.disc]||'#888';
+    const discUrl=DISC_LINKS[item.disc];
+    const discNameEl=discUrl
+      ?`<a href="${discUrl}" target="_blank" rel="noopener" class="bloco-disc-name" style="color:${c};text-decoration:none" onclick="event.stopPropagation()">${item.disc}</a>`
+      :`<div class="bloco-disc-name" style="color:${c}">${item.disc}</div>`;
+    return`<div class="${rc}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
+      <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
+      <div style="flex:1;min-width:0">
+        ${discNameEl}
+        <div class="bloco-topic-name ${done?'done-text':''}">${item.topico}</div>
+        <div style="display:flex;gap:5px;align-items:center;margin-top:6px;flex-wrap:wrap">
+          ${compactResumoHTML(item.id)}
+          <span style="color:#1e3f5c;font-size:10px;flex-shrink:0">·</span>
+          ${compactCadernoHTML(item.id)}
+        </div>
       </div>
-      ${resumoInputHTML(item.id)}
-      ${cadernoInputHTML(item.id, getBlocoLabel(item.bloco))}
+      <div style="font-size:11px;color:#7fb3c8;white-space:nowrap;flex-shrink:0;text-align:right;padding-top:2px">${getBlocoLabel(item.bloco)}</div>
     </div>`;
   }).join('');
   return`<div class="${cls}">
@@ -698,9 +738,9 @@ function renderStats(){
       <span class="disc-prog">${done+'/'+total}</span>
       <span class="disc-time" style="${secs>0?'color:'+c+';font-weight:600':''}">${tStr}</span>
       <div style="width:100%;display:flex;align-items:center;gap:8px;padding-left:18px">
-        <div class="disc-bar-wrap" style="width:120px;flex-shrink:0"><div class="disc-bar" style="width:${p}%;background:${c}"></div></div>
-        <span style="font-size:10px;color:var(--muted);min-width:28px">${p}%</span>
-        ${secs>0?`<div style="width:60px;height:5px;background:#1e3f5c;border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pctTime}%;background:${c};border-radius:99px"></div></div><span style="font-size:10px;color:var(--muted)">${pctTime}% do tempo</span>`:''}
+        <div class="disc-bar-wrap" style="flex:1"><div class="disc-bar" style="width:${p}%;background:${c}"></div></div>
+        <span style="font-size:10px;color:var(--muted);white-space:nowrap;min-width:28px;text-align:right">${p}%</span>
+        ${secs>0?`<div style="width:50px;height:5px;background:#1e3f5c;border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pctTime}%;background:${c};border-radius:99px"></div></div><span style="font-size:10px;color:var(--muted);white-space:nowrap">${pctTime}% do tempo</span>`:''}
       </div>
     </div>`;
   }).join('');
