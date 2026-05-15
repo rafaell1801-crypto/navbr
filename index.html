@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d1b2a;--surface:#122333;--surface2:#1a3349;
+  --bg:#000000;--surface:#0d1a26;--surface2:#0f2030;
   --border:#1e3f5c;--text:#e8f4f8;--muted:#7fb3c8;
   --accent:#3eb5c8;--success:#2dd4a0;--danger:#f26b5e;
   --warn:#f5a623;--radius:10px;--done-bg:#0d2e27;
@@ -16,17 +16,17 @@
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px}
 .app-header-text{flex:1}
-.app-header h1{font-size:16px;font-weight:700;color:var(--accent)}
+.app-header h1{font-size:16px;font-weight:700;color:#e8f4f8;letter-spacing:.3px}
 .app-header p{font-size:12px;color:var(--muted);margin-top:2px}
 .sync-indicator{display:inline-block;font-size:11px;margin-left:8px;padding:2px 7px;border-radius:99px;font-weight:600}
 .sync-ok{background:#dcfce7;color:#15803d}.sync-saving{background:#fef9c3;color:#854d0e}.sync-error{background:#fee2e2;color:#991b1b}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;gap:4px;align-items:center}
+.tabs{display:flex;background:#000000;border-bottom:1px solid var(--border);padding:0 20px;gap:4px;align-items:center}
 .tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .15s;white-space:nowrap}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab:hover:not(.active){color:var(--text)}
 .settings-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:10px 8px;color:var(--muted);margin-left:auto;line-height:1}
 .settings-btn:hover{color:var(--text)}
-.timer-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.timer-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:#000000;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .timer-ring{width:38px;height:38px;flex-shrink:0}
 .timer-display{font-size:22px;font-weight:700;letter-spacing:1px;min-width:72px}
 .timer-display.running{color:var(--accent)}.timer-display.finished{color:var(--success)}
@@ -80,8 +80,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .check-btn.checked svg,.rev-check.checked svg{opacity:1}
 .bloco-info{min-width:0}
 .disc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px}
-.topico-name{font-size:13px;font-weight:500;line-height:1.3}
-.bloco-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;text-align:right}
+.topico-name{font-size:13px;font-weight:500;line-height:1.3;color:#c8e6f0}
+.bloco-time{font-size:11px;color:#7fb3c8;white-space:nowrap;flex-shrink:0;text-align:right}
 /* MOTIVAÇÃO */
 .motiv-box{margin:8px 14px 4px;padding:10px 12px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-left:3px solid var(--accent);border-radius:6px;cursor:pointer}
 .motiv-quote{font-size:12px;font-style:italic;color:#7dd3e8;line-height:1.4;font-weight:500}
@@ -97,9 +97,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .disc-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border)}
 .disc-row:last-child{border-bottom:none}
 .disc-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-.disc-name{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.disc-prog{font-size:11px;color:var(--muted);white-space:nowrap}
-.disc-time{font-size:11px;color:var(--muted);white-space:nowrap;margin-left:2px}
+.disc-name{font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c8e6f0}
+.disc-prog{font-size:11px;color:#7fb3c8;white-space:nowrap}
+.disc-time{font-size:11px;color:#ffffff;font-weight:600;white-space:nowrap;margin-left:2px}
 .disc-bar-wrap{width:80px;height:6px;background:#1e3f5c;border-radius:99px;overflow:hidden;flex-shrink:0}
 .disc-bar{height:100%;border-radius:99px;transition:width .4s}
 /* REVISÕES */
@@ -172,7 +172,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .timer-edit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:4px}
 .edit-time-card{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);transition:border-color .15s;min-width:0;overflow:hidden}
 .edit-time-card:hover{border-color:var(--accent)}
-.edit-time-card label{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.edit-time-card label{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;color:inherit}
 .edit-time-card-bottom{display:flex;align-items:center;gap:6px;min-width:0}
 .edit-time-card-bottom .edit-time-input{flex:1;min-width:0;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;text-align:center;background:var(--surface2)}
 .edit-time-card-bottom .edit-time-input:focus{border-color:var(--accent);outline:none}
@@ -349,9 +349,10 @@ async function saveResumo(itemId, url) {
 function resumoInputHTML(itemId) {
   const url = resumosState[itemId] || '';
   const safeId = 'res-'+itemId;
-  const inputEl = `<input class="caderno-input" id="\${safeId}" value="\${url.replace(/"/g,'&quot;')}" placeholder="📄 link resumo..." style="border-color:#2a5c7a">`;
-  const saveBtn = `<button class="caderno-save-btn" style="border-color:#3eb5c8;color:#3eb5c8" onclick="saveResumo(\${itemId}, document.getElementById('\${safeId}').value.trim())">Salvar</button>`;
-  const openBtn = url ? `<a href="\${url}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2d40;border-color:#3eb5c8;color:#7dd3e8">Abrir ↗</a>` : `<span style="min-width:56px"></span>`;
+  const safeVal = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const inputEl = '<input class="caderno-input" id="'+safeId+'" value="'+safeVal+'" placeholder="📄 link resumo..." style="border-color:#2a5c7a">';
+  const saveBtn = '<button class="caderno-save-btn" style="border-color:#3eb5c8;color:#3eb5c8" onclick="saveResumo('+itemId+', document.getElementById(''+safeId+'').value.trim())">Salvar</button>';
+  const openBtn = url ? '<a href="'+url+'" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2d40;border-color:#3eb5c8;color:#7dd3e8">Abrir ↗</a>' : '<span style="min-width:56px"></span>';
   return inputEl + saveBtn + openBtn;
 }
 
@@ -366,10 +367,11 @@ async function saveCaderno(itemId, url) {
 function cadernoInputHTML(itemId, timeLabel) {
   const url = cadernosState[itemId] || '';
   const safeId = 'cad-'+itemId;
-  const inputEl = `<input class="caderno-input" id="${safeId}" value="${url.replace(/"/g,'&quot;')}" placeholder="📎 link questões...">`;
-  const saveBtn = `<button class="caderno-save-btn" onclick="saveCaderno(${itemId}, document.getElementById('${safeId}').value.trim())">Salvar</button>`;
-  const timeEl = `<div class="bloco-time">${timeLabel||''}</div>`;
-  const openBtn = url ? `<a href="${url}" target="_blank" rel="noopener" class="caderno-link-btn">Abrir ↗</a>` : `<span style="min-width:56px"></span>`;
+  const safeVal = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const inputEl = '<input class="caderno-input" id="'+safeId+'" value="'+safeVal+'" placeholder="📎 link questões...">';
+  const saveBtn = '<button class="caderno-save-btn" onclick="saveCaderno('+itemId+', document.getElementById(''+safeId+'').value.trim())">Salvar</button>';
+  const timeEl = '<div class="bloco-time">'+(timeLabel||'')+'</div>';
+  const openBtn = url ? '<a href="'+url+'" target="_blank" rel="noopener" class="caderno-link-btn">Abrir ↗</a>' : '<span style="min-width:56px"></span>';
   return inputEl + saveBtn + timeEl + openBtn;
 }
 
@@ -414,7 +416,7 @@ function fmtFull(s){return Math.floor(s/3600)+':'+String(Math.floor((s%3600)/60)
 function parseTimeInput(v){v=v.trim();const p=v.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*3600+p[1]*60;return parseInt(v)*3600||0;}
 function fmtHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 function chkIcon(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>`;}
-function badgeStyle(d){const c=CORES[d]||'#555';return`background:${c}22;color:${c};border:1px solid ${c}55`;}
+function badgeStyle(d){const c=CORES[d]||'#888';return`background:${c}33;color:${c};border:1px solid ${c}77;filter:brightness(1.3)`;}
 function discBadgeHTML(disc){
   const style=badgeStyle(disc);
   const url=DISC_LINKS[disc];
@@ -445,8 +447,8 @@ function buildTimerEditList(containerId){
     const c=CORES[disc]||'#888';
     const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
     const safeDisc=disc.replace(/'/g,"\'");
-    return`<div class="edit-time-card">
-      <label style="color:${c}" title="${disc}">${disc} <span style="font-weight:400;color:var(--muted)">${tStr}</span></label>
+    return`<div class="edit-time-card" style="border-color:${c}55">
+      <label style="color:${c}" title="${disc}">${disc} <span style="font-weight:600;color:#ffffff">${tStr}</span></label>
       <div class="edit-time-card-bottom">
         <input class="edit-time-input" id="${safeId}" value="${fmtHM(secs)}" placeholder="hh:mm">
         <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓ Ok</button>
