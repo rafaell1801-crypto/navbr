@@ -197,6 +197,43 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .bulk-textarea:focus{border-color:var(--accent);outline:none}
 .bulk-apply-btn{margin-top:6px;padding:5px 14px;font-size:12px;font-weight:600;border-radius:6px;border:none;background:var(--accent);color:#000;cursor:pointer}
 .bulk-apply-btn:hover{opacity:.85}
+
+/* BULK TOP SECTION */
+.bulk-top-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.bulk-top-card h3{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px}
+.bulk-disc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bulk-disc-select{flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px}
+.bulk-load-btn{padding:5px 11px;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
+.bulk-load-btn:hover{border-color:var(--accent);color:var(--accent)}
+.bulk-main-apply{padding:6px 16px;font-size:12px;font-weight:700;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+.bulk-main-apply:hover{opacity:.85}
+.bulk-main-textarea{width:100%;min-height:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:12px;resize:vertical;line-height:1.6;font-family:inherit}
+.bulk-main-textarea:focus{border-color:var(--accent);outline:none}
+.add-disc-section{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border)}
+.add-disc-label{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}
+.add-disc-input{flex:1;min-width:140px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:13px}
+.add-disc-input:focus{border-color:var(--accent);outline:none}
+.add-disc-color{width:34px;height:28px;border:1px solid var(--border);border-radius:5px;cursor:pointer;padding:2px;background:var(--surface2)}
+.add-disc-btn{padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:none;background:var(--success);color:#000;cursor:pointer;white-space:nowrap}
+.del-disc-btn{padding:2px 8px;font-size:10px;font-weight:700;border-radius:5px;border:1.5px solid #ef4444;background:transparent;color:#ef4444;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.del-disc-btn:hover{background:#ef4444;color:#fff}
+
+/* RESPONSIVO */
+@media(max-width:600px){
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .timer-display{font-size:18px;min-width:60px}
+  .timer-label{display:none}
+  .timer-disc-select{max-width:none;width:100%;order:5;flex-basis:100%}
+  .days-list{padding:8px 10px}
+  .stats-page,.rev-page,.content-page{padding:10px 12px}
+  .rev-summary-bar{grid-template-columns:repeat(3,1fr)}
+  .bloco-row{flex-wrap:wrap}
+  .bloco-info{width:calc(100% - 34px)}
+  .caderno-input{font-size:10px}
+  .info-grid{grid-template-columns:1fr}
+  .tabs{padding:0 8px;gap:0}
+  .tab{padding:10px 10px;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -660,9 +697,10 @@ function renderStats(){
       <span class="disc-name" title="${disc}">${disc}</span>
       <span class="disc-prog">${done+'/'+total}</span>
       <span class="disc-time" style="${secs>0?'color:'+c+';font-weight:600':''}">${tStr}</span>
-      <div style="width:100%;display:flex;align-items:center;gap:6px;padding-left:18px">
-        <div class="disc-bar-wrap" style="flex:1"><div class="disc-bar" style="width:${disc==='Língua Portuguesa'?100:p}%;background:${c}"></div></div>
-        ${secs>0?`<div style="width:70px;height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pctTime}%;background:${c};border-radius:99px"></div></div><span style="font-size:10px;color:var(--muted)">${pctTime}% do tempo</span>`:''}
+      <div style="width:100%;display:flex;align-items:center;gap:8px;padding-left:18px">
+        <div class="disc-bar-wrap" style="width:120px;flex-shrink:0"><div class="disc-bar" style="width:${p}%;background:${c}"></div></div>
+        <span style="font-size:10px;color:var(--muted);min-width:28px">${p}%</span>
+        ${secs>0?`<div style="width:60px;height:5px;background:#1e3f5c;border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pctTime}%;background:${c};border-radius:99px"></div></div><span style="font-size:10px;color:var(--muted)">${pctTime}% do tempo</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -769,7 +807,9 @@ async function loadCustomTopics() {
 
 function renderContent() {
   const q = (document.getElementById('content-search')?.value || '').toLowerCase();
-  const discNames = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
+  const baseDiscs = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
+  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !baseDiscs.includes(d)) : [];
+  const discNames = [...baseDiscs, ...customDiscs];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
   list.innerHTML = discNames.map((disc, di) => {
@@ -778,12 +818,13 @@ function renderContent() {
     const active = topics.filter(t => !t.deleted).length;
     const filtered = q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : topics;
     if (q && filtered.length === 0) return '';
+    const isCustomDisc = !baseDiscs.includes(disc);
     const rows = filtered.map((t, ti) => {
       const realIdx = topics.indexOf(t);
       return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
         <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
-        <input class="content-topic-input ${t.deleted?'deleted':''}" 
-          value="${t.topico.replace(/"/g,'&quot;')}" 
+        <input class="content-topic-input ${t.deleted?'deleted':''}"
+          value="${t.topico.replace(/"/g,'&quot;')}"
           onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
           ${t.deleted?'disabled':''}>
         ${t.deleted
@@ -797,18 +838,20 @@ function renderContent() {
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0;box-shadow:0 0 6px ${c}88"></span>
         <span class="content-disc-title" style="color:${c};font-weight:700">${disc}</span>
         <span class="content-disc-meta">${active} tópico${active!==1?'s':''}</span>
+        <button class="del-disc-btn" onclick="event.stopPropagation();deleteDisc('${disc.replace(/'/g,"\\'")}')" title="Excluir disciplina">✕ Excluir</button>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
       <div class="content-disc-body" id="cdb-${di}">
         ${rows}
         <div class="content-add-row">
-          <input class="content-add-input" id="add-inp-${di}" placeholder="+ Novo tópico..." 
+          <input class="content-add-input" id="add-inp-${di}" placeholder="+ Novo tópico..."
             onkeydown="if(event.key==='Enter')addTopic('${disc.replace(/'/g,"\'")}',${di})">
           <button class="content-add-btn" onclick="addTopic('${disc.replace(/'/g,"\'")}',${di})">Adicionar</button>
         </div>
       </div>
     </div>`;
   }).join('');
+  populateBulkDiscSelect();
 }
 
 function applyBulk(disc, di) {
@@ -821,10 +864,68 @@ function applyBulk(disc, di) {
   customTopics[disc] = lines.map((topico,i) => ({id: newTopicCounter++, topico, deleted:false}));
   ta.value = '';
   renderContent();
-  // Re-open
   const body = document.getElementById('cdb-'+di);
   const chev = document.getElementById('chev-'+di);
   if (body) {body.classList.add('open'); chev?.classList.add('open');}
+}
+
+function populateBulkDiscSelect() {
+  const sel = document.getElementById('bulk-disc-select');
+  if (!sel) return;
+  const baseDiscs = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
+  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !baseDiscs.includes(d)) : [];
+  const all = [...baseDiscs, ...customDiscs];
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- Selecione a disciplina --</option>' +
+    all.map(d => `<option value="${d.replace(/"/g,'&quot;')}"${d===prev?' selected':''}>${d}</option>`).join('');
+}
+
+function loadCurrentTopicsIntoTextarea() {
+  const disc = document.getElementById('bulk-disc-select').value;
+  if (!disc) { alert('Selecione uma disciplina primeiro.'); return; }
+  const topics = getDiscTopics(disc).filter(t => !t.deleted).map(t => t.topico);
+  document.getElementById('bulk-main-textarea').value = topics.join('\n');
+}
+
+function applyBulkMain() {
+  const disc = document.getElementById('bulk-disc-select').value;
+  const ta = document.getElementById('bulk-main-textarea');
+  if (!disc) { alert('Selecione uma disciplina primeiro.'); return; }
+  if (!ta || !ta.value.trim()) { alert('Digite ao menos um tópico.'); return; }
+  const lines = ta.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (!confirm(`Substituir os tópicos de "${disc}" por ${lines.length} novo(s) tópico(s)?`)) return;
+  ensureAllCustom();
+  customTopics[disc] = lines.map(topico => ({id: newTopicCounter++, topico, deleted: false}));
+  ta.value = '';
+  showSync('saving', '⏳ Lembre de salvar!');
+  document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
+  renderContent();
+}
+
+function addNewDisc() {
+  const nameEl = document.getElementById('new-disc-name');
+  const colorEl = document.getElementById('new-disc-color');
+  const name = nameEl.value.trim();
+  if (!name) { nameEl.focus(); return; }
+  const baseDiscs = [...new Set(AGENDA.map(i => i.disc))];
+  const existing = customTopics ? Object.keys(customTopics) : [];
+  if (baseDiscs.includes(name) || existing.includes(name)) { alert('Essa disciplina já existe!'); return; }
+  CORES[name] = colorEl ? colorEl.value : '#3eb5c8';
+  ensureAllCustom();
+  customTopics[name] = [];
+  nameEl.value = '';
+  showSync('saving', '⏳ Lembre de salvar!');
+  document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
+  renderContent();
+}
+
+function deleteDisc(disc) {
+  if (!confirm(`Excluir a disciplina "${disc}" do ciclo? Os tópicos serão removidos.`)) return;
+  ensureAllCustom();
+  customTopics[disc] = [];
+  showSync('saving', '⏳ Lembre de salvar!');
+  document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
+  renderContent();
 }
 
 function toggleDiscBlock(di) {
@@ -840,6 +941,11 @@ function ensureCustom(disc) {
   if (!customTopics[disc]) {
     customTopics[disc] = AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
   }
+}
+
+function ensureAllCustom() {
+  if (!customTopics) customTopics = {};
+  [...new Set(AGENDA.filter(i=>!i.port).map(i=>i.disc))].forEach(d => ensureCustom(d));
 }
 
 function updateTopic(disc, idx, val) {
@@ -1007,12 +1113,35 @@ function getEffectiveAgenda() {
 populateDiscSelect();updateTimerUI();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
+render();loadAll();loadCustomTopics().then(()=>populateBulkDiscSelect());loadCadernos();loadResumos();
 
 </script>
 
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
+
+  <!-- Substituição em massa -->
+  <div class="bulk-top-card">
+    <h3>📋 Substituição em massa</h3>
+    <div class="bulk-disc-row">
+      <select class="bulk-disc-select" id="bulk-disc-select">
+        <option value="">-- Selecione a disciplina --</option>
+      </select>
+      <button class="bulk-load-btn" onclick="loadCurrentTopicsIntoTextarea()" title="Carrega os tópicos atuais da disciplina selecionada">Carregar atuais</button>
+      <button class="bulk-main-apply" onclick="applyBulkMain()">✔ Aplicar</button>
+    </div>
+    <textarea class="bulk-main-textarea" id="bulk-main-textarea" placeholder="Digite um tópico por linha...&#10;Exemplo:&#10;Equivalências e Negações Lógicas&#10;Diagramas Lógicos&#10;Raciocínio Sequencial"></textarea>
+    <div style="font-size:11px;color:var(--muted)">💡 Um tópico por linha. Clique em <strong>Aplicar</strong> para substituir os tópicos da disciplina selecionada. Depois clique em <strong>Salvar alterações</strong>.</div>
+
+    <!-- Adicionar nova disciplina -->
+    <div class="add-disc-section">
+      <span class="add-disc-label">+ Nova disciplina:</span>
+      <input class="add-disc-input" id="new-disc-name" placeholder="Nome da disciplina..." onkeydown="if(event.key==='Enter')addNewDisc()">
+      <input type="color" class="add-disc-color" id="new-disc-color" value="#3eb5c8" title="Cor da disciplina">
+      <button class="add-disc-btn" onclick="addNewDisc()">+ Adicionar</button>
+    </div>
+  </div>
+
   <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
   <div id="content-disc-list"></div>
   <div class="content-save-bar">
