@@ -930,6 +930,12 @@ function loadCurrentTopicsIntoTextarea() {
   document.getElementById('bulk-main-textarea').value = topics.join('\n');
 }
 
+function deleteBulkSelected() {
+  const disc = document.getElementById('bulk-disc-select').value;
+  if (!disc) { alert('Selecione uma disciplina primeiro.'); return; }
+  deleteDisc(disc);
+}
+
 function applyBulkMain() {
   const disc = document.getElementById('bulk-disc-select').value;
   const ta = document.getElementById('bulk-main-textarea');
@@ -1172,6 +1178,7 @@ render();loadAll();loadCustomTopics().then(()=>populateBulkDiscSelect());loadCad
       </select>
       <button class="bulk-load-btn" onclick="loadCurrentTopicsIntoTextarea()" title="Carrega os tópicos atuais da disciplina selecionada">Carregar atuais</button>
       <button class="bulk-main-apply" onclick="applyBulkMain()">✔ Aplicar</button>
+      <button class="del-disc-btn" onclick="deleteBulkSelected()" title="Excluir disciplina selecionada">✕ Excluir</button>
     </div>
     <textarea class="bulk-main-textarea" id="bulk-main-textarea" placeholder="Digite um tópico por linha...&#10;Exemplo:&#10;Equivalências e Negações Lógicas&#10;Diagramas Lógicos&#10;Raciocínio Sequencial"></textarea>
     <div style="font-size:11px;color:var(--muted)">💡 Um tópico por linha. Clique em <strong>Aplicar</strong> para substituir os tópicos da disciplina selecionada. Depois clique em <strong>Salvar alterações</strong>.</div>
