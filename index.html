@@ -351,7 +351,7 @@ function resumoInputHTML(itemId) {
   const safeId = 'res-'+itemId;
   const safeVal = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const inputEl = '<input class="caderno-input" id="'+safeId+'" value="'+safeVal+'" placeholder="📄 link resumo..." style="border-color:#2a5c7a">';
-  const saveBtn = '<button class="caderno-save-btn" style="border-color:#3eb5c8;color:#3eb5c8" onclick="saveResumo('+itemId+', document.getElementById(''+safeId+'').value.trim())">Salvar</button>';
+  const saveBtn = '<button class="caderno-save-btn" style="border-color:#3eb5c8;color:#3eb5c8" onclick="saveResumo('+itemId+', document.getElementById(\''+safeId+'\').value.trim())">Salvar</button>';
   const openBtn = url ? '<a href="'+url+'" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2d40;border-color:#3eb5c8;color:#7dd3e8">Abrir ↗</a>' : '<span style="min-width:56px"></span>';
   return inputEl + saveBtn + openBtn;
 }
@@ -369,7 +369,7 @@ function cadernoInputHTML(itemId, timeLabel) {
   const safeId = 'cad-'+itemId;
   const safeVal = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const inputEl = '<input class="caderno-input" id="'+safeId+'" value="'+safeVal+'" placeholder="📎 link questões...">';
-  const saveBtn = '<button class="caderno-save-btn" onclick="saveCaderno('+itemId+', document.getElementById(''+safeId+'').value.trim())">Salvar</button>';
+  const saveBtn = '<button class="caderno-save-btn" onclick="saveCaderno('+itemId+', document.getElementById(\''+safeId+'\').value.trim())">Salvar</button>';
   const timeEl = '<div class="bloco-time">'+(timeLabel||'')+'</div>';
   const openBtn = url ? '<a href="'+url+'" target="_blank" rel="noopener" class="caderno-link-btn">Abrir ↗</a>' : '<span style="min-width:56px"></span>';
   return inputEl + saveBtn + timeEl + openBtn;
@@ -426,7 +426,7 @@ function discBadgeHTML(disc){
 function groupByDay(){const d={};for(const i of AGENDA){if(!d[i.data])d[i.data]=[];d[i.data].push(i);}return d;}
 
 function calcDeadline(){
-  const pending=AGENDA.filter(i=>!i.port&&!isDone(i.id)).length;
+  const pending=getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id)).length;
   const daysNeeded=Math.ceil(pending/BLOCOS_DIA);
   const dl=new Date(TODAY_D);dl.setDate(dl.getDate()+daysNeeded-1);
   return dtStr(dl);
@@ -459,6 +459,7 @@ function buildTimerEditList(containerId){
 
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
+  const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const el=document.getElementById('cfg-'+k);
     if(el)el.value=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
@@ -468,6 +469,7 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 function saveSettings(){
+  const sdEl=document.getElementById('cfg-start-date');if(sdEl&&sdEl.value){saveStartDateSetting(sdEl.value);}
   customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>{
     const el=document.getElementById('cfg-'+k);
     return el?el.value.trim()||DEFAULT_BLOCOS[i]:DEFAULT_BLOCOS[i];
@@ -581,9 +583,9 @@ function buildDayHTML(dateStr,days){
 
 function render(){
   const days=groupByDay();
-  const mainItems=AGENDA.filter(i=>!i.port);
+  const mainItems=getMainItems();
   const doneCount=mainItems.filter(i=>isDone(i.id)).length;
-  const lateItems=AGENDA.filter(i=>!i.port&&isPast(i.data)&&!isDone(i.id));
+  const lateItems=getLateItems();
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
   document.getElementById('s-total').textContent=TOTAL_MAIN;
   document.getElementById('s-done').textContent=doneCount;
@@ -834,7 +836,8 @@ async function saveContent() {
     );
     await Promise.all(promises);
     showSync('ok', '✓ Conteúdo salvo');
-    document.getElementById('content-save-note').textContent = '✓ Salvo com sucesso! Recarregue a página para ver o novo ciclo.';
+    document.getElementById('content-save-note').textContent = '✓ Salvo! O ciclo foi atualizado automaticamente.';
+    render(); // Rebuild cycle with new topics
   } catch {
     document.getElementById('content-save-note').textContent = '✗ Erro ao salvar. Tente novamente.';
   }
@@ -847,7 +850,123 @@ function resetContent() {
   document.getElementById('content-save-note').textContent = 'Conteúdo restaurado para o original.';
 }
 
-populateDiscSelect();updateTimerUI();loadAll();loadCustomTopics();loadCadernos();loadResumos();
+// ── Data de início dinâmica ───────────────────────────────────────────────────
+function loadStartDate() {
+  return localStorage.getItem('nav_start_date') || '2026-05-14';
+}
+function saveStartDateSetting(val) {
+  localStorage.setItem('nav_start_date', val);
+}
+function getStartDate() {
+  const s = loadStartDate();
+  const [y,m,d] = s.split('-');
+  return new Date(+y,+m-1,+d);
+}
+
+// Override parseDate-based TODAY_D with dynamic start
+function getAgendaWithDate() {
+  const start = getStartDate();
+  const dateMap = {};
+  // Group original AGENDA by dia_idx and reassign dates
+  const result = AGENDA.map(item => {
+    const dt = new Date(start);
+    dt.setDate(dt.getDate() + item.dia_idx);
+    const dd = String(dt.getDate()).padStart(2,'0');
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const yy = dt.getFullYear();
+    return {...item, data: dd+'/'+mm+'/'+yy};
+  });
+  return result;
+}
+
+// Replace AGENDA reference in groupByDay with dynamic version
+const _origGroupByDay = groupByDay;
+function groupByDay() {
+  const agenda = getEffectiveAgenda();
+  const d = {};
+  for (const i of agenda) { if(!d[i.data]) d[i.data]=[]; d[i.data].push(i); }
+  return d;
+}
+
+// Also patch AGENDA-based filters to use dynamic dates
+function getMainItems() { return getEffectiveAgenda().filter(i=>!i.port); }
+function getLateItems() { return getEffectiveAgenda().filter(i=>!i.port && isPast(i.data) && !isDone(i.id)); }
+
+// ── Ciclo dinâmico baseado em customTopics ────────────────────────────────────
+function getDynamicAgenda() {
+  if (!customTopics || Object.keys(customTopics).length === 0) return null;
+
+  // Build interleaved agenda from customTopics
+  const grupo = {
+    'Raciocínio Lógico Matemático':0,'Matemática Financeira':0,
+    'Noções de Direito Administrativo':1,'Noções de Direito Constitucional':1,'Licitações e Contratos':1,
+    'Administração':2,'Gestão de Suprimentos':2,'Orçamento Público e Análise Financeira':2,
+    'Noções de Ética e Integridade':3,'Teoria Econômica Aplicada':4,'Língua Portuguesa':5
+  };
+  const BLOCOS = ['08:00–09:20','09:30–10:50','11:00–12:20'];
+  
+  // Gather all non-port topics by group
+  const byGroup = {0:[],1:[],2:[],3:[],4:[]};
+  for (const [disc, topics] of Object.entries(customTopics)) {
+    if (disc === 'Língua Portuguesa') continue;
+    const g = grupo[disc] ?? 2;
+    for (const t of topics) {
+      if (!t.deleted) byGroup[g].push({disc, topico: t.topico});
+    }
+  }
+
+  // Interleave round-robin
+  const conteudos = [];
+  const idxs = {0:0,1:0,2:0,3:0,4:0};
+  while (true) {
+    let added = false;
+    for (const g of [0,1,2,3,4]) {
+      if (idxs[g] < byGroup[g].length) {
+        conteudos.push(byGroup[g][idxs[g]++]);
+        added = true;
+      }
+    }
+    if (!added) break;
+  }
+
+  // Build agenda with dates
+  const start = getStartDate();
+  const totalDias = Math.ceil(conteudos.length / 3);
+  const agenda = [];
+  let id = 0;
+  for (let i = 0; i < conteudos.length; i++) {
+    const diaIdx = Math.floor(i/3);
+    const blocoIdx = i % 3;
+    const dt = new Date(start); dt.setDate(dt.getDate()+diaIdx);
+    const dd=String(dt.getDate()).padStart(2,'0'), mm=String(dt.getMonth()+1).padStart(2,'0');
+    agenda.push({id, data:dd+'/'+mm+'/'+dt.getFullYear(), dia_idx:diaIdx,
+      bloco:BLOCOS[blocoIdx], disc:conteudos[i].disc, topico:conteudos[i].topico, port:false});
+    id++;
+  }
+
+  // Add Língua Portuguesa for each day
+  const portTopics = customTopics['Língua Portuguesa'] || [];
+  const activePort = portTopics.filter(t=>!t.deleted);
+  for (let d = 0; d < totalDias; d++) {
+    const dt = new Date(start); dt.setDate(dt.getDate()+d);
+    const dd=String(dt.getDate()).padStart(2,'0'), mm=String(dt.getMonth()+1).padStart(2,'0');
+    agenda.push({id, data:dd+'/'+mm+'/'+dt.getFullYear(), dia_idx:d,
+      bloco:'Português · 1h', disc:'Língua Portuguesa',
+      topico: activePort.length > 0 ? activePort[d % activePort.length].topico : 'Aprofundamento',
+      port:true});
+    id++;
+  }
+  return agenda;
+}
+
+function getEffectiveAgenda() {
+  return getDynamicAgenda() || getAgendaWithDate();
+}
+
+populateDiscSelect();updateTimerUI();
+// Set start date input
+const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
 
 </script>
 
