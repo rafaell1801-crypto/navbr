@@ -70,7 +70,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .day-meta{font-size:11px;color:var(--muted);margin-left:auto}
 .day-check-all{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;filter:invert(1)}
 .blocos-list{display:flex;flex-direction:column}
-.bloco-row{display:grid;grid-template-columns:auto 1fr 130px auto 130px auto 90px auto;align-items:center;gap:8px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s}
+.bloco-row{display:grid;grid-template-columns:auto minmax(0,1fr) 120px auto 120px auto 80px auto;align-items:center;gap:8px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s}
 .bloco-row:last-child{border-bottom:none}
 .bloco-row.done{background:#0d2820}.bloco-row.done .topico-name{text-decoration:line-through;color:var(--muted)}
 .bloco-row.late-row{background:#2a1800}.bloco-row.port-row{background:#1e1a0f}
@@ -78,8 +78,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .check-btn.checked{background:#1a7a5e;border-color:#2dd4a0}
 .check-btn svg,.rev-check svg{opacity:0;transition:opacity .12s}
 .check-btn.checked svg,.rev-check.checked svg{opacity:1}
-.bloco-info{min-width:0}
-.disc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px}
+.bloco-info{min-width:0;overflow:hidden}
+.disc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .topico-name{font-size:13px;font-weight:500;line-height:1.3;color:#c8e6f0}
 .bloco-time{font-size:11px;color:#7fb3c8;white-space:nowrap;flex-shrink:0;text-align:right}
 /* MOTIVAÇÃO */
@@ -190,6 +190,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .caderno-save-btn:hover{background:var(--accent);color:#fff}
 .caderno-link-btn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#e8f0fe;color:#1d5fa8;text-decoration:none;border:1px solid #c5d8fa;white-space:nowrap;flex-shrink:0}
 .caderno-link-btn:hover{background:#1d5fa8;color:#fff}
+
+.bulk-edit-section{padding:10px 14px;background:#0a1a28;border-top:1px solid var(--border)}
+.bulk-edit-section label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px}
+.bulk-textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;resize:vertical;line-height:1.5}
+.bulk-textarea:focus{border-color:var(--accent);outline:none}
+.bulk-apply-btn{margin-top:6px;padding:5px 14px;font-size:12px;font-weight:600;border-radius:6px;border:none;background:var(--accent);color:#000;cursor:pointer}
+.bulk-apply-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -293,6 +300,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <div class="modal">
     <h2>⚙️ Configurações</h2>
 
+    <div class="modal-section">
+      <h3>Data de início</h3>
+      <div class="modal-row">
+        <label>Data de início</label>
+        <input id="cfg-start-date" type="date" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+      </div>
+    </div>
     <div class="modal-section">
       <h3>Horários dos blocos</h3>
       <div class="modal-row"><label>Bloco 1</label><input id="cfg-b1" type="text" placeholder="08:00–09:20"></div>
@@ -416,7 +430,7 @@ function fmtFull(s){return Math.floor(s/3600)+':'+String(Math.floor((s%3600)/60)
 function parseTimeInput(v){v=v.trim();const p=v.split(':').map(Number);if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*3600+p[1]*60;return parseInt(v)*3600||0;}
 function fmtHM(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 function chkIcon(){return`<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 5,10 11,3"/></svg>`;}
-function badgeStyle(d){const c=CORES[d]||'#888';return`background:${c}33;color:${c};border:1px solid ${c}77;filter:brightness(1.3)`;}
+function badgeStyle(d){const c=CORES[d]||'#888';return`background:${c}28;color:${c};border:1px solid ${c}66;`;}
 function discBadgeHTML(disc){
   const style=badgeStyle(disc);
   const url=DISC_LINKS[disc];
@@ -632,7 +646,8 @@ function renderStats(){
   const totalEl=document.getElementById('st-total-time');
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
-    const di=AGENDA.filter(i=>i.disc===disc&&!i.port);
+    const isPort=disc==='Língua Portuguesa';
+    const di=getEffectiveAgenda().filter(i=>i.disc===disc&&(isPort?i.port:!i.port));
     const total=di.length,done=di.filter(i=>isDone(i.id)).length;
     const p=total>0?Math.round(done/total*100):0;
     const c=CORES[disc]||'#888';
@@ -675,14 +690,23 @@ function renderRev(){
   for(const row of rows){const d=row.rev.diff;let key,label,cls;if(d<0){key='over';label='Atrasadas';cls='overdue';}else if(d===0){key='today';label='Hoje';cls='today';}else if(d<=7){key='week';label='Esta semana';cls='upcoming';}else if(d<=30){key='month';label='Este mês';cls='upcoming';}else{key='f'+Math.floor(d/30);label='Em '+dtStr(row.rev.dt);cls='future';}if(!buckets[key])buckets[key]={label,cls,rows:[]};buckets[key].rows.push(row);}
   list.innerHTML=Object.values(buckets).map(bucket=>{
     const items=bucket.rows.map(({item,rev})=>{const c=CORES[item.disc]||'#888';const diffLbl=rev.diff<0?`${Math.abs(rev.diff)}d atrás`:rev.diff===0?'Hoje':`em ${rev.diff}d`;const bc=rev.diff<0?'c-over':rev.diff===0?'c-today':rev.diff<=7?'c-soon':'c-future';const cadUrl=cadernosState[item.id];
+      const resUrl=resumosState[item.id];
       return`<div class="rev-item ${rev.done?'rev-done-row':''}">
         <div class="rev-check ${rev.done?'checked':''}" onclick="toggleRevCheck(${item.id},${rev.days})">${chkIcon()}</div>
         <div class="rev-info">
-          <div class="rev-disc" style="color:${c}">${item.disc}</div>
+          <span style="display:inline-flex;align-items:center;gap:5px;margin-bottom:3px">
+            <span style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
+            <span class="rev-disc" style="color:${c};font-weight:700">${item.disc}</span>
+          </span>
           <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
-          ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="margin-top:4px">📎 Abrir caderno ↗</a>`:'<span style="font-size:10px;color:#ccc">sem caderno</span>'}
+          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+            ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn">📎 Questões ↗</a>`:''}
+            ${resUrl?`<a href="${resUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📄 Resumo ↗</a>`:''}
+            ${!cadUrl&&!resUrl?'<span style="font-size:10px;color:#444">sem links</span>':''}
+          </div>
         </div>
-        <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div><div class="rev-date">${diffLbl}</div></div>
+        <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
+          <div class="rev-date">${diffLbl}</div></div>
       </div>`;}).join('');
     const n=bucket.rows.length;return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}<span style="margin-left:auto;font-weight:400;font-size:11px">${n} revis${n>1?'ões':'ão'}</span></div>${items}</div>`;
   }).join('');
@@ -769,8 +793,8 @@ function renderContent() {
     }).join('');
     return `<div class="content-disc-block">
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
-        <span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;flex-shrink:0"></span>
-        <span class="content-disc-title" style="color:${c}">${disc}</span>
+        <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0;box-shadow:0 0 6px ${c}88"></span>
+        <span class="content-disc-title" style="color:${c};font-weight:700">${disc}</span>
         <span class="content-disc-meta">${active} tópico${active!==1?'s':''}</span>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
@@ -784,6 +808,22 @@ function renderContent() {
       </div>
     </div>`;
   }).join('');
+}
+
+function applyBulk(disc, di) {
+  const ta = document.getElementById('bulk-'+di);
+  if (!ta) return;
+  const lines = ta.value.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if (lines.length === 0) return;
+  if (!confirm('Substituir todos os '+lines.length+' tópicos de "'+disc+'"? Os tópicos atuais serão substituídos.')) return;
+  ensureCustom(disc);
+  customTopics[disc] = lines.map((topico,i) => ({id: newTopicCounter++, topico, deleted:false}));
+  ta.value = '';
+  renderContent();
+  // Re-open
+  const body = document.getElementById('cdb-'+di);
+  const chev = document.getElementById('chev-'+di);
+  if (body) {body.classList.add('open'); chev?.classList.add('open');}
 }
 
 function toggleDiscBlock(di) {
