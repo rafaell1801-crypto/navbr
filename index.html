@@ -843,24 +843,53 @@ function getDiscTopics(disc) {
   return AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
 }
 
+function localSave() {
+  if (!customTopics) return;
+  try {
+    localStorage.setItem('plano_ct', JSON.stringify(customTopics));
+    const baseSet = new Set(AGENDA.map(i => i.disc));
+    const cols = {};
+    for (const d of Object.keys(customTopics))
+      if (!baseSet.has(d) && d !== '__colors__' && CORES[d]) cols[d] = CORES[d];
+    localStorage.setItem('plano_cc', JSON.stringify(cols));
+  } catch {}
+}
+
+function localLoad() {
+  try {
+    const raw = localStorage.getItem('plano_ct');
+    if (raw) {
+      customTopics = JSON.parse(raw);
+      const cols = localStorage.getItem('plano_cc');
+      if (cols) Object.assign(CORES, JSON.parse(cols));
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
 async function loadCustomTopics() {
+  // 1. carrega localStorage imediatamente (sem esperar rede)
+  localLoad();
+  render(); populateDiscSelect(); populateBulkDiscSelect();
+  // 2. tenta Supabase e sobrescreve se tiver dados
   try {
     const rows = await sbGet('conteudo', 'select=disc,topics');
     if (rows && rows.length > 0) {
-      customTopics = {};
+      const sbTopics = {};
       for (const r of rows) {
         if (r.disc === '__colors__') {
           if (r.topics && typeof r.topics === 'object' && !Array.isArray(r.topics))
             Object.assign(CORES, r.topics);
         } else {
-          customTopics[r.disc] = r.topics;
+          sbTopics[r.disc] = r.topics;
         }
       }
+      customTopics = sbTopics;
+      localSave(); // sincroniza localStorage com o que veio do Supabase
+      render(); populateDiscSelect(); populateBulkDiscSelect();
     }
   } catch {}
-  render();
-  populateDiscSelect();
-  populateBulkDiscSelect();
 }
 
 function renderContent() {
@@ -959,6 +988,7 @@ function applyBulkMain() {
   if (!confirm(`Substituir os tópicos de "${disc}" por ${lines.length} novo(s) tópico(s)?`)) return;
   ensureAllCustom();
   customTopics[disc] = lines.map(topico => ({id: newTopicCounter++, topico, deleted: false}));
+  localSave();
   ta.value = '';
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
@@ -976,6 +1006,7 @@ function addNewDisc() {
   CORES[name] = colorEl ? colorEl.value : '#3eb5c8';
   ensureAllCustom();
   customTopics[name] = [];
+  localSave();
   nameEl.value = '';
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
@@ -988,6 +1019,7 @@ function deleteDisc(disc) {
   if (!confirm(`Excluir a disciplina "${disc}" completamente do ciclo?`)) return;
   ensureAllCustom();
   customTopics[disc] = null; // null = excluída; diferente de [] que é "sem tópicos"
+  localSave();
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
   renderContent();
@@ -1018,11 +1050,13 @@ function ensureAllCustom() {
 function updateTopic(disc, idx, val) {
   ensureCustom(disc);
   customTopics[disc][idx].topico = val;
+  localSave();
 }
 
 function toggleDeleteTopic(disc, idx) {
   ensureCustom(disc);
   customTopics[disc][idx].deleted = !customTopics[disc][idx].deleted;
+  localSave();
   renderContent();
 }
 
@@ -1033,6 +1067,7 @@ function addTopic(disc, di) {
   ensureCustom(disc);
   customTopics[disc].push({id: newTopicCounter++, topico: inp.value.trim(), deleted: false});
   inp.value = '';
+  localSave();
   renderContent();
   // Re-open the block
   const body = document.getElementById('cdb-'+di);
@@ -1057,18 +1092,23 @@ async function saveContent() {
     if (Object.keys(customColors).length > 0)
       promises.push(sbUpsert('conteudo', {disc: '__colors__', topics: customColors}));
     await Promise.all(promises);
+    localSave();
     showSync('ok', '✓ Conteúdo salvo');
     document.getElementById('content-save-note').textContent = '✓ Salvo! O ciclo foi atualizado automaticamente.';
     render(); // Rebuild cycle with new topics
   } catch {
-    document.getElementById('content-save-note').textContent = '✗ Erro ao salvar. Tente novamente.';
+    localSave(); // salva local mesmo se Supabase falhar
+    document.getElementById('content-save-note').textContent = '✗ Erro no Supabase, mas salvo localmente.';
   }
 }
 
 function resetContent() {
   if (!confirm('Restaurar o conteúdo original de todas as disciplinas? Suas alterações serão perdidas.')) return;
   customTopics = null;
+  try { localStorage.removeItem('plano_ct'); localStorage.removeItem('plano_cc'); } catch {}
   renderContent();
+  populateDiscSelect();
+  populateBulkDiscSelect();
   document.getElementById('content-save-note').textContent = 'Conteúdo restaurado para o original.';
 }
 
