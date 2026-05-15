@@ -109,7 +109,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .compact-save-btn{padding:2px 6px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0}
 .compact-save-btn:hover{border-color:var(--accent);color:var(--accent)}
 .compact-open-btn{font-size:10px;padding:2px 5px;border-radius:5px;text-decoration:none;white-space:nowrap;flex-shrink:0}
-.bloco-disc-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bloco-disc-name{font-size:12px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c8e6f0}
 .bloco-topic-name{font-size:13px;font-weight:400;line-height:1.3;color:#e8f4f8}
 .bloco-topic-name.done-text{text-decoration:line-through;color:var(--muted)}
 .disc-bar{height:100%;border-radius:99px;transition:width .4s}
@@ -644,8 +644,8 @@ function buildDayHTML(dateStr,days){
     const discUrl=DISC_LINKS[item.disc];
     const discDot=`<div style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0;margin-top:1px"></div>`;
     const discNameEl=discUrl
-      ?`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<a href="${discUrl}" target="_blank" rel="noopener" class="bloco-disc-name" style="color:${c};text-decoration:none" onclick="event.stopPropagation()">${item.disc}</a></div>`
-      :`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<div class="bloco-disc-name" style="color:${c}">${item.disc}</div></div>`;
+      ?`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<a href="${discUrl}" target="_blank" rel="noopener" class="bloco-disc-name" style="text-decoration:none" onclick="event.stopPropagation()">${item.disc}</a></div>`
+      :`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<div class="bloco-disc-name">${item.disc}</div></div>`;
     return`<div class="${rc}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
       <div style="flex:1;min-width:0">
@@ -830,8 +830,9 @@ function timerFinish(){clearInterval(timerSt.interval);timerSt.running=false;tim
 let customTopics = null;
 
 function getDiscTopics(disc) {
-  if (customTopics && customTopics[disc]) return customTopics[disc];
-  // Build from AGENDA
+  if (customTopics && customTopics[disc] !== undefined) {
+    return Array.isArray(customTopics[disc]) ? customTopics[disc] : []; // null = deleted
+  }
   return AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
 }
 
@@ -847,8 +848,10 @@ async function loadCustomTopics() {
 
 function renderContent() {
   const q = (document.getElementById('content-search')?.value || '').toLowerCase();
-  const baseDiscs = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
-  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !baseDiscs.includes(d)) : [];
+  const allBase = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
+  // oculta discs excluídas (null) da lista
+  const baseDiscs = allBase.filter(d => !customTopics || customTopics[d] !== null);
+  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null) : [];
   const discNames = [...baseDiscs, ...customDiscs];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
@@ -948,7 +951,7 @@ function addNewDisc() {
   const name = nameEl.value.trim();
   if (!name) { nameEl.focus(); return; }
   const baseDiscs = [...new Set(AGENDA.map(i => i.disc))];
-  const existing = customTopics ? Object.keys(customTopics) : [];
+  const existing = customTopics ? Object.keys(customTopics).filter(d => customTopics[d] !== null) : [];
   if (baseDiscs.includes(name) || existing.includes(name)) { alert('Essa disciplina já existe!'); return; }
   CORES[name] = colorEl ? colorEl.value : '#3eb5c8';
   ensureAllCustom();
@@ -960,9 +963,9 @@ function addNewDisc() {
 }
 
 function deleteDisc(disc) {
-  if (!confirm(`Excluir a disciplina "${disc}" do ciclo? Os tópicos serão removidos.`)) return;
+  if (!confirm(`Excluir a disciplina "${disc}" completamente do ciclo?`)) return;
   ensureAllCustom();
-  customTopics[disc] = [];
+  customTopics[disc] = null; // null = excluída; diferente de [] que é "sem tópicos"
   showSync('saving', '⏳ Lembre de salvar!');
   document.getElementById('content-save-note').textContent = '⚠️ Clique em Salvar para confirmar as alterações.';
   renderContent();
@@ -978,7 +981,7 @@ function toggleDiscBlock(di) {
 
 function ensureCustom(disc) {
   if (!customTopics) customTopics = {};
-  if (!customTopics[disc]) {
+  if (customTopics[disc] === undefined) { // não sobrescreve null (excluída) nem array existente
     customTopics[disc] = AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
   }
 }
@@ -1095,7 +1098,7 @@ function getDynamicAgenda() {
   // Gather all non-port topics by group
   const byGroup = {0:[],1:[],2:[],3:[],4:[]};
   for (const [disc, topics] of Object.entries(customTopics)) {
-    if (disc === 'Língua Portuguesa') continue;
+    if (disc === 'Língua Portuguesa' || !Array.isArray(topics)) continue; // null = excluída
     const g = grupo[disc] ?? 2;
     for (const t of topics) {
       if (!t.deleted) byGroup[g].push({disc, topico: t.topico});
