@@ -260,7 +260,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <button class="tab active" onclick="showTab('ciclo')">Ciclo</button>
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
-  <button class="tab" onclick="showTab('content')">Conteúdo</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações">⚙️</button>
 </div>
 
@@ -576,8 +575,8 @@ loadSettings();
 
 function showTab(t){
   ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content'][i]===t));
-  if(t==='rev')renderRev();if(t==='stats')renderStats();if(t==='content')renderContent();
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats'][i]===t));
+  if(t==='rev')renderRev();if(t==='stats')renderStats();
 }
 let currentSubtab='pending';
 function showSubtab(s){
