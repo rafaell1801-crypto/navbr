@@ -1304,9 +1304,11 @@ function getDynamicAgenda() {
 }
 
 function getEffectiveAgenda() {
-  return getDynamicAgenda() || getAgendaWithDate();
+  return getAgendaWithDate();
 }
 
+// Limpa localStorage antigo se a versão do ciclo mudou
+(function(){const V='pdf-v1';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
 populateDiscSelect();updateTimerUI();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
