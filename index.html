@@ -368,6 +368,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div id="timer-edit-list"></div>
     </div>
 
+    <div class="modal-section">
+      <h3>Reset completo</h3>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Apaga todo o progresso, revisões, cadernos, resumos e tempo salvo no Supabase e no navegador. Irreversível.</p>
+      <button onclick="resetCompleto()" style="width:100%;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
+    </div>
+
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeSettings()">Fechar</button>
       <button class="btn-save" onclick="saveSettings()">Salvar horários</button>
@@ -605,6 +611,23 @@ function openSettings(){
   buildTimerEditList('timer-edit-list');
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+async function resetCompleto(){
+  if(!confirm('Tem certeza? Isso apagará TODO o progresso, revisões, cadernos, resumos e tempo do Supabase e do navegador. Essa ação é irreversível.'))return;
+  try{
+    const h={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+    await Promise.all([
+      fetch(SB_URL+'/rest/v1/progresso?id=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/revisoes?item_id=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/timer_disc?segundos=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/cadernos?item_id=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/resumos?item_id=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/conteudo?disc=neq.',{method:'DELETE',headers:h}),
+    ]);
+  }catch(e){console.error('Erro ao limpar Supabase:',e);}
+  localStorage.clear();
+  alert('Dados apagados. A página será recarregada.');
+  location.reload();
+}
 function saveSettings(){
   const sdEl=document.getElementById('cfg-start-date');if(sdEl&&sdEl.value){saveStartDateSetting(sdEl.value);}
   customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>{
