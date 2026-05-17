@@ -724,7 +724,7 @@ function compactResumoHTML(itemId) {
   const sid = `res-input-${itemId}`;
   const sv = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const pill = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-res">📄 resumo ↗</a><button class="link-edit-icon" onclick="toggleLinkInput('res',${itemId})" title="Editar link">✎</button>`
+    ? `<div style="display:inline-flex;align-items:center;gap:4px"><a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-res">📄 resumo ↗</a><button class="link-edit-icon" onclick="toggleLinkInput('res',${itemId})" title="Editar link">✎</button></div>`
     : `<button class="link-pill-add link-pill-add-res" onclick="toggleLinkInput('res',${itemId})">＋ resumo</button>`;
   const edit = `<div class="link-edit-row hidden" id="li-res-${itemId}"><input id="${sid}" value="${sv}" placeholder="cole o link do resumo..."><button class="link-confirm-btn" onclick="saveResumo(${itemId},document.getElementById('${sid}').value.trim())">✓ Salvar</button><button class="link-cancel-btn" onclick="toggleLinkInput('res',${itemId})">✕</button></div>`;
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
@@ -735,7 +735,7 @@ function compactCadernoHTML(itemId) {
   const sid = `cad-input-${itemId}`;
   const sv = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
   const pill = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-cad">📎 questões ↗</a><button class="link-edit-icon" onclick="toggleLinkInput('cad',${itemId})" title="Editar link">✎</button>`
+    ? `<div style="display:inline-flex;align-items:center;gap:4px"><a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-cad">📎 questões ↗</a><button class="link-edit-icon" onclick="toggleLinkInput('cad',${itemId})" title="Editar link">✎</button></div>`
     : `<button class="link-pill-add link-pill-add-cad" onclick="toggleLinkInput('cad',${itemId})">＋ questões</button>`;
   const edit = `<div class="link-edit-row hidden" id="li-cad-${itemId}"><input id="${sid}" value="${sv}" placeholder="cole o link das questões..."><button class="link-confirm-btn" onclick="saveCaderno(${itemId},document.getElementById('${sid}').value.trim())">✓ Salvar</button><button class="link-cancel-btn" onclick="toggleLinkInput('cad',${itemId})">✕</button></div>`;
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
