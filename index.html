@@ -59,11 +59,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .late-item:last-child{border-bottom:none}
 .days-list{padding:12px 20px;display:flex;flex-direction:column;gap:10px}
 .day-group{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
-.day-group.all-done{border-color:#86efac;background:var(--done-bg)}
+.day-group.all-done{border-color:#86efac;background:#000}
 .day-group.is-today{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,95,168,.1)}
 .day-group.has-late{border-color:#f59e0b}
 .day-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
-.day-group.all-done .day-header{background:#0d2e27}
+.day-group.all-done .day-header{background:#000}
 .day-date{font-weight:700;font-size:13px}
 .day-tag{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
 .tag-today{background:#0f2d40;color:#7dd3e8}.tag-done{background:#0d2820;color:#2dd4a0}.tag-late{background:#2a1f00;color:var(--warn)}
@@ -72,7 +72,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .blocos-list{display:flex;flex-direction:column}
 .bloco-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s;flex-wrap:nowrap;min-width:0}
 .bloco-row:last-child{border-bottom:none}
-.bloco-row.done{background:#0d2820}.bloco-row.done .topico-name{text-decoration:line-through;color:var(--muted)}
+.bloco-row.done{background:#000}.bloco-row.done .topico-name{text-decoration:line-through;color:var(--muted)}
 .bloco-row.late-row{background:#2a1800}.bloco-row.port-row{background:#1e1a0f}
 .check-btn{width:22px;height:22px;border-radius:5px;border:2px solid #2a5070;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;background:transparent}
 .check-btn.checked{background:#1a7a5e;border-color:#2dd4a0}
@@ -344,10 +344,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <div class="stats-card">
     <h3>Visão geral</h3>
     <div class="info-grid">
-      <div class="info-item"><span class="info-label">Início</span><span class="info-val">14/05/2026</span></div>
+      <div class="info-item"><span class="info-label">Início</span><span class="info-val" id="st-inicio">–</span></div>
       <div class="info-item"><span class="info-label">Conclusão prevista</span><span class="info-val" id="st-fim">–</span></div>
       <div class="info-item"><span class="info-label">⏱ Dias desde o início</span><span class="info-val" id="st-dias-total">–</span></div>
-      <div class="info-item"><span class="info-label">Horas/dia</span><span class="info-val">4h</span></div>
+      <div class="info-item"><span class="info-label">Horas/dia</span><span class="info-val" id="st-horas-dia">–</span></div>
       <div class="info-item"><span class="info-label">Dias restantes</span><span class="info-val" id="st-rest">–</span></div>
       <div class="info-item"><span class="info-label">Progresso</span><span class="info-val" id="st-pct">–</span></div>
       <div class="info-item"><span class="info-label">Total de horas estudadas</span><span class="info-val" id="st-total-time">0h</span></div>
@@ -838,7 +838,10 @@ function renderStats(){
   const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
   const sfim=document.getElementById('st-fim');if(sfim)sfim.textContent=calcDeadline();
-  const sdias=document.getElementById('st-dias-total');if(sdias){const start=new Date(2026,4,14);const now=new Date();now.setHours(0,0,0,0);const elapsed=Math.floor((now-start)/86400000);sdias.textContent=Math.max(0,elapsed)+' dias desde o início';}
+  const stStart=getStartDate();
+  const sinicio=document.getElementById('st-inicio');if(sinicio){const sd=String(stStart.getDate()).padStart(2,'0'),sm=String(stStart.getMonth()+1).padStart(2,'0'),sy=stStart.getFullYear();sinicio.textContent=`${sd}/${sm}/${sy}`;}
+  const sdias=document.getElementById('st-dias-total');if(sdias){const now=new Date();now.setHours(0,0,0,0);const elapsed=Math.floor((now-stStart)/86400000);sdias.textContent=Math.max(0,elapsed)+' dias desde o início';}
+  const shd=document.getElementById('st-horas-dia');if(shd){const ag=getEffectiveAgenda();const byDay={};ag.forEach(it=>{const m=it.bloco.match(/(\d{2}):(\d{2})–(\d{2}):(\d{2})/);const mins=m?(parseInt(m[3])*60+parseInt(m[4]))-(parseInt(m[1])*60+parseInt(m[2])):60;byDay[it.dia_idx]=(byDay[it.dia_idx]||0)+mins;});const vals=Object.values(byDay);const avg=vals.reduce((a,b)=>a+b,0)/vals.length;const h=Math.floor(avg/60),min=Math.round(avg%60);shd.textContent=min>0?`${h}h${String(min).padStart(2,'0')}`:`${h}h`;}
   const srest=document.getElementById('st-rest');if(srest)srest.textContent=Math.ceil(getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id)).length/BLOCOS_DIA)+' dias';
   const spct=document.getElementById('st-pct');if(spct)spct.textContent=pct+'%';
   const discNames=getActiveDiscs();
