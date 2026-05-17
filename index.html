@@ -589,8 +589,8 @@ function buildTimerEditList(containerId){
     return`<div class="edit-time-card" style="border-color:${c}44;background:${c}08">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
         <div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>
-        <span style="font-size:12px;font-weight:700;color:${c};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${disc}">${disc}</span>
-        <span style="font-size:11px;font-weight:600;color:${secs>0?'#ffffff':'var(--muted)'};white-space:nowrap">${tStr}</span>
+        <span style="font-size:12px;font-weight:700;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${disc}">${disc}</span>
+        <span style="font-size:11px;font-weight:600;color:${secs>0?'#7dd3fc':'var(--muted)'};white-space:nowrap">${tStr}</span>
       </div>
       <div class="edit-time-card-bottom">
         <input class="edit-time-input" id="${safeId}" value="${fmtHM(secs)}" placeholder="hh:mm">
