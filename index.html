@@ -20,13 +20,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .app-header p{font-size:12px;color:var(--muted);margin-top:2px}
 .sync-indicator{display:inline-block;font-size:11px;margin-left:8px;padding:2px 7px;border-radius:99px;font-weight:600}
 .sync-ok{background:#dcfce7;color:#15803d}.sync-saving{background:#fef9c3;color:#854d0e}.sync-error{background:#fee2e2;color:#991b1b}
-.tabs{display:flex;background:#000000;border-bottom:1px solid var(--border);padding:0 20px;gap:4px;align-items:center}
+.tabs{display:flex;background:#000000;border-bottom:1px solid var(--border);padding:0 20px;gap:4px;align-items:center;position:sticky;top:57px;z-index:99}
 .tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .15s;white-space:nowrap}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab:hover:not(.active){color:var(--text)}
 .settings-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:10px 8px;color:var(--muted);margin-left:auto;line-height:1}
 .settings-btn:hover{color:var(--text)}
-.timer-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:#000000;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.timer-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:#000000;border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:99px;z-index:98}
 .timer-ring{width:38px;height:38px;flex-shrink:0}
 .timer-display{font-size:22px;font-weight:700;letter-spacing:1px;min-width:72px}
 .timer-display.running{color:var(--accent)}.timer-display.finished{color:var(--success)}
@@ -37,6 +37,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .tbtn-pause{background:#f59e0b;color:#fff;border-color:#f59e0b}
 .tbtn-stop{background:transparent;color:var(--muted);border-color:var(--border)}
 .tbtn-reset{background:transparent;color:#ef4444;border-color:#ef4444}
+.timer-icon-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .15s;flex-shrink:0;background:transparent;line-height:1}
+.tibtn-pause{color:#f59e0b;border-color:#f59e0b}.tibtn-pause:hover{background:#2a1f00}
+.tibtn-save{color:#2dd4a0;border-color:#2dd4a0}.tibtn-save:hover{background:#0d2820}
 .hidden{display:none!important}
 .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
 .stat{text-align:center}
@@ -293,9 +296,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <option value="">— Selecione a disciplina —</option>
   </select>
   <button class="timer-btn tbtn-start" id="btn-start" onclick="timerStart()">Iniciar</button>
-  <button class="timer-btn tbtn-pause hidden" id="btn-pause" onclick="timerPause()">Pausar</button>
-  <button class="timer-btn tbtn-stop hidden" id="btn-stop" onclick="timerStop()">Zerar</button>
-  <button class="timer-btn tbtn-reset hidden" id="btn-reset-disc" onclick="openTimerEdit()">Editar tempo</button>
+  <button class="timer-icon-btn tibtn-pause hidden" id="btn-pause" onclick="timerPauseToggle()" title="Pausar / Retomar">⏸</button>
+  <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerSave()" title="Salvar tempo">✓</button>
 </div>
 
 <!-- TAB CICLO -->
@@ -379,7 +381,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
 
     <div class="modal-section">
-      <h3>Zerar tempo por disciplina</h3>
+      <h3>Editar tempo por disciplina</h3>
       <div id="timer-edit-list"></div>
     </div>
 
@@ -1041,20 +1043,35 @@ function timerStart(){
   const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
   timerSt.currentDisc=sel.value;timerSt.running=true;
   document.getElementById('btn-start').classList.add('hidden');
-  ['btn-pause','btn-stop','btn-reset-disc'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
+  ['btn-pause','btn-save-time'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
+  document.getElementById('btn-pause').textContent='⏸';
   document.getElementById('timer-disc').disabled=true;
   clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);updateTimerUI();
 }
-function timerPause(){timerSt.running=false;clearInterval(timerSt.interval);const btn=document.getElementById('btn-pause');btn.textContent='Retomar';btn.className='timer-btn tbtn-start';btn.onclick=timerResume;updateTimerUI();}
-function timerResume(){timerSt.running=true;const btn=document.getElementById('btn-pause');btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);updateTimerUI();}
-function timerStop(){
-  clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=BLOCK_SECS;
-  document.getElementById('btn-start').classList.remove('hidden');
-  ['btn-pause','btn-stop','btn-reset-disc'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  const btn=document.getElementById('btn-pause');btn.textContent='Pausar';btn.className='timer-btn tbtn-pause';btn.onclick=timerPause;
-  document.getElementById('timer-disc').disabled=false;updateTimerUI();
+function timerPauseToggle(){
+  if(timerSt.running){
+    timerSt.running=false;clearInterval(timerSt.interval);
+    document.getElementById('btn-pause').textContent='▶';updateTimerUI();
+  }else{
+    timerSt.running=true;clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);
+    document.getElementById('btn-pause').textContent='⏸';updateTimerUI();
+  }
 }
-function timerFinish(){clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=0;document.getElementById('btn-pause').classList.add('hidden');document.getElementById('btn-stop').textContent='Reiniciar';updateTimerUI();}
+async function timerSave(){
+  clearInterval(timerSt.interval);timerSt.running=false;
+  const disc=timerSt.currentDisc;
+  if(disc&&timerSt.timeByDisc[disc]){
+    await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+    showSync('ok','✓ Tempo salvo');
+  }
+  timerSt.remaining=BLOCK_SECS;
+  document.getElementById('btn-start').classList.remove('hidden');
+  ['btn-pause','btn-save-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('btn-pause').textContent='⏸';
+  document.getElementById('timer-disc').disabled=false;
+  updateTimerUI();renderStats();
+}
+function timerFinish(){clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=0;updateTimerUI();}
 
 // ── Conteúdo Programático ─────────────────────────────────────────────────────
 // customTopics: { discName: [ {id, topico, deleted} ] }
