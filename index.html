@@ -384,6 +384,15 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
 
     <div class="modal-section">
+      <h3>Backup de links</h3>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte seus links de resumo e questões para um arquivo JSON. Guarde-o como backup antes de qualquer reset.</p>
+      <div style="display:flex;gap:8px">
+        <button onclick="exportLinks()" style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #3eb5c8;background:transparent;color:#3eb5c8">⬇ Exportar links</button>
+        <label style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #7dd3fc;background:transparent;color:#7dd3fc;text-align:center">⬆ Importar links<input type="file" accept=".json" style="display:none" onchange="importLinks(event)"></label>
+      </div>
+    </div>
+
+    <div class="modal-section">
       <h3>Reset completo</h3>
       <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Apaga todo o progresso, revisões, cadernos, resumos e tempo salvo no Supabase e no navegador. Irreversível.</p>
       <button onclick="resetCompleto()" style="width:100%;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
@@ -481,26 +490,42 @@ const CORES={"Raciocínio Lógico Matemático": "#4d9de0", "Noções de Direito 
 let cadernosState = {};
 let resumosState = {};
 
+function lsLinksGet(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
+}
+function lsLinksSave(key, obj) {
+  try { localStorage.setItem(key, JSON.stringify(obj)); } catch {}
+}
+
 async function loadCadernos() {
+  const backup = lsLinksGet('cadernos_backup');
   try {
     const rows = await sbGet('cadernos', 'select=item_id,url');
-    cadernosState = {};
+    cadernosState = {...backup};
     for (const r of rows) cadernosState[r.item_id] = r.url;
-  } catch {}
+    lsLinksSave('cadernos_backup', cadernosState);
+  } catch {
+    cadernosState = backup;
+  }
   render();
 }
 
 async function loadResumos() {
+  const backup = lsLinksGet('resumos_backup');
   try {
     const rows = await sbGet('resumos', 'select=item_id,url');
-    resumosState = {};
+    resumosState = {...backup};
     for (const r of rows) resumosState[r.item_id] = r.url;
-  } catch {}
+    lsLinksSave('resumos_backup', resumosState);
+  } catch {
+    resumosState = backup;
+  }
   render();
 }
 
 async function saveResumo(itemId, url) {
   resumosState[itemId] = url;
+  lsLinksSave('resumos_backup', resumosState);
   await sbUpsert('resumos', {item_id: itemId, url: url});
   showSync('ok', '✓ Resumo salvo');
   render();
@@ -518,6 +543,7 @@ function resumoInputHTML(itemId) {
 
 async function saveCaderno(itemId, url) {
   cadernosState[itemId] = url;
+  lsLinksSave('cadernos_backup', cadernosState);
   await sbUpsert('cadernos', {item_id: itemId, url: url});
   showSync('ok', '✓ Link salvo');
   render();
@@ -652,6 +678,51 @@ function openSettings(){
   calcBlockTotal();
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+
+function exportLinks() {
+  const data = {
+    versao: 1,
+    exportado: new Date().toISOString(),
+    resumos: resumosState,
+    cadernos: cadernosState
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'plano_links_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function importLinks(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.resumos && !data.cadernos) { alert('Arquivo inválido.'); return; }
+    if (!confirm(`Importar ${Object.keys(data.resumos||{}).length} resumos e ${Object.keys(data.cadernos||{}).length} links de questões? Isso vai sobrescrever os links atuais.`)) return;
+    showSync('saving', '⟳ Importando...');
+    const ups = [];
+    for (const [id, url] of Object.entries(data.resumos || {})) {
+      resumosState[id] = url;
+      ups.push(sbUpsert('resumos', {item_id: Number(id), url}));
+    }
+    for (const [id, url] of Object.entries(data.cadernos || {})) {
+      cadernosState[id] = url;
+      ups.push(sbUpsert('cadernos', {item_id: Number(id), url}));
+    }
+    await Promise.all(ups);
+    lsLinksSave('resumos_backup', resumosState);
+    lsLinksSave('cadernos_backup', cadernosState);
+    showSync('ok', '✓ Links importados');
+    render();
+  } catch(e) {
+    alert('Erro ao importar: ' + e.message);
+    showSync('error', '✗ Erro');
+  }
+  event.target.value = '';
+}
 async function resetCompleto(){
   if(!confirm('Tem certeza? Isso apagará TODO o progresso, revisões, cadernos, resumos e tempo do Supabase e do navegador. Essa ação é irreversível.'))return;
   try{
@@ -665,6 +736,8 @@ async function resetCompleto(){
       fetch(SB_URL+'/rest/v1/conteudo?disc=neq.',{method:'DELETE',headers:h}),
     ]);
   }catch(e){console.error('Erro ao limpar Supabase:',e);}
+  localStorage.removeItem('resumos_backup');
+  localStorage.removeItem('cadernos_backup');
   localStorage.clear();
   alert('Dados apagados. A página será recarregada.');
   location.reload();
