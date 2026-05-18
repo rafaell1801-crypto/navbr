@@ -1077,6 +1077,34 @@ function localSave() {
       if (!baseSet.has(d) && d !== '__colors__' && CORES[d]) cols[d] = CORES[d];
     localStorage.setItem('plano_cc', JSON.stringify(cols));
   } catch {}
+  scheduleContentSync();
+}
+
+let _contentSyncTimer = null;
+function scheduleContentSync() {
+  if (_contentSyncTimer) clearTimeout(_contentSyncTimer);
+  const noteEl = document.getElementById('content-save-note');
+  if (noteEl) noteEl.textContent = '⏳ Salvando automaticamente...';
+  _contentSyncTimer = setTimeout(async () => {
+    if (!customTopics) return;
+    try {
+      const baseDiscSet = new Set(AGENDA.map(i => i.disc));
+      const customColors = {};
+      for (const disc of Object.keys(customTopics))
+        if (!baseDiscSet.has(disc) && disc !== '__colors__' && CORES[disc])
+          customColors[disc] = CORES[disc];
+      const promises = Object.entries(customTopics).map(([disc, topics]) =>
+        sbUpsert('conteudo', {disc, topics})
+      );
+      if (Object.keys(customColors).length > 0)
+        promises.push(sbUpsert('conteudo', {disc: '__colors__', topics: customColors}));
+      await Promise.all(promises);
+      showSync('ok', '✓ Conteúdo salvo');
+      if (noteEl) noteEl.textContent = '✓ Salvo automaticamente no Supabase.';
+    } catch {
+      if (noteEl) noteEl.textContent = '✗ Erro ao salvar no Supabase (salvo localmente).';
+    }
+  }, 2000);
 }
 
 function localLoad() {
