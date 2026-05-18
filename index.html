@@ -487,6 +487,7 @@ async function loadCadernos() {
     cadernosState = {};
     for (const r of rows) cadernosState[r.item_id] = r.url;
   } catch {}
+  render();
 }
 
 async function loadResumos() {
@@ -495,6 +496,7 @@ async function loadResumos() {
     resumosState = {};
     for (const r of rows) resumosState[r.item_id] = r.url;
   } catch {}
+  render();
 }
 
 async function saveResumo(itemId, url) {
