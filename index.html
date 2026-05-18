@@ -1055,28 +1055,45 @@ function populateDiscSelect(){
   sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+getActiveDiscs().map(d=>`<option value="${d}"${d===prev?' selected':''}>${d}</option>`).join('');
 }
 function timerTick(){
-  if(timerSt.remaining>0){timerSt.remaining--;timerSt.timeByDisc[timerSt.currentDisc]=(timerSt.timeByDisc[timerSt.currentDisc]||0)+1;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sbUpsert('timer_disc',{disc:timerSt.currentDisc,segundos:timerSt.timeByDisc[timerSt.currentDisc]}),3000);updateTimerUI();}else{timerFinish();}
+  if(!timerSt.running||!timerSt.startedAt)return;
+  const elapsed=Math.floor((Date.now()-timerSt.startedAt)/1000);
+  const totalDisc=(timerSt.discBase||0)+elapsed;
+  timerSt.timeByDisc[timerSt.currentDisc]=totalDisc;
+  const newRem=timerSt.remainingAtStart-elapsed;
+  if(newRem<=0){timerSt.remaining=0;timerFinish();return;}
+  timerSt.remaining=newRem;
+  clearTimeout(syncTimer);syncTimer=setTimeout(()=>sbUpsert('timer_disc',{disc:timerSt.currentDisc,segundos:totalDisc}),3000);
+  updateTimerUI();
+}
+function _timerAnchor(){
+  timerSt.startedAt=Date.now();
+  timerSt.remainingAtStart=timerSt.remaining;
+  timerSt.discBase=timerSt.timeByDisc[timerSt.currentDisc]||0;
 }
 function timerStart(){
   const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
   timerSt.currentDisc=sel.value;timerSt.running=true;
+  _timerAnchor();
   document.getElementById('btn-start').classList.add('hidden');
   ['btn-pause','btn-save-time'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
   document.getElementById('btn-pause').textContent='⏸';
   document.getElementById('timer-disc').disabled=true;
-  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);updateTimerUI();
+  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);updateTimerUI();
 }
 function timerPauseToggle(){
   if(timerSt.running){
-    timerSt.running=false;clearInterval(timerSt.interval);
+    timerTick(); // sincroniza antes de pausar
+    timerSt.running=false;clearInterval(timerSt.interval);timerSt.startedAt=null;
     document.getElementById('btn-pause').textContent='▶';updateTimerUI();
   }else{
-    timerSt.running=true;clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,1000);
+    timerSt.running=true;_timerAnchor();
+    clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);
     document.getElementById('btn-pause').textContent='⏸';updateTimerUI();
   }
 }
 async function timerSave(){
-  clearInterval(timerSt.interval);timerSt.running=false;
+  timerTick(); // garante que o último segundo seja contabilizado
+  clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc]){
     await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
@@ -1089,7 +1106,13 @@ async function timerSave(){
   document.getElementById('timer-disc').disabled=false;
   updateTimerUI();renderStats();
 }
-function timerFinish(){clearInterval(timerSt.interval);timerSt.running=false;timerSt.remaining=0;updateTimerUI();}
+function timerFinish(){
+  clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
+  const disc=timerSt.currentDisc;
+  if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+  timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerSt.running)timerTick();});
 
 // ── Conteúdo Programático ─────────────────────────────────────────────────────
 // customTopics: { discName: [ {id, topico, deleted} ] }
