@@ -1129,7 +1129,14 @@ function timerFinish(){
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
   timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
 }
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&timerSt.running)timerTick();});
+async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden){
+    if(timerSt.running)timerTick();
+    syncAll();
+  }
+});
+setInterval(()=>{if(!document.hidden)syncAll();},60000);
 
 // ── Conteúdo Programático ─────────────────────────────────────────────────────
 // customTopics: { discName: [ {id, topico, deleted} ] }
