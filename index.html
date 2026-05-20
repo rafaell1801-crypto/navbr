@@ -1093,8 +1093,9 @@ function saveTodayByDisc(){try{localStorage.setItem(TODAY_KEY,JSON.stringify(tod
 function _commitSubSession(){
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.startedAt){
-    const elapsed=Math.floor((Date.now()-timerSt.startedAt)/1000);
-    if(elapsed>0){todayByDisc[disc]=(todayByDisc[disc]||0)+elapsed;saveTodayByDisc();}
+    const elapsed=Math.max(0,Math.floor((Date.now()-timerSt.startedAt)/1000));
+    todayByDisc[disc]=(todayByDisc[disc]||0)+elapsed;
+    saveTodayByDisc();
   }
 }
 function getTodayDiscTime(disc){
@@ -1109,7 +1110,7 @@ function updateDiscTimerTags(){
     const disc=el.getAttribute('data-disc');
     const secs=getTodayDiscTime(disc);
     const isActive=disc===activeDisc;
-    if(isActive||secs>=60){
+    if(isActive||secs>0){
       const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);
       el.textContent='⏱ '+h+':'+String(m).padStart(2,'0');
       el.classList.add('has-time');
