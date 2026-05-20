@@ -302,6 +302,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <button class="timer-btn tbtn-start" id="btn-start" onclick="timerStart()">Iniciar</button>
   <button class="timer-icon-btn tibtn-pause hidden" id="btn-pause" onclick="timerPauseToggle()" title="Pausar / Retomar">⏸</button>
   <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerSave()" title="Salvar tempo">✓</button>
+  <button class="timer-icon-btn hidden" id="btn-cancel-time" onclick="timerCancel()" title="Cancelar sessão" style="color:#ef4444;border-color:#ef4444">✕</button>
 </div>
 </div><!-- /sticky-shell -->
 
@@ -1122,7 +1123,11 @@ function updateTimerUI(){
   document.getElementById('timer-arc').setAttribute('stroke',timerSt.running?'#1d5fa8':rem===0?'#15803d':'#94a3b8');
   const disp=document.getElementById('timer-display');disp.textContent=fmtFull(rem);
   disp.className='timer-display'+(timerSt.running?' running':rem===0?' finished':'');
-  document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':'Temporizador · 1h20';
+  const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
+  const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
+  document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
+  if(timerSt.running){document.title=fmtFull(rem)+' ⏱';}
+  else{document.title='Plano de Estudos – NAV Brasil';}
   updateDiscTimerTags();
 }
 function getActiveDiscs(){
@@ -1157,7 +1162,7 @@ function timerStart(){
   timerSt.currentDisc=sel.value;timerSt.running=true;
   _timerAnchor();
   document.getElementById('btn-start').classList.add('hidden');
-  ['btn-pause','btn-save-time'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
+  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
   document.getElementById('btn-pause').textContent='⏸';
   document.getElementById('timer-disc').disabled=true;
   clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);updateTimerUI();
@@ -1174,6 +1179,16 @@ function timerPauseToggle(){
     document.getElementById('btn-pause').textContent='⏸';updateTimerUI();
   }
 }
+function timerCancel(){
+  clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
+  timerSt.remaining=getBlockSecs();
+  document.getElementById('btn-start').classList.remove('hidden');
+  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('btn-pause').textContent='⏸';
+  document.getElementById('timer-disc').disabled=false;
+  document.title='Plano de Estudos – NAV Brasil';
+  updateTimerUI();
+}
 async function timerSave(){
   if(timerSt.running)_commitSubSession();
   timerTick(); // garante que o último segundo seja contabilizado
@@ -1185,7 +1200,7 @@ async function timerSave(){
   }
   timerSt.remaining=getBlockSecs();
   document.getElementById('btn-start').classList.remove('hidden');
-  ['btn-pause','btn-save-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('btn-pause').textContent='⏸';
   document.getElementById('timer-disc').disabled=false;
   updateTimerUI();renderStats();
@@ -1216,7 +1231,7 @@ function timerFinish(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
-  timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
+  timerSt.remaining=0;document.title='Plano de Estudos – NAV Brasil';updateTimerUI();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
 async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
