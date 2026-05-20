@@ -1195,6 +1195,7 @@ function updateTimerUI(){
   const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
+  document.title=timerSt.running?'⏳':rem===0?'✅':'Plano de Estudos – NAV Brasil';
   updateDiscTimerTags();
 }
 function getActiveDiscs(){
