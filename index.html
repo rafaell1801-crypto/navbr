@@ -913,7 +913,7 @@ function buildDayHTML(dateStr,days){
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
         <div style="font-size:11px;color:#7fb3c8;white-space:nowrap">${getBlocoLabel(item.bloco)}</div>
-        <div class="disc-timer-tag" data-disc="${item.disc}"></div>
+        ${isToday?`<div class="disc-timer-tag" data-disc="${item.disc}"></div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1057,11 +1057,24 @@ function renderRev(){
   }).join('');
 }
 
+let dailySnap={};
+function initDailySnap(){
+  const key='timer_snap_'+TODAY;
+  try{const s=localStorage.getItem(key);if(s){dailySnap=JSON.parse(s);return;}}catch{}
+  // Novo dia: salva baseline com os valores atuais do Supabase
+  dailySnap={...timerSt.timeByDisc};
+  try{
+    localStorage.setItem(key,JSON.stringify(dailySnap));
+    // Limpa snapshots de dias anteriores
+    Object.keys(localStorage).filter(k=>k.startsWith('timer_snap_')&&k!==key).forEach(k=>localStorage.removeItem(k));
+  }catch{}
+}
+function getTodayDiscTime(disc){return Math.max(0,(timerSt.timeByDisc[disc]||0)-(dailySnap[disc]||0));}
 function fmtDiscTime(s){if(!s||s<60)return null;const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?(m>0?`${h}h${String(m).padStart(2,'0')}m`:`${h}h`):`${m}m`;}
 function updateDiscTimerTags(){
   document.querySelectorAll('.disc-timer-tag[data-disc]').forEach(el=>{
     const disc=el.getAttribute('data-disc');
-    const secs=timerSt.timeByDisc[disc]||0;
+    const secs=getTodayDiscTime(disc);
     const txt=fmtDiscTime(secs);
     if(txt){el.textContent='⏱ '+txt;el.classList.add('has-time');}
     else{el.textContent='';el.classList.remove('has-time');}
@@ -1580,7 +1593,7 @@ function getEffectiveAgenda() {
 populateDiscSelect();updateTimerUI();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll().then(updateDiscTimerTags);loadCustomTopics();loadCadernos();loadResumos();
+render();loadAll().then(()=>{initDailySnap();updateDiscTimerTags();});loadCustomTopics();loadCadernos();loadResumos();
 
 </script>
 
