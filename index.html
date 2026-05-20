@@ -44,10 +44,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .tibtn-save{color:#2dd4a0;border-color:#2dd4a0}.tibtn-save:hover{background:#0d2820}
 .hidden{display:none!important}
 .spin-wrap{display:flex;align-items:center;gap:8px}
-.spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;text-align:center}
-.spin-btns{display:flex;flex-direction:column;gap:2px}
-.spin-btn{background:transparent;border:1px solid var(--border);color:var(--accent);border-radius:4px;width:22px;height:16px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .1s}
-.spin-btn:hover{background:var(--surface2);border-color:var(--accent)}
+.spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;text-align:center;cursor:ns-resize;user-select:none;transition:border-color .15s}
+.spin-val:hover{border-color:var(--accent)}
 .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
@@ -396,17 +394,17 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
     <div class="modal-section">
       <h3>Horários dos blocos</h3>
-      <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1">08:00–09:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b1',1)">▲</button><button class="spin-btn" onclick="spinBlock('b1',-1)">▼</button></div></div></div>
-      <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2">09:00–10:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b2',1)">▲</button><button class="spin-btn" onclick="spinBlock('b2',-1)">▼</button></div></div></div>
-      <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3">10:00–11:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b3',1)">▲</button><button class="spin-btn" onclick="spinBlock('b3',-1)">▼</button></div></div></div>
-      <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4">13:40–14:40</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b4',1)">▲</button><button class="spin-btn" onclick="spinBlock('b4',-1)">▼</button></div></div></div>
-      <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5">14:40–15:40</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b5',1)">▲</button><button class="spin-btn" onclick="spinBlock('b5',-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1">08:00–09:00</span></div></div>
+      <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2">09:00–10:00</span></div></div>
+      <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3">10:00–11:00</span></div></div>
+      <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4">13:40–14:40</span></div></div>
+      <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5">14:40–15:40</span></div></div>
       <div class="modal-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><label style="color:#7dd3fc;font-weight:600">Total/dia</label><span id="cfg-block-total" style="font-size:14px;font-weight:700;color:#7dd3fc">–</span></div>
     </div>
 
     <div class="modal-section">
       <h3>Temporizador</h3>
-      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer">01:20</span><div class="spin-btns"><button class="spin-btn" onclick="spinTimer(1)">▲</button><button class="spin-btn" onclick="spinTimer(-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer">01:20</span></div></div>
     </div>
 
     <div class="modal-section">
@@ -727,8 +725,8 @@ function spinBlock(k,dir){
   const el=document.getElementById('spin-'+k);if(!el)return;
   const m=(el.textContent||'').match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
   if(!m)return;
-  let sm=parseInt(m[1])*60+parseInt(m[2])+dir*15;
-  let em=parseInt(m[3])*60+parseInt(m[4])+dir*15;
+  let sm=parseInt(m[1])*60+parseInt(m[2])+dir*5;
+  let em=parseInt(m[3])*60+parseInt(m[4])+dir*5;
   sm=((sm%1440)+1440)%1440;em=((em%1440)+1440)%1440;
   const fmt=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
   el.textContent=fmt(sm)+'–'+fmt(em);
@@ -738,8 +736,8 @@ function spinTimer(dir){
   const el=document.getElementById('spin-timer');if(!el)return;
   const m=(el.textContent||'').match(/(\d{1,2}):(\d{2})/);
   if(!m)return;
-  let tm=parseInt(m[1])*60+parseInt(m[2])+dir*15;
-  tm=Math.max(15,Math.min(1440,tm));
+  let tm=parseInt(m[1])*60+parseInt(m[2])+dir*5;
+  tm=Math.max(5,Math.min(1440,tm));
   el.textContent=`${String(Math.floor(tm/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`;
 }
 function openSettings(){
@@ -861,6 +859,11 @@ async function saveTimerEdit(){
   closeTimerEdit();renderStats();
 }
 loadSettings();
+['b1','b2','b3','b4','b5'].forEach(k=>{
+  const el=document.getElementById('spin-'+k);
+  if(el)el.addEventListener('wheel',e=>{e.preventDefault();spinBlock(k,e.deltaY<0?1:-1);},{passive:false});
+});
+(()=>{const el=document.getElementById('spin-timer');if(el)el.addEventListener('wheel',e=>{e.preventDefault();spinTimer(e.deltaY<0?1:-1);},{passive:false});})();
 
 function showTab(t){
   ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
