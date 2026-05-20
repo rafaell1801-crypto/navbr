@@ -614,6 +614,7 @@ async function loadAll(){
     timerSt.timeByDisc={};for(const r of timers)timerSt.timeByDisc[r.disc]=r.segundos;
     showSync('ok','✓ Sincronizado');
   }catch{showSync('error','✗ Offline');}
+  initDailySnap();
   render();
 }
 
@@ -973,6 +974,7 @@ function render(){
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
   const alertCount=AGENDA.filter(i=>{if(!isDone(i.id))return false;const rs=revState[i.id];if(!rs)return false;return REV_INTERVALS.some(d=>{const dt=addDays(rs.doneDate,d);return dt<=REV_LIMIT&&diffDays(dt)<=0&&!(rs.completedRevs||[]).includes(d);});}).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
+  updateDiscTimerTags();
 }
 
 function renderStats(){
@@ -1593,7 +1595,7 @@ function getEffectiveAgenda() {
 populateDiscSelect();updateTimerUI();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll().then(()=>{initDailySnap();updateDiscTimerTags();});loadCustomTopics();loadCadernos();loadResumos();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
 
 </script>
 
