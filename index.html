@@ -403,9 +403,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <h3>Temporizador</h3>
       <div class="modal-row">
         <label>Duração da sessão</label>
-        <input id="cfg-timer-dur" type="text" placeholder="1:20:00" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+        <input id="cfg-timer-dur" type="time" step="900" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px">
       </div>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px">Formato: H:MM:SS ou HH:MM. Padrão: 1:20:00</p>
     </div>
 
     <div class="modal-section">
@@ -428,10 +427,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <button onclick="resetCompleto()" style="width:100%;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
     </div>
 
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeSettings()">Fechar</button>
-      <button class="btn-save" onclick="saveSettings()">Salvar horários</button>
-    </div>
   </div>
 </div>
 
@@ -734,7 +729,7 @@ function openSettings(){
     const sEl=document.getElementById('cfg-'+k+'-s'),eEl=document.getElementById('cfg-'+k+'-e');
     if(sEl)sEl.value=t.s;if(eEl)eEl.value=t.e;
   });
-  const tdEl=document.getElementById('cfg-timer-dur');if(tdEl)tdEl.value=fmtFull(getBlockSecs());
+  const tdEl=document.getElementById('cfg-timer-dur');if(tdEl){const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);tdEl.value=String(bh).padStart(2,'0')+':'+String(bm).padStart(2,'0');}
   document.getElementById('settings-modal').classList.remove('hidden');
   buildTimerEditList('timer-edit-list');
   calcBlockTotal();
@@ -809,8 +804,8 @@ function saveSettings(){
   customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>blocoFromInputs(k,i));
   localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
   const tdEl=document.getElementById('cfg-timer-dur');
-  if(tdEl&&tdEl.value.trim()){
-    const secs=parseTimeInput(tdEl.value.trim());
+  if(tdEl&&tdEl.value){
+    const secs=parseTimeInput(tdEl.value);
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
   closeSettings();render();
