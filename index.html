@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Plano de Estudos – NAV Brasil</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -390,11 +391,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
     <div class="modal-section">
       <h3>Horários dos blocos</h3>
-      <div class="modal-row"><label>Bloco 1</label><input id="cfg-b1" type="text" placeholder="08:00–09:20" oninput="calcBlockTotal()"></div>
-      <div class="modal-row"><label>Bloco 2</label><input id="cfg-b2" type="text" placeholder="09:30–10:50" oninput="calcBlockTotal()"></div>
-      <div class="modal-row"><label>Bloco 3</label><input id="cfg-b3" type="text" placeholder="11:00–12:20" oninput="calcBlockTotal()"></div>
-      <div class="modal-row"><label>Bloco 4</label><input id="cfg-b4" type="text" placeholder="13:40–15:00" oninput="calcBlockTotal()"></div>
-      <div class="modal-row"><label>Português</label><input id="cfg-b5" type="text" placeholder="Português · 1h" oninput="calcBlockTotal()"></div>
+      <div class="modal-row"><label>Bloco 1</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b1-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b1-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
+      <div class="modal-row"><label>Bloco 2</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b2-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b2-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
+      <div class="modal-row"><label>Bloco 3</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b3-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b3-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
+      <div class="modal-row"><label>Bloco 4</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b4-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b4-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
+      <div class="modal-row"><label>Português</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b5-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b5-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
       <div class="modal-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><label style="color:#7dd3fc;font-weight:600">Total/dia</label><span id="cfg-block-total" style="font-size:14px;font-weight:700;color:#7dd3fc">–</span></div>
     </div>
 
@@ -702,6 +703,15 @@ function blockMinsFromStr(s){
   if(!m)return 60;
   return(parseInt(m[3])*60+parseInt(m[4]))-(parseInt(m[1])*60+parseInt(m[2]));
 }
+function blocoToTimes(s){
+  const m=(s||'').match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
+  if(!m)return{s:'',e:''};
+  return{s:String(parseInt(m[1])).padStart(2,'0')+':'+m[2],e:String(parseInt(m[3])).padStart(2,'0')+':'+m[4]};
+}
+function blocoFromInputs(k,i){
+  const s=document.getElementById('cfg-'+k+'-s'),e=document.getElementById('cfg-'+k+'-e');
+  return(s&&e&&s.value&&e.value)?s.value+'–'+e.value:DEFAULT_BLOCOS[i];
+}
 function getBlockTotalMins(vals){
   return(vals||customBlocos||DEFAULT_BLOCOS).reduce((s,v)=>s+blockMinsFromStr(v),0);
 }
@@ -711,7 +721,7 @@ function blockTotalText(mins){
 }
 function calcBlockTotal(){
   const keys=['b1','b2','b3','b4','b5'];
-  const vals=keys.map((k,i)=>{const el=document.getElementById('cfg-'+k);return el?el.value.trim()||DEFAULT_BLOCOS[i]:DEFAULT_BLOCOS[i];});
+  const vals=keys.map((k,i)=>blocoFromInputs(k,i));
   const txt=blockTotalText(getBlockTotalMins(vals));
   const el=document.getElementById('cfg-block-total');if(el)el.textContent=txt;
   const shd=document.getElementById('st-horas-dia');if(shd)shd.textContent=txt;
@@ -720,8 +730,9 @@ function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
-    const el=document.getElementById('cfg-'+k);
-    if(el)el.value=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
+    const t=blocoToTimes((b&&b[i])||DEFAULT_BLOCOS[i]||'');
+    const sEl=document.getElementById('cfg-'+k+'-s'),eEl=document.getElementById('cfg-'+k+'-e');
+    if(sEl)sEl.value=t.s;if(eEl)eEl.value=t.e;
   });
   const tdEl=document.getElementById('cfg-timer-dur');if(tdEl)tdEl.value=fmtFull(getBlockSecs());
   document.getElementById('settings-modal').classList.remove('hidden');
@@ -795,15 +806,12 @@ async function resetCompleto(){
 }
 function saveSettings(){
   const sdEl=document.getElementById('cfg-start-date');if(sdEl&&sdEl.value){saveStartDateSetting(sdEl.value);}
-  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>{
-    const el=document.getElementById('cfg-'+k);
-    return el?el.value.trim()||DEFAULT_BLOCOS[i]:DEFAULT_BLOCOS[i];
-  });
+  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>blocoFromInputs(k,i));
   localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
   const tdEl=document.getElementById('cfg-timer-dur');
   if(tdEl&&tdEl.value.trim()){
     const secs=parseTimeInput(tdEl.value.trim());
-    if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running)timerSt.remaining=secs;}
+    if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
   closeSettings();render();
 }
@@ -1126,8 +1134,6 @@ function updateTimerUI(){
   const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
-  if(timerSt.running){document.title=fmtFull(rem)+' ⏱';}
-  else{document.title='Plano de Estudos – NAV Brasil';}
   updateDiscTimerTags();
 }
 function getActiveDiscs(){
@@ -1186,7 +1192,6 @@ function timerCancel(){
   ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('btn-pause').textContent='⏸';
   document.getElementById('timer-disc').disabled=false;
-  document.title='Plano de Estudos – NAV Brasil';
   updateTimerUI();
 }
 async function timerSave(){
@@ -1231,7 +1236,7 @@ function timerFinish(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
-  timerSt.remaining=0;document.title='Plano de Estudos – NAV Brasil';updateTimerUI();showSync('ok','✓ Sessão concluída');
+  timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
 async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
