@@ -43,6 +43,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .tibtn-pause{color:#f59e0b;border-color:#f59e0b}.tibtn-pause:hover{background:#2a1f00}
 .tibtn-save{color:#2dd4a0;border-color:#2dd4a0}.tibtn-save:hover{background:#0d2820}
 .hidden{display:none!important}
+.spin-wrap{display:flex;align-items:center;gap:8px}
+.spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;text-align:center}
+.spin-btns{display:flex;flex-direction:column;gap:2px}
+.spin-btn{background:transparent;border:1px solid var(--border);color:var(--accent);border-radius:4px;width:22px;height:16px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .1s}
+.spin-btn:hover{background:var(--surface2);border-color:var(--accent)}
 .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
@@ -391,20 +396,17 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
     <div class="modal-section">
       <h3>Horários dos blocos</h3>
-      <div class="modal-row"><label>Bloco 1</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b1-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b1-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
-      <div class="modal-row"><label>Bloco 2</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b2-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b2-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
-      <div class="modal-row"><label>Bloco 3</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b3-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b3-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
-      <div class="modal-row"><label>Bloco 4</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b4-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b4-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
-      <div class="modal-row"><label>Português</label><div style="display:flex;align-items:center;gap:6px"><input id="cfg-b5-s" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"><span style="color:var(--muted)">–</span><input id="cfg-b5-e" type="time" onchange="calcBlockTotal()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px" step="900"></div></div>
+      <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1">08:00–09:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b1',1)">▲</button><button class="spin-btn" onclick="spinBlock('b1',-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2">09:00–10:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b2',1)">▲</button><button class="spin-btn" onclick="spinBlock('b2',-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3">10:00–11:00</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b3',1)">▲</button><button class="spin-btn" onclick="spinBlock('b3',-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4">13:40–14:40</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b4',1)">▲</button><button class="spin-btn" onclick="spinBlock('b4',-1)">▼</button></div></div></div>
+      <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5">14:40–15:40</span><div class="spin-btns"><button class="spin-btn" onclick="spinBlock('b5',1)">▲</button><button class="spin-btn" onclick="spinBlock('b5',-1)">▼</button></div></div></div>
       <div class="modal-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><label style="color:#7dd3fc;font-weight:600">Total/dia</label><span id="cfg-block-total" style="font-size:14px;font-weight:700;color:#7dd3fc">–</span></div>
     </div>
 
     <div class="modal-section">
       <h3>Temporizador</h3>
-      <div class="modal-row">
-        <label>Duração da sessão</label>
-        <input id="cfg-timer-dur" type="time" step="900" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px">
-      </div>
+      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer">01:20</span><div class="spin-btns"><button class="spin-btn" onclick="spinTimer(1)">▲</button><button class="spin-btn" onclick="spinTimer(-1)">▼</button></div></div></div>
     </div>
 
     <div class="modal-section">
@@ -424,7 +426,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="modal-section">
       <h3>Reset completo</h3>
       <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Apaga todo o progresso, revisões, cadernos, resumos e tempo salvo no Supabase e no navegador. Irreversível.</p>
-      <button onclick="resetCompleto()" style="width:100%;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
+      <button onclick="resetCompleto()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
     </div>
 
   </div>
@@ -703,9 +705,9 @@ function blocoToTimes(s){
   if(!m)return{s:'',e:''};
   return{s:String(parseInt(m[1])).padStart(2,'0')+':'+m[2],e:String(parseInt(m[3])).padStart(2,'0')+':'+m[4]};
 }
-function blocoFromInputs(k,i){
-  const s=document.getElementById('cfg-'+k+'-s'),e=document.getElementById('cfg-'+k+'-e');
-  return(s&&e&&s.value&&e.value)?s.value+'–'+e.value:DEFAULT_BLOCOS[i];
+function blocoFromSpan(k,i){
+  const el=document.getElementById('spin-'+k);
+  return(el&&el.textContent.trim())?el.textContent.trim():DEFAULT_BLOCOS[i];
 }
 function getBlockTotalMins(vals){
   return(vals||customBlocos||DEFAULT_BLOCOS).reduce((s,v)=>s+blockMinsFromStr(v),0);
@@ -716,20 +718,39 @@ function blockTotalText(mins){
 }
 function calcBlockTotal(){
   const keys=['b1','b2','b3','b4','b5'];
-  const vals=keys.map((k,i)=>blocoFromInputs(k,i));
+  const vals=keys.map((k,i)=>blocoFromSpan(k,i));
   const txt=blockTotalText(getBlockTotalMins(vals));
   const el=document.getElementById('cfg-block-total');if(el)el.textContent=txt;
   const shd=document.getElementById('st-horas-dia');if(shd)shd.textContent=txt;
+}
+function spinBlock(k,dir){
+  const el=document.getElementById('spin-'+k);if(!el)return;
+  const m=(el.textContent||'').match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
+  if(!m)return;
+  let sm=parseInt(m[1])*60+parseInt(m[2])+dir*15;
+  let em=parseInt(m[3])*60+parseInt(m[4])+dir*15;
+  sm=((sm%1440)+1440)%1440;em=((em%1440)+1440)%1440;
+  const fmt=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+  el.textContent=fmt(sm)+'–'+fmt(em);
+  calcBlockTotal();
+}
+function spinTimer(dir){
+  const el=document.getElementById('spin-timer');if(!el)return;
+  const m=(el.textContent||'').match(/(\d{1,2}):(\d{2})/);
+  if(!m)return;
+  let tm=parseInt(m[1])*60+parseInt(m[2])+dir*15;
+  tm=Math.max(15,Math.min(1440,tm));
+  el.textContent=`${String(Math.floor(tm/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`;
 }
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
-    const t=blocoToTimes((b&&b[i])||DEFAULT_BLOCOS[i]||'');
-    const sEl=document.getElementById('cfg-'+k+'-s'),eEl=document.getElementById('cfg-'+k+'-e');
-    if(sEl)sEl.value=t.s;if(eEl)eEl.value=t.e;
+    const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
+    const el=document.getElementById('spin-'+k);if(el)el.textContent=val;
   });
-  const tdEl=document.getElementById('cfg-timer-dur');if(tdEl){const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);tdEl.value=String(bh).padStart(2,'0')+':'+String(bm).padStart(2,'0');}
+  const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
+  const stEl=document.getElementById('spin-timer');if(stEl)stEl.textContent=String(bh).padStart(2,'0')+':'+String(bm).padStart(2,'0');
   document.getElementById('settings-modal').classList.remove('hidden');
   buildTimerEditList('timer-edit-list');
   calcBlockTotal();
@@ -801,11 +822,11 @@ async function resetCompleto(){
 }
 function saveSettings(){
   const sdEl=document.getElementById('cfg-start-date');if(sdEl&&sdEl.value){saveStartDateSetting(sdEl.value);}
-  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>blocoFromInputs(k,i));
+  customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>blocoFromSpan(k,i));
   localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
-  const tdEl=document.getElementById('cfg-timer-dur');
-  if(tdEl&&tdEl.value){
-    const secs=parseTimeInput(tdEl.value);
+  const stEl=document.getElementById('spin-timer');
+  if(stEl&&stEl.textContent.trim()){
+    const secs=parseTimeInput(stEl.textContent.trim());
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
   closeSettings();render();
