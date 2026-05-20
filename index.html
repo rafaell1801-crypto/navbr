@@ -899,13 +899,11 @@ function openSpinPicker(el,count,onSelect){
   [['sh',true],['sm',false],['eh',true],['em',false]].forEach(([f,isH])=>{
     const id='spin-'+k+'-'+f;
     const el=document.getElementById(id);if(!el)return;
-    el.addEventListener('wheel',makeWheelHandler(dir=>isH?spinHour(id,dir):spinMin(id,dir)),{passive:false});
     el.addEventListener('click',e=>{e.stopPropagation();openSpinPicker(el,isH?24:60,v=>{el.textContent=String(v).padStart(2,'0');calcBlockTotal();});});
   });
 });
 ['h','m'].forEach(f=>{
   const id='spin-timer-'+f;const el=document.getElementById(id);if(!el)return;
-  el.addEventListener('wheel',makeWheelHandler(dir=>f==='h'?spinTimerH(dir):spinTimerM(dir)),{passive:false});
   el.addEventListener('click',e=>{e.stopPropagation();openSpinPicker(el,f==='h'?24:60,v=>{el.textContent=String(v).padStart(2,'0');});});
 });
 
