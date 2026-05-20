@@ -375,8 +375,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 style="margin:0">⚙️ Configurações</h2>
       <div style="display:flex;gap:8px">
-        <button class="timer-icon-btn tibtn-pause" onclick="closeSettings()" style="width:auto;padding:0 14px;font-size:13px;font-weight:600">✕ Fechar</button>
-        <button class="timer-icon-btn tibtn-save" onclick="saveSettings()" style="width:auto;padding:0 14px;font-size:13px;font-weight:600">✓ Salvar</button>
+        <button class="timer-icon-btn tibtn-pause" onclick="closeSettings()" title="Fechar">✕</button>
+        <button class="timer-icon-btn tibtn-save" onclick="saveSettings()" title="Salvar">✓</button>
       </div>
     </div>
 
@@ -1132,7 +1132,7 @@ function getActiveDiscs(){
   const base=[...new Set(AGENDA.map(i=>i.disc))];
   const deleted=customTopics?Object.keys(customTopics).filter(d=>customTopics[d]===null):[];
   const custom=customTopics?Object.keys(customTopics).filter(d=>!base.includes(d)&&customTopics[d]!==null&&d!=='__colors__'):[];
-  return [...base.filter(d=>!deleted.includes(d)),...custom];
+  return [...base.filter(d=>!deleted.includes(d)),...custom].sort((a,b)=>a.localeCompare(b,'pt'));
 }
 function populateDiscSelect(){
   const sel=document.getElementById('timer-disc');
