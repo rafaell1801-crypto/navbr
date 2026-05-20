@@ -1110,13 +1110,10 @@ function updateDiscTimerTags(){
     const disc=el.getAttribute('data-disc');
     const secs=getTodayDiscTime(disc);
     const isActive=disc===activeDisc;
-    if(isActive||secs>0){
-      const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);
-      el.textContent='⏱ '+h+':'+String(m).padStart(2,'0');
-      el.classList.add('has-time');
-    }else{
-      el.textContent='';el.classList.remove('has-time');
-    }
+    const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);
+    el.textContent='⏱ '+h+':'+String(m).padStart(2,'0');
+    el.style.opacity=(secs>0||isActive)?'1':'0.3';
+    el.classList.add('has-time');
   });
 }
 function updateTimerUI(){
@@ -1193,12 +1190,34 @@ async function timerSave(){
   document.getElementById('timer-disc').disabled=false;
   updateTimerUI();renderStats();
 }
+function timerBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [0,300,600].forEach(delay=>{
+      const osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.frequency.value=880;osc.type='sine';
+      gain.gain.setValueAtTime(0.4,ctx.currentTime+delay/1000);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay/1000+0.4);
+      osc.start(ctx.currentTime+delay/1000);osc.stop(ctx.currentTime+delay/1000+0.4);
+    });
+  }catch{}
+}
+function timerNotify(disc){
+  timerBeep();
+  if(Notification.permission==='granted'){
+    new Notification('⏱ Sessão concluída!',{body:disc?`Tempo de estudo de ${disc} encerrado.`:'Seu bloco de estudo terminou.',icon:'',silent:true});
+  }else if(Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{if(p==='granted')new Notification('⏱ Sessão concluída!',{body:disc?`Tempo de estudo de ${disc} encerrado.`:'Seu bloco de estudo terminou.',silent:true});});
+  }
+}
 function timerFinish(){
   _commitSubSession();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
   timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
+  timerNotify(disc);
 }
 async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
 document.addEventListener('visibilitychange',()=>{
@@ -1633,6 +1652,7 @@ function getEffectiveAgenda() {
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
 populateDiscSelect();loadTodayByDisc();updateTimerUI();
+if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
 render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
