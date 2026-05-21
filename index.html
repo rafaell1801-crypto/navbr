@@ -1329,6 +1329,7 @@ async function saveCalEdit(iso){
   const input=document.getElementById('cal-h-input');if(!input)return;
   const secs=Math.round((parseFloat(input.value)||0)*3600);
   sessoesDiarias[iso]=secs;
+  try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}
   showSync('saving','↺');
   await sbUpsert('sessoes_diarias',{data:iso,segundos:secs});
   showSync('ok','✓');
