@@ -42,7 +42,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .timer-icon-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .15s;flex-shrink:0;background:transparent;line-height:1}
 .tibtn-pause{color:#f59e0b;border-color:#f59e0b}.tibtn-pause:hover{background:#2a1f00}
 .tibtn-save{color:#2dd4a0;border-color:#2dd4a0}.tibtn-save:hover{background:#0d2820}
-.tibtn-playpause{color:#f59e0b;border-color:#f59e0b;font-size:20px}.tibtn-playpause:hover{background:#2a1f00}
+.tibtn-playpause{color:var(--accent);border-color:var(--accent);font-size:20px}.tibtn-playpause:hover{background:#071a28}
 .tibtn-stop{color:#ef4444;border-color:#ef4444;border-radius:50%!important;font-size:14px}.tibtn-stop:hover{background:#2a0a0a}
 .hidden{display:none!important}
 .spin-wrap{display:flex;align-items:center;gap:4px}
@@ -129,13 +129,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:500;text-decoration:none;white-space:nowrap;transition:all .15s;border:1px solid transparent}
 .link-pill-res{background:#0c2230;border-color:#3eb5c8;color:#7dd3e8}
 .link-pill-res:hover{background:#3eb5c8;color:#fff}
-.link-pill-cad{background:#0d1e35;border-color:#4d9de0;color:#93c5fd}
-.link-pill-cad:hover{background:#4d9de0;color:#fff}
+.link-pill-cad{background:#0c2230;border-color:#3eb5c8;color:#7dd3e8}
+.link-pill-cad:hover{background:#3eb5c8;color:#fff}
 .link-pill-add{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:400;background:transparent;cursor:pointer;transition:all .15s;white-space:nowrap;border-style:dashed;border-width:1px}
 .link-pill-add-res{border-color:#2a4050;color:#4a7080}
 .link-pill-add-res:hover{border-color:#3eb5c8;color:#7dd3e8}
-.link-pill-add-cad{border-color:#24344a;color:#405570}
-.link-pill-add-cad:hover{border-color:#4d9de0;color:#93c5fd}
+.link-pill-add-cad{border-color:#2a4050;color:#4a7080}
+.link-pill-add-cad:hover{border-color:#3eb5c8;color:#7dd3e8}
 .link-edit-row{display:flex;align-items:center;gap:4px;margin-top:5px}
 .link-edit-row input{flex:1;min-width:0;max-width:230px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:#fff}
 .link-edit-row input:focus{outline:none;border-color:var(--accent)}
@@ -317,7 +317,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <option value="">— Selecione a disciplina —</option>
   </select>
   <button class="timer-icon-btn tibtn-playpause" id="btn-playpause" onclick="timerPlayPause()" title="Iniciar / Pausar">▶</button>
-  <button class="timer-icon-btn tibtn-stop hidden" id="btn-cancel-time" onclick="timerStop()" title="Encerrar sessão">✕</button>
+  <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerStop()" title="Concluir e salvar">✓</button>
+  <button class="timer-icon-btn tibtn-stop hidden" id="btn-cancel-time" onclick="timerCancel()" title="Cancelar sessão">✕</button>
   <div class="sync-icons">
     <span class="s-ok hidden" id="sync-ok">✓</span>
     <span class="s-spin hidden" id="sync-spin">↺</span>
@@ -409,12 +410,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div class="modal-row"><label>TEC · URL</label><input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
       <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
         <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px">Links extras</div>
-        <div class="modal-row"><label>1 · Nome</label><input id="cfg-x1-nome" type="text" placeholder="ex: YouTube" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div class="modal-row"><label>1 · URL</label><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div class="modal-row"><label>2 · Nome</label><input id="cfg-x2-nome" type="text" placeholder="ex: Notion" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div class="modal-row"><label>2 · URL</label><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div class="modal-row"><label>3 · Nome</label><input id="cfg-x3-nome" type="text" placeholder="ex: Discord" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div class="modal-row"><label>3 · URL</label><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">1</label><input id="cfg-x1-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">2</label><input id="cfg-x2-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">3</label><input id="cfg-x3-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
       </div>
     </div>
 
@@ -1199,7 +1197,7 @@ function renderRev(){
         <div class="rev-info">
           <span style="display:inline-flex;align-items:center;gap:5px;margin-bottom:3px">
             <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
-            <span class="rev-disc" style="color:${c}">${item.disc}</span>
+            <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
           </span>
           <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
           <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
@@ -1295,12 +1293,19 @@ function _timerAnchor(){
 }
 function _timerButtonsUpdate(){
   const pp=document.getElementById('btn-playpause');
-  const stop=document.getElementById('btn-cancel-time');
+  const save=document.getElementById('btn-save-time');
+  const cancel=document.getElementById('btn-cancel-time');
   if(pp)pp.textContent=timerSt.running?'⏸':'▶';
   const started=timerSt.running||(timerSt.remaining>0&&timerSt.remaining<getBlockSecs());
-  if(stop)stop.classList.toggle('hidden',!started);
+  if(save)save.classList.toggle('hidden',!started);
+  if(cancel)cancel.classList.toggle('hidden',!started);
   const disc=document.getElementById('timer-disc');
   if(disc)disc.disabled=timerSt.running;
+}
+function timerCancel(){
+  clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
+  timerSt.remaining=getBlockSecs();
+  _timerButtonsUpdate();updateTimerUI();
 }
 function timerPlayPause(){
   if(!timerSt.running&&timerSt.remaining===getBlockSecs()&&!timerSt.startedAt){
