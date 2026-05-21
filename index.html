@@ -673,7 +673,12 @@ let linksExtras={};
 let sessoesDiarias={};
 let dailyChart=null;
 async function loadSessoesDiarias(){
-  try{const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');sessoesDiarias={};(d||[]).forEach(r=>{sessoesDiarias[r.data]=r.segundos;});}catch{}
+  try{const s=localStorage.getItem('nav_sessoes_bkp');if(s)sessoesDiarias=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');
+    sessoesDiarias={};(d||[]).forEach(r=>{sessoesDiarias[r.data]=r.segundos;});
+    try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}
+  }catch{}
 }
 async function saveDailySession(){
   const total=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
@@ -681,6 +686,7 @@ async function saveDailySession(){
   const[d,m,y]=TODAY.split('/');
   const iso=`${y}-${m}-${d}`;
   sessoesDiarias[iso]=total;
+  try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}
   await sbUpsert('sessoes_diarias',{data:iso,segundos:total});
 }
 function renderDailyChart(){
@@ -761,15 +767,22 @@ function showSync(type,msg){
 }
 
 async function loadAll(){
+  // Restore from localStorage immediately so UI shows last-known state on load
+  try{const s=localStorage.getItem('nav_state_bkp');if(s){const o=JSON.parse(s);state={};for(const k in o)state[+k]=o[k];}}catch{}
+  try{const s=localStorage.getItem('nav_rev_bkp');if(s)revState=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_timer_bkp');if(s)timerSt.timeByDisc=JSON.parse(s);}catch{}
+  loadTodayByDisc();render();
   showSync('saving','⟳ Carregando...');
   try{
     const[prog,revs,timers]=await Promise.all([sbGet('progresso','select=id,feito'),sbGet('revisoes','select=item_id,done_date,completed_revs'),sbGet('timer_disc','select=disc,segundos')]);
     state={};for(const r of prog)state[r.id]=r.feito;
     revState={};for(const r of revs)revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
     timerSt.timeByDisc={};for(const r of timers)timerSt.timeByDisc[r.disc]=r.segundos;
+    try{localStorage.setItem('nav_state_bkp',JSON.stringify(state));}catch{}
+    try{localStorage.setItem('nav_rev_bkp',JSON.stringify(revState));}catch{}
+    try{localStorage.setItem('nav_timer_bkp',JSON.stringify(timerSt.timeByDisc));}catch{}
     showSync('ok','✓ Sincronizado');
   }catch{showSync('error','✗ Offline');}
-  loadTodayByDisc();
   render();
 }
 
