@@ -366,6 +366,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="stat"><div class="stat-val c-today" id="rv-today">–</div><div class="stat-lbl">Hoje</div></div>
     <div class="stat"><div class="stat-val c-soon" id="rv-week">–</div><div class="stat-lbl">Próx. 7 dias</div></div>
   </div>
+  <div class="prog-wrap" style="padding:6px 0 2px;border-top:none">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;color:#7dd3e8;font-weight:600;white-space:nowrap">Hoje</span>
+      <div class="prog-outer" style="flex:1;height:6px"><div id="rev-prog-bar" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#0ea5e9,#2dd4a0);transition:width .4s;width:0%"></div></div>
+      <span id="rev-prog-label" style="font-size:11px;color:var(--muted);white-space:nowrap">0/0</span>
+    </div>
+  </div>
   <div class="rev-filter-bar">
     <button class="rev-filter-btn active" onclick="setRevFilter('pending_today',this)">Hoje + Pendentes</button>
     <button class="rev-filter-btn" onclick="setRevFilter('all',this)">Todas</button>
@@ -1329,6 +1336,12 @@ function renderRev(){
   const todays=rows.filter(r=>!r.rev.done&&r.rev.diff===0).length;
   const week=rows.filter(r=>!r.rev.done&&r.rev.diff>0&&r.rev.diff<=7).length;
   document.getElementById('rv-over').textContent=over;document.getElementById('rv-today').textContent=todays;document.getElementById('rv-week').textContent=week;
+  const todayPendingAll=rows.filter(r=>r.rev.diff<=0);
+  const todayDone=todayPendingAll.filter(r=>r.rev.done).length;
+  const todayTotal=todayPendingAll.length;
+  const revPct=todayTotal>0?Math.round(todayDone/todayTotal*100):0;
+  const rpb=document.getElementById('rev-prog-bar');if(rpb)rpb.style.width=revPct+'%';
+  const rpl=document.getElementById('rev-prog-label');if(rpl)rpl.textContent=todayTotal>0?`${todayDone}/${todayTotal}`:'–';
   if(revFilter==='pending_today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<=0);
   else if(revFilter==='overdue')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<0);
   else if(revFilter==='today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff===0);
