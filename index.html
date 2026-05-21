@@ -677,7 +677,14 @@ async function loadSessoesDiarias(){
   try{
     const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');
     if(d!==null){sessoesDiarias={};d.forEach(r=>{sessoesDiarias[r.data]=r.segundos;});try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}}
+async function loadSessoesDiarias(){
+  try{const s=localStorage.getItem('nav_sessoes_bkp');if(s)sessoesDiarias=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');
+    if(d!==null&&d.length>=0){sessoesDiarias={};d.forEach(r=>{sessoesDiarias[r.data]=r.segundos;});try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}}
   }catch{}
+  const statsTab=document.getElementById('tab-stats');
+  if(statsTab&&!statsTab.classList.contains('hidden'))renderStats();
 }
 async function saveDailySession(){
   const total=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
