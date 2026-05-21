@@ -666,7 +666,7 @@ const REV_INTERVALS=[1,3,5,10,14,20,28,30,60,90,120];
 const REV_LIMIT=new Date(2026,7,2);
 
 const sbH={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'};
-async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():[];}catch{return[];}}
+async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():null;}catch{return null;}}
 async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
 let linksExtras={};
@@ -676,8 +676,7 @@ async function loadSessoesDiarias(){
   try{const s=localStorage.getItem('nav_sessoes_bkp');if(s)sessoesDiarias=JSON.parse(s);}catch{}
   try{
     const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');
-    sessoesDiarias={};(d||[]).forEach(r=>{sessoesDiarias[r.data]=r.segundos;});
-    try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}
+    if(d!==null){sessoesDiarias={};d.forEach(r=>{sessoesDiarias[r.data]=r.segundos;});try{localStorage.setItem('nav_sessoes_bkp',JSON.stringify(sessoesDiarias));}catch{}}
   }catch{}
 }
 async function saveDailySession(){
@@ -775,9 +774,9 @@ async function loadAll(){
   showSync('saving','⟳ Carregando...');
   try{
     const[prog,revs,timers]=await Promise.all([sbGet('progresso','select=id,feito'),sbGet('revisoes','select=item_id,done_date,completed_revs'),sbGet('timer_disc','select=disc,segundos')]);
-    state={};for(const r of prog)state[r.id]=r.feito;
-    revState={};for(const r of revs)revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
-    timerSt.timeByDisc={};for(const r of timers)timerSt.timeByDisc[r.disc]=r.segundos;
+    state={};for(const r of(prog||[]))state[r.id]=r.feito;
+    revState={};for(const r of(revs||[]))revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
+    timerSt.timeByDisc={};for(const r of(timers||[]))timerSt.timeByDisc[r.disc]=r.segundos;
     try{localStorage.setItem('nav_state_bkp',JSON.stringify(state));}catch{}
     try{localStorage.setItem('nav_rev_bkp',JSON.stringify(revState));}catch{}
     try{localStorage.setItem('nav_timer_bkp',JSON.stringify(timerSt.timeByDisc));}catch{}
