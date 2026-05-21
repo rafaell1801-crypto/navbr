@@ -16,12 +16,12 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .sticky-shell{position:sticky;top:0;z-index:100}
-.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:10px}
-.app-header-text{flex:1}
-.app-header h1{font-size:16px;font-weight:700;color:#e8f4f8;letter-spacing:.3px}
-.app-header p{font-size:12px;color:var(--muted);margin-top:2px}
-.sync-indicator{display:inline-block;font-size:11px;margin-left:8px;padding:2px 7px;border-radius:99px;font-weight:600}
-.sync-ok{background:#dcfce7;color:#15803d}.sync-saving{background:#fef9c3;color:#854d0e}.sync-error{background:#fee2e2;color:#991b1b}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.app-header h1{font-size:15px;font-weight:700;color:#e8f4f8;letter-spacing:.2px;white-space:nowrap;margin:0}
+.app-header-links{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.sync-icons{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
+.s-ok{font-size:15px;font-weight:700;color:#2dd4a0}
+.s-spin{font-size:15px;color:var(--accent)}
 .tabs{display:flex;background:#000000;border-bottom:1px solid var(--border);padding:0 20px;gap:4px;align-items:center}
 .tab{padding:10px 16px;font-size:13px;font-weight:500;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .15s;white-space:nowrap}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -42,6 +42,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .timer-icon-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .15s;flex-shrink:0;background:transparent;line-height:1}
 .tibtn-pause{color:#f59e0b;border-color:#f59e0b}.tibtn-pause:hover{background:#2a1f00}
 .tibtn-save{color:#2dd4a0;border-color:#2dd4a0}.tibtn-save:hover{background:#0d2820}
+.tibtn-playpause{color:#f59e0b;border-color:#f59e0b;font-size:20px}.tibtn-playpause:hover{background:#2a1f00}
+.tibtn-stop{color:#ef4444;border-color:#ef4444;border-radius:50%!important;font-size:14px}.tibtn-stop:hover{background:#2a0a0a}
 .hidden{display:none!important}
 .spin-wrap{display:flex;align-items:center;gap:4px}
 .spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;width:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 6px;text-align:center;cursor:ns-resize;user-select:none;transition:border-color .15s}
@@ -52,8 +54,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .xlink-pill.empty{border-style:dashed;font-size:14px;padding:0 7px}
 .xlink-pill.set{color:var(--accent);border-color:var(--accent);background:#071a28}
 .xlink-pill.set:hover{background:#0d2030}
-.xlink-edit{background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:0 2px;vertical-align:middle;opacity:0;transition:opacity .15s}
-.xlink-wrap:hover .xlink-edit{opacity:1}
 .spin-picker{position:fixed;z-index:99999;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;overflow-y:auto;max-height:180px;min-width:52px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
 .spin-picker-item{padding:5px 10px;text-align:center;cursor:pointer;font-size:13px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
 .spin-picker-item:hover{background:var(--surface)}
@@ -287,9 +287,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 <div class="sticky-shell">
 <div class="app-header">
-  <div class="app-header-text">
-    <h1>⚡ Plano de Estudos – NAV Brasil <span class="sync-indicator sync-ok hidden" id="sync-badge">✓ Salvo</span> <a href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d;margin-left:4px">TEC</a><span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span></h1>
-    <p id="subtitle">–</p>
+  <h1>⚡ NAV Brasil Serviços de Navegação Aérea S.A.</h1>
+  <div class="app-header-links">
+    <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d">TEC</a>
+    <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
   </div>
 </div>
 
@@ -315,10 +316,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <select class="timer-disc-select" id="timer-disc">
     <option value="">— Selecione a disciplina —</option>
   </select>
-  <button class="timer-btn tbtn-start" id="btn-start" onclick="timerStart()">Iniciar</button>
-  <button class="timer-icon-btn tibtn-pause hidden" id="btn-pause" onclick="timerPauseToggle()" title="Pausar / Retomar">⏸</button>
-  <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerSave()" title="Salvar tempo">✓</button>
-  <button class="timer-icon-btn hidden" id="btn-cancel-time" onclick="timerCancel()" title="Cancelar sessão" style="color:#ef4444;border-color:#ef4444">✕</button>
+  <button class="timer-icon-btn tibtn-playpause" id="btn-playpause" onclick="timerPlayPause()" title="Iniciar / Pausar">▶</button>
+  <button class="timer-icon-btn tibtn-stop hidden" id="btn-cancel-time" onclick="timerStop()" title="Encerrar sessão">✕</button>
+  <div class="sync-icons">
+    <span class="s-ok hidden" id="sync-ok">✓</span>
+    <span class="s-spin hidden" id="sync-spin">↺</span>
+  </div>
 </div>
 </div><!-- /sticky-shell -->
 
@@ -387,22 +390,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 </div>
 
 <!-- MODAL CONFIGURAÇÕES -->
-<div id="xlink-modal" class="modal-overlay hidden" onclick="closeXLink()">
-  <div class="modal" style="max-width:360px" onclick="event.stopPropagation()">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h2 style="margin:0;font-size:15px">Link extra</h2>
-      <div style="display:flex;gap:8px">
-        <button class="timer-icon-btn tibtn-pause" onclick="closeXLink()" title="Fechar">✕</button>
-        <button class="timer-icon-btn tibtn-save" onclick="saveXLink()" title="Salvar">✓</button>
-      </div>
-    </div>
-    <div class="modal-row"><label>Nome</label><input id="xlink-nome" type="text" placeholder="ex: Aula YouTube" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)"></div>
-    <div class="modal-row" style="margin-top:8px"><label>URL</label><input id="xlink-url" type="url" placeholder="https://..." style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)"></div>
-    <div style="margin-top:14px;text-align:right">
-      <button onclick="clearXLink()" style="padding:5px 12px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid #ef4444;background:transparent;color:#ef4444">Remover</button>
-    </div>
-  </div>
-</div>
 <div id="settings-modal" class="modal-overlay hidden">
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -410,6 +397,24 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div style="display:flex;gap:8px">
         <button class="timer-icon-btn tibtn-pause" onclick="closeSettings()" title="Fechar">✕</button>
         <button class="timer-icon-btn tibtn-save" onclick="saveSettings()" title="Salvar">✓</button>
+      </div>
+    </div>
+
+    <div class="modal-section" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px">
+      <p id="cfg-subtitle" style="font-size:12px;color:var(--muted);margin:0">–</p>
+    </div>
+
+    <div class="modal-section">
+      <h3>Links rápidos</h3>
+      <div class="modal-row"><label>TEC · URL</label><input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px">Links extras</div>
+        <div class="modal-row"><label>1 · Nome</label><input id="cfg-x1-nome" type="text" placeholder="ex: YouTube" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div class="modal-row"><label>1 · URL</label><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div class="modal-row"><label>2 · Nome</label><input id="cfg-x2-nome" type="text" placeholder="ex: Notion" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div class="modal-row"><label>2 · URL</label><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div class="modal-row"><label>3 · Nome</label><input id="cfg-x3-nome" type="text" placeholder="ex: Discord" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div class="modal-row"><label>3 · URL</label><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
       </div>
     </div>
 
@@ -646,9 +651,9 @@ async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q
 async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
 let linksExtras={};
-let xlinkId=null;
 async function loadLinksExtras(){
   try{const d=await sbGet('links_extras','select=id,nome,url');linksExtras={};(d||[]).forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});}catch{}
+  const tecUrl=localStorage.getItem('nav_tec_url');if(tecUrl){const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
   renderXLinks();
 }
 function renderXLinks(){
@@ -656,39 +661,22 @@ function renderXLinks(){
     const wrap=document.getElementById('xwrap-'+i);if(!wrap)return;
     const d=linksExtras[i];
     if(d&&d.url){
-      wrap.innerHTML=`<a href="${d.url}" target="_blank" rel="noopener" class="xlink-pill set">${d.nome||'Link '+i}</a><button class="xlink-edit" onclick="openXLink(${i})" title="Editar">✏</button>`;
+      wrap.innerHTML=`<a href="${d.url}" target="_blank" rel="noopener" class="xlink-pill set">${d.nome||'Link '+i}</a>`;
     }else{
-      wrap.innerHTML=`<span class="xlink-pill empty" onclick="openXLink(${i})" title="Adicionar link">+</span>`;
+      wrap.innerHTML='';
     }
   });
-}
-function openXLink(i){
-  xlinkId=i;
-  const d=linksExtras[i]||{};
-  document.getElementById('xlink-nome').value=d.nome||'';
-  document.getElementById('xlink-url').value=d.url||'';
-  document.getElementById('xlink-modal').classList.remove('hidden');
-  document.getElementById('xlink-nome').focus();
-}
-function closeXLink(){document.getElementById('xlink-modal').classList.add('hidden');xlinkId=null;}
-async function saveXLink(){
-  if(!xlinkId)return;
-  const nome=document.getElementById('xlink-nome').value.trim();
-  const url=document.getElementById('xlink-url').value.trim();
-  linksExtras[xlinkId]={nome,url};
-  await sbUpsert('links_extras',{id:xlinkId,nome,url});
-  renderXLinks();closeXLink();showSync('ok','✓ Link salvo');
-}
-async function clearXLink(){
-  if(!xlinkId)return;
-  linksExtras[xlinkId]={nome:'',url:''};
-  await sbUpsert('links_extras',{id:xlinkId,nome:'',url:''});
-  renderXLinks();closeXLink();showSync('ok','✓ Link removido');
 }
 let state={},revState={},timerSt={timeByDisc:{},remaining:getBlockSecs(),running:false,interval:null,currentDisc:''};
 let syncTimer=null;
 
-function showSync(type,msg){const el=document.getElementById('sync-badge');el.className='sync-indicator sync-'+type;el.textContent=msg;el.classList.remove('hidden');if(type==='ok')setTimeout(()=>el.classList.add('hidden'),2000);}
+function showSync(type,msg){
+  const ok=document.getElementById('sync-ok'),spin=document.getElementById('sync-spin');
+  if(!ok||!spin)return;
+  if(type==='ok'){ok.classList.remove('hidden');spin.classList.add('hidden');setTimeout(()=>ok.classList.add('hidden'),2000);}
+  else if(type==='saving'){spin.classList.remove('hidden');ok.classList.add('hidden');}
+  else{ok.classList.add('hidden');spin.classList.add('hidden');}
+}
 
 async function loadAll(){
   showSync('saving','⟳ Carregando...');
@@ -812,6 +800,9 @@ function spinTimerM(dir){
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
+  const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
+  [1,2,3].forEach(i=>{const d=linksExtras[i]||{};const n=document.getElementById('cfg-x'+i+'-nome'),u=document.getElementById('cfg-x'+i+'-url');if(n)n.value=d.nome||'';if(u)u.value=d.url||'';});
+
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
     const m=val.match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
@@ -905,6 +896,17 @@ function saveSettings(){
     const secs=parseInt(thEl.textContent)*3600+parseInt(tmEl.textContent)*60;
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
+  const tecUrl=(document.getElementById('cfg-tec-url')||{}).value||'';
+  if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
+  const linkSaves=[];
+  [1,2,3].forEach(i=>{
+    const nome=(document.getElementById('cfg-x'+i+'-nome')||{}).value||'';
+    const url=(document.getElementById('cfg-x'+i+'-url')||{}).value||'';
+    linksExtras[i]={nome,url};
+    linkSaves.push(sbUpsert('links_extras',{id:i,nome,url}));
+  });
+  Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
+  renderXLinks();
   closeSettings();render();
 }
 async function applyTimerEdit(disc){
@@ -1103,7 +1105,8 @@ function render(){
   const todayTotal=todayItems.length;
   const dayPct=todayTotal>0?Math.round(todayDone/todayTotal*100):0;
   const dayBar=document.getElementById('day-prog-bar');if(dayBar)dayBar.style.width=dayPct+'%';
-  document.getElementById('subtitle').textContent=`${doneCount} de ${TOTAL_MAIN} tópicos · conclusão prevista: ${calcDeadline()}`;
+  const _subtxt=`${doneCount} de ${TOTAL_MAIN} tópicos · conclusão prevista: ${calcDeadline()}`;
+  const _subEl=document.getElementById('cfg-subtitle');if(_subEl)_subEl.textContent=_subtxt;
   const lateSection=document.getElementById('late-section');
   document.getElementById('late-count').textContent=lateItems.length;
   if(lateItems.length>0){
@@ -1290,52 +1293,37 @@ function _timerAnchor(){
   timerSt.remainingAtStart=timerSt.remaining;
   timerSt.discBase=timerSt.timeByDisc[timerSt.currentDisc]||0;
 }
-function timerStart(){
-  const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
-  timerSt.currentDisc=sel.value;timerSt.running=true;
-  _timerAnchor();
-  document.getElementById('btn-start').classList.add('hidden');
-  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.remove('hidden'));
-  document.getElementById('btn-pause').textContent='⏸';
-  document.getElementById('timer-disc').disabled=true;
-  clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);updateTimerUI();
+function _timerButtonsUpdate(){
+  const pp=document.getElementById('btn-playpause');
+  const stop=document.getElementById('btn-cancel-time');
+  if(pp)pp.textContent=timerSt.running?'⏸':'▶';
+  const started=timerSt.running||(timerSt.remaining>0&&timerSt.remaining<getBlockSecs());
+  if(stop)stop.classList.toggle('hidden',!started);
+  const disc=document.getElementById('timer-disc');
+  if(disc)disc.disabled=timerSt.running;
 }
-function timerPauseToggle(){
-  if(timerSt.running){
-    _commitSubSession();
-    timerTick(); // sincroniza antes de pausar
+function timerPlayPause(){
+  if(!timerSt.running&&timerSt.remaining===getBlockSecs()&&!timerSt.startedAt){
+    const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
+    timerSt.currentDisc=sel.value;timerSt.running=true;
+    _timerAnchor();clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);
+  }else if(timerSt.running){
+    _commitSubSession();timerTick();
     timerSt.running=false;clearInterval(timerSt.interval);timerSt.startedAt=null;
-    document.getElementById('btn-pause').textContent='▶';updateTimerUI();
   }else{
     timerSt.running=true;_timerAnchor();
     clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);
-    document.getElementById('btn-pause').textContent='⏸';updateTimerUI();
   }
+  _timerButtonsUpdate();updateTimerUI();
 }
-function timerCancel(){
-  clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
-  timerSt.remaining=getBlockSecs();
-  document.getElementById('btn-start').classList.remove('hidden');
-  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('btn-pause').textContent='⏸';
-  document.getElementById('timer-disc').disabled=false;
-  updateTimerUI();
-}
-async function timerSave(){
+async function timerStop(){
   if(timerSt.running)_commitSubSession();
-  timerTick(); // garante que o último segundo seja contabilizado
+  timerTick();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
-  if(disc&&timerSt.timeByDisc[disc]){
-    await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
-    showSync('ok','✓ Tempo salvo');
-  }
+  if(disc&&timerSt.timeByDisc[disc]){await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});showSync('ok','✓ Tempo salvo');}
   timerSt.remaining=getBlockSecs();
-  document.getElementById('btn-start').classList.remove('hidden');
-  ['btn-pause','btn-save-time','btn-cancel-time'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('btn-pause').textContent='⏸';
-  document.getElementById('timer-disc').disabled=false;
-  updateTimerUI();renderStats();
+  _timerButtonsUpdate();updateTimerUI();renderStats();
 }
 function timerBeep(){
   try{
@@ -1363,7 +1351,7 @@ function timerFinish(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
-  timerSt.remaining=0;updateTimerUI();showSync('ok','✓ Sessão concluída');
+  timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
 async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
