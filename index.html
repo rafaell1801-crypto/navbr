@@ -6,6 +6,7 @@
 <title>Plano de Estudos – NAV Brasil</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <meta name="theme-color" content="#0d1a26">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -389,6 +390,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div class="info-item"><span class="info-label">Total de horas estudadas</span><span class="info-val" id="st-total-time">0h</span></div>
     </div>
   </div>
+  <div class="stats-card">
+    <h3>Horas estudadas por dia</h3>
+    <div style="position:relative;height:200px;margin-top:8px">
+      <canvas id="daily-chart"></canvas>
+    </div>
+  </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
 </div>
 
@@ -403,26 +410,25 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       </div>
     </div>
 
-    <div class="modal-section" style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px">
-      <p id="cfg-subtitle" style="font-size:12px;color:var(--muted);margin:0">–</p>
-    </div>
-
     <div class="modal-section">
-      <h3>Links rápidos</h3>
-      <div class="modal-row"><label>TEC · URL</label><input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px">Links extras</div>
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">1</label><input id="cfg-x1-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">2</label><input id="cfg-x2-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">3</label><input id="cfg-x3-nome" type="text" placeholder="Nome" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+      <h3>Links</h3>
+      <div style="display:flex;gap:6px;align-items:center;background:#071e30;border:1px solid var(--accent);border-radius:8px;padding:6px 8px;margin-bottom:8px">
+        <input id="cfg-tec-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:#7dd3e8;font-weight:600">
+        <input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:var(--text)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">1</label><input id="cfg-x1-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">2</label><input id="cfg-x2-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
+        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">3</label><input id="cfg-x3-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
       </div>
     </div>
 
     <div class="modal-section">
       <h3>Data de início</h3>
-      <div class="modal-row">
+      <div class="modal-row" style="flex-wrap:wrap;gap:8px">
         <label>Data de início</label>
-        <input id="cfg-start-date" type="date" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+        <input id="cfg-start-date" type="date" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+        <span id="cfg-subtitle" style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:4px;align-self:center">–</span>
       </div>
     </div>
     <div class="modal-section">
@@ -432,12 +438,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3-sh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b3-eh">11</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-em">00</span></div></div>
       <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4-sh">13</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b4-eh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-em">40</span></div></div>
       <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5-sh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b5-eh">15</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-em">40</span></div></div>
-      <div class="modal-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><label style="color:#7dd3fc;font-weight:600">Total/dia</label><span id="cfg-block-total" style="font-size:14px;font-weight:700;color:#7dd3fc">–</span></div>
     </div>
 
     <div class="modal-section">
       <h3>Temporizador</h3>
-      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
+      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div><span style="font-size:11px;color:var(--muted);margin-left:14px;white-space:nowrap">Total/dia <span id="cfg-block-total" style="color:#7dd3fc;font-weight:700">–</span></span></div>
     </div>
 
     <div class="modal-section">
@@ -651,6 +656,45 @@ async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q
 async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
 let linksExtras={};
+let sessoesDiarias={};
+let dailyChart=null;
+async function loadSessoesDiarias(){
+  try{const d=await sbGet('sessoes_diarias','select=data,segundos&order=data.asc');sessoesDiarias={};(d||[]).forEach(r=>{sessoesDiarias[r.data]=r.segundos;});}catch{}
+}
+async function saveDailySession(){
+  const total=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
+  if(total<=0)return;
+  const[d,m,y]=TODAY.split('/');
+  const iso=`${y}-${m}-${d}`;
+  sessoesDiarias[iso]=total;
+  await sbUpsert('sessoes_diarias',{data:iso,segundos:total});
+}
+function renderDailyChart(){
+  const canvas=document.getElementById('daily-chart');if(!canvas)return;
+  const start=getStartDate();
+  const today=new Date();today.setHours(0,0,0,0);
+  const labels=[],data=[];
+  const cur=new Date(start);
+  while(cur<=today){
+    const dd=String(cur.getDate()).padStart(2,'0'),mm=String(cur.getMonth()+1).padStart(2,'0'),yy=cur.getFullYear();
+    labels.push(dd+'/'+mm);
+    data.push(+((sessoesDiarias[`${yy}-${mm}-${dd}`]||0)/3600).toFixed(2));
+    cur.setDate(cur.getDate()+1);
+  }
+  if(dailyChart)dailyChart.destroy();
+  dailyChart=new Chart(canvas.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:'rgba(61,181,200,.35)',borderColor:'#3eb5c8',borderWidth:1,borderRadius:3}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const h=Math.floor(c.raw),m=Math.round((c.raw-h)*60);return m>0?`${h}h${String(m).padStart(2,'0')}`:h+'h';}}}},
+      scales:{
+        x:{ticks:{color:'#7fb3c8',font:{size:10},maxTicksLimit:25,maxRotation:45},grid:{color:'#1e3f5c22'}},
+        y:{ticks:{color:'#7fb3c8',font:{size:10},callback:v=>v+'h'},grid:{color:'#1e3f5c'},beginAtZero:true}
+      }
+    }
+  });
+}
 async function loadLinksExtras(){
   const backup=JSON.parse(localStorage.getItem('nav_xlinks')||'{}');
   try{
@@ -663,7 +707,7 @@ async function loadLinksExtras(){
   }catch{linksExtras=backup;}
   const tec=linksExtras[0]||{};
   const tecUrl=tec.url||localStorage.getItem('nav_tec_url')||'';
-  if(tecUrl){const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
+  if(tecUrl){const tl=document.getElementById('tec-link');if(tl){tl.href=tecUrl;if(tec.nome)tl.textContent=tec.nome;}}
   renderXLinks();
 }
 function renderXLinks(){
@@ -811,6 +855,7 @@ function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
   const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=(linksExtras[0]&&linksExtras[0].url)||localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
+  const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
   [1,2,3].forEach(i=>{const d=linksExtras[i]||{};const n=document.getElementById('cfg-x'+i+'-nome'),u=document.getElementById('cfg-x'+i+'-url');if(n)n.value=d.nome||'';if(u)u.value=d.url||'';});
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -907,9 +952,10 @@ function saveSettings(){
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
   const tecUrl=(document.getElementById('cfg-tec-url')||{}).value||'';
-  linksExtras[0]={nome:'TEC',url:tecUrl};
-  if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
-  const linkSaves=[sbUpsert('links_extras',{id:0,nome:'TEC',url:tecUrl})];
+  const tecNome=(document.getElementById('cfg-tec-nome')||{}).value||'TEC';
+  linksExtras[0]={nome:tecNome,url:tecUrl};
+  if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl){tl.href=tecUrl;tl.textContent=tecNome;}}
+  const linkSaves=[sbUpsert('links_extras',{id:0,nome:tecNome,url:tecUrl})];
   [1,2,3].forEach(i=>{
     const nome=(document.getElementById('cfg-x'+i+'-nome')||{}).value||'';
     const url=(document.getElementById('cfg-x'+i+'-url')||{}).value||'';
@@ -1160,6 +1206,7 @@ function renderStats(){
   const totalSecs=Object.values(timerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
   const totalEl=document.getElementById('st-total-time');
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
+  renderDailyChart();
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
     const isPort=disc==='Língua Portuguesa';
     const di=getEffectiveAgenda().filter(i=>i.disc===disc&&(isPort?i.port:!i.port));
@@ -1341,6 +1388,7 @@ async function timerStop(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc]){await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});showSync('ok','✓ Tempo salvo');}
+  await saveDailySession();
   timerSt.remaining=getBlockSecs();
   _timerButtonsUpdate();updateTimerUI();renderStats();
 }
@@ -1370,6 +1418,7 @@ function timerFinish(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
   if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+  saveDailySession();
   timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
@@ -1809,7 +1858,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
