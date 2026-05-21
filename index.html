@@ -653,10 +653,15 @@ async function loadLinksExtras(){
   const backup=JSON.parse(localStorage.getItem('nav_xlinks')||'{}');
   try{
     const d=await sbGet('links_extras','select=id,nome,url');
-    if(d&&d.length>0){linksExtras={};d.forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));}
-    else{linksExtras=backup;}
+    if(d&&d.length>0){
+      linksExtras={};
+      d.forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});
+      localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
+    }else{linksExtras=backup;}
   }catch{linksExtras=backup;}
-  const tecUrl=localStorage.getItem('nav_tec_url');if(tecUrl){const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
+  const tec=linksExtras[0]||{};
+  const tecUrl=tec.url||localStorage.getItem('nav_tec_url')||'';
+  if(tecUrl){const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
   renderXLinks();
 }
 function renderXLinks(){
@@ -803,7 +808,7 @@ function spinTimerM(dir){
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
-  const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
+  const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=(linksExtras[0]&&linksExtras[0].url)||localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
   [1,2,3].forEach(i=>{const d=linksExtras[i]||{};const n=document.getElementById('cfg-x'+i+'-nome'),u=document.getElementById('cfg-x'+i+'-url');if(n)n.value=d.nome||'';if(u)u.value=d.url||'';});
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -900,8 +905,9 @@ function saveSettings(){
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
   const tecUrl=(document.getElementById('cfg-tec-url')||{}).value||'';
+  linksExtras[0]={nome:'TEC',url:tecUrl};
   if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
-  const linkSaves=[];
+  const linkSaves=[sbUpsert('links_extras',{id:0,nome:'TEC',url:tecUrl})];
   [1,2,3].forEach(i=>{
     const nome=(document.getElementById('cfg-x'+i+'-nome')||{}).value||'';
     const url=(document.getElementById('cfg-x'+i+'-url')||{}).value||'';
