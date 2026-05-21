@@ -47,6 +47,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;width:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 6px;text-align:center;cursor:ns-resize;user-select:none;transition:border-color .15s}
 .spin-val:hover{border-color:var(--accent)}
 .spin-sep{font-size:13px;color:var(--muted);padding:0 1px;user-select:none}
+.xlink-wrap{display:inline-block;margin-left:4px;vertical-align:middle}
+.xlink-pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;text-decoration:none;display:inline-block;line-height:1.6;transition:border-color .15s,color .15s}
+.xlink-pill.empty{border-style:dashed;font-size:14px;padding:0 7px}
+.xlink-pill.set{color:var(--accent);border-color:var(--accent);background:#071a28}
+.xlink-pill.set:hover{background:#0d2030}
+.xlink-edit{background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:0 2px;vertical-align:middle;opacity:0;transition:opacity .15s}
+.xlink-wrap:hover .xlink-edit{opacity:1}
 .spin-picker{position:fixed;z-index:99999;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;overflow-y:auto;max-height:180px;min-width:52px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
 .spin-picker-item{padding:5px 10px;text-align:center;cursor:pointer;font-size:13px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
 .spin-picker-item:hover{background:var(--surface)}
@@ -281,7 +288,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <div class="sticky-shell">
 <div class="app-header">
   <div class="app-header-text">
-    <h1>📘 Plano de Estudos – NAV Brasil <span class="sync-indicator sync-ok hidden" id="sync-badge">✓ Salvo</span> <a href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d;margin-left:4px">TEC</a></h1>
+    <h1>⚡ Plano de Estudos – NAV Brasil <span class="sync-indicator sync-ok hidden" id="sync-badge">✓ Salvo</span> <a href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d;margin-left:4px">TEC</a><span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span></h1>
     <p id="subtitle">–</p>
   </div>
 </div>
@@ -380,6 +387,22 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 </div>
 
 <!-- MODAL CONFIGURAÇÕES -->
+<div id="xlink-modal" class="modal-overlay hidden" onclick="closeXLink()">
+  <div class="modal" style="max-width:360px" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0;font-size:15px">Link extra</h2>
+      <div style="display:flex;gap:8px">
+        <button class="timer-icon-btn tibtn-pause" onclick="closeXLink()" title="Fechar">✕</button>
+        <button class="timer-icon-btn tibtn-save" onclick="saveXLink()" title="Salvar">✓</button>
+      </div>
+    </div>
+    <div class="modal-row"><label>Nome</label><input id="xlink-nome" type="text" placeholder="ex: Aula YouTube" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)"></div>
+    <div class="modal-row" style="margin-top:8px"><label>URL</label><input id="xlink-url" type="url" placeholder="https://..." style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button onclick="clearXLink()" style="padding:5px 12px;font-size:12px;border-radius:6px;cursor:pointer;border:1px solid #ef4444;background:transparent;color:#ef4444">Remover</button>
+    </div>
+  </div>
+</div>
 <div id="settings-modal" class="modal-overlay hidden">
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -622,6 +645,46 @@ const sbH={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Be
 async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():[];}catch{return[];}}
 async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
+let linksExtras={};
+let xlinkId=null;
+async function loadLinksExtras(){
+  try{const d=await sbGet('links_extras','select=id,nome,url');linksExtras={};(d||[]).forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});}catch{}
+  renderXLinks();
+}
+function renderXLinks(){
+  [1,2,3].forEach(i=>{
+    const wrap=document.getElementById('xwrap-'+i);if(!wrap)return;
+    const d=linksExtras[i];
+    if(d&&d.url){
+      wrap.innerHTML=`<a href="${d.url}" target="_blank" rel="noopener" class="xlink-pill set">${d.nome||'Link '+i}</a><button class="xlink-edit" onclick="openXLink(${i})" title="Editar">✏</button>`;
+    }else{
+      wrap.innerHTML=`<span class="xlink-pill empty" onclick="openXLink(${i})" title="Adicionar link">+</span>`;
+    }
+  });
+}
+function openXLink(i){
+  xlinkId=i;
+  const d=linksExtras[i]||{};
+  document.getElementById('xlink-nome').value=d.nome||'';
+  document.getElementById('xlink-url').value=d.url||'';
+  document.getElementById('xlink-modal').classList.remove('hidden');
+  document.getElementById('xlink-nome').focus();
+}
+function closeXLink(){document.getElementById('xlink-modal').classList.add('hidden');xlinkId=null;}
+async function saveXLink(){
+  if(!xlinkId)return;
+  const nome=document.getElementById('xlink-nome').value.trim();
+  const url=document.getElementById('xlink-url').value.trim();
+  linksExtras[xlinkId]={nome,url};
+  await sbUpsert('links_extras',{id:xlinkId,nome,url});
+  renderXLinks();closeXLink();showSync('ok','✓ Link salvo');
+}
+async function clearXLink(){
+  if(!xlinkId)return;
+  linksExtras[xlinkId]={nome:'',url:''};
+  await sbUpsert('links_extras',{id:xlinkId,nome:'',url:''});
+  renderXLinks();closeXLink();showSync('ok','✓ Link removido');
+}
 let state={},revState={},timerSt={timeByDisc:{},remaining:getBlockSecs(),running:false,interval:null,currentDisc:''};
 let syncTimer=null;
 
@@ -1739,7 +1802,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();
 
 </script>
 
