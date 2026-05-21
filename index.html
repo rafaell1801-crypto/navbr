@@ -650,7 +650,12 @@ async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'P
 
 let linksExtras={};
 async function loadLinksExtras(){
-  try{const d=await sbGet('links_extras','select=id,nome,url');linksExtras={};(d||[]).forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});}catch{}
+  const backup=JSON.parse(localStorage.getItem('nav_xlinks')||'{}');
+  try{
+    const d=await sbGet('links_extras','select=id,nome,url');
+    if(d&&d.length>0){linksExtras={};d.forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));}
+    else{linksExtras=backup;}
+  }catch{linksExtras=backup;}
   const tecUrl=localStorage.getItem('nav_tec_url');if(tecUrl){const tl=document.getElementById('tec-link');if(tl)tl.href=tecUrl;}
   renderXLinks();
 }
@@ -903,6 +908,7 @@ function saveSettings(){
     linksExtras[i]={nome,url};
     linkSaves.push(sbUpsert('links_extras',{id:i,nome,url}));
   });
+  localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
   closeSettings();render();
@@ -1201,7 +1207,7 @@ function renderRev(){
           </span>
           <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
           <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-            ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn">📎 Questões ↗</a>`:''}
+            ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📎 Questões ↗</a>`:''}
             ${resUrl?`<a href="${resUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📄 Resumo ↗</a>`:''}
             ${!cadUrl&&!resUrl?'<span style="font-size:10px;color:#444">sem links</span>':''}
           </div>
