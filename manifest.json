@@ -1,0 +1,15 @@
+{
+  "name": "NAV Brasil",
+  "short_name": "NAVBr",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#00bcd4",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
