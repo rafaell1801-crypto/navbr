@@ -1196,6 +1196,8 @@ function updateTimerUI(){
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
   document.title=timerSt.running?'⏳':rem===0?'✅':'Plano de Estudos – NAV Brasil';
+  const emoji=timerSt.running?'⏳':rem===0?'✅':'⚡';
+  document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${emoji}</text></svg>`;
   updateDiscTimerTags();
 }
 function getActiveDiscs(){
