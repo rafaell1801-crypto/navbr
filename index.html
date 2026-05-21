@@ -675,16 +675,30 @@ function renderDailyChart(){
   const today=new Date();today.setHours(0,0,0,0);
   const labels=[],data=[];
   const cur=new Date(start);
+  const [td,tm,ty]=TODAY.split('/');
+  const todayIso=`${ty}-${tm}-${td}`;
+  const todayLocalSecs=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
   while(cur<=today){
     const dd=String(cur.getDate()).padStart(2,'0'),mm=String(cur.getMonth()+1).padStart(2,'0'),yy=cur.getFullYear();
+    const iso=`${yy}-${mm}-${dd}`;
     labels.push(dd+'/'+mm);
-    data.push(+((sessoesDiarias[`${yy}-${mm}-${dd}`]||0)/3600).toFixed(2));
+    let secs=sessoesDiarias[iso]||0;
+    if(iso===todayIso)secs=Math.max(secs,todayLocalSecs);
+    data.push(+(secs/3600).toFixed(2));
     cur.setDate(cur.getDate()+1);
   }
+  const ptColors=data.map((v,i)=>i===0?'#3eb5c8':v>=data[i-1]?'#3eb5c8':'#f5a623');
   if(dailyChart)dailyChart.destroy();
   dailyChart=new Chart(canvas.getContext('2d'),{
-    type:'bar',
-    data:{labels,datasets:[{data,backgroundColor:'rgba(61,181,200,.35)',borderColor:'#3eb5c8',borderWidth:1,borderRadius:3}]},
+    type:'line',
+    data:{labels,datasets:[{
+      data,tension:0.4,fill:false,borderWidth:2,
+      pointBackgroundColor:ptColors,pointBorderColor:ptColors,
+      pointRadius:4,pointHoverRadius:6,
+      segment:{
+        borderColor:ctx=>ctx.p1.parsed.y>=ctx.p0.parsed.y?'#3eb5c8':'#f5a623'
+      }
+    }]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const h=Math.floor(c.raw),m=Math.round((c.raw-h)*60);return m>0?`${h}h${String(m).padStart(2,'0')}`:h+'h';}}}},
