@@ -19,8 +19,9 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .sticky-shell{position:sticky;top:0;z-index:100}
-.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;-webkit-app-region:drag;padding-left:calc(env(titlebar-area-x,0px) + 20px);padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 20px)}
 .app-header h1{font-size:15px;font-weight:700;color:#e8f4f8;letter-spacing:.2px;white-space:nowrap;margin:0}
+.app-header a,.app-header button,.app-header .xlink-wrap,.app-header .xlink-pill{-webkit-app-region:no-drag}
 .app-header-links{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .sync-icons{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
 .s-ok{font-size:15px;font-weight:700;color:#2dd4a0}
