@@ -877,16 +877,30 @@ function renderDailyChart(){
     data.push(+(secs/3600).toFixed(2));
     cur.setDate(cur.getDate()+1);
   }
-  const ptColors=data.map((v,i)=>i===0?'#3eb5c8':v>=data[i-1]?'#3eb5c8':'#f5a623');
+  const targetHours=getBlockTotalMins()/60;
+  function colorForHours(h){
+    if(!targetHours||targetHours<=0)return '#3eb5c8';
+    const r=h/targetHours;
+    if(r>=0.7)return '#3eb5c8';
+    if(r>=0.5)return '#f5a623';
+    return '#ef4444';
+  }
   if(dailyChart)dailyChart.destroy();
   dailyChart=new Chart(canvas.getContext('2d'),{
     type:'line',
     data:{labels,datasets:[{
-      data,tension:0.4,fill:false,borderWidth:2,
-      pointBackgroundColor:ptColors,pointBorderColor:ptColors,
-      pointRadius:4,pointHoverRadius:6,
+      data,tension:0.4,fill:false,borderWidth:2.5,
+      pointRadius:0,pointHoverRadius:6,
+      pointHoverBackgroundColor:ctx=>colorForHours(ctx.parsed.y),
+      pointHoverBorderColor:'#fff',
       segment:{
-        borderColor:ctx=>ctx.p1.parsed.y>=ctx.p0.parsed.y?'#3eb5c8':'#f5a623'
+        borderColor:ctx=>{
+          const c0=colorForHours(ctx.p0.parsed.y),c1=colorForHours(ctx.p1.parsed.y);
+          if(c0===c1)return c0;
+          const grad=canvas.getContext('2d').createLinearGradient(ctx.p0.x,0,ctx.p1.x,0);
+          grad.addColorStop(0,c0);grad.addColorStop(1,c1);
+          return grad;
+        }
       }
     }]},
     options:{
