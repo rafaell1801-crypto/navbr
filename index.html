@@ -6,6 +6,9 @@
 <title>NAV Brasil | Plano de Estudos</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <meta name="theme-color" content="#0d1a26">
 <style>
@@ -17,7 +20,7 @@
   --warn:#f5a623;--radius:10px;--done-bg:#0d2e27;
   --motiv-bg:#0f2d40;--motiv-border:#2a7a8a;
 }
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',system-ui,sans-serif;font-size:14px}
 .sticky-shell{position:sticky;top:0;z-index:100}
 .app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;flex-direction:column;gap:4px}
 .app-verse{font-size:11px;font-style:italic;color:#7fb3c8;text-align:right;line-height:1.4}
@@ -194,7 +197,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .modal-section h3{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
 .cfg-group{border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-top:12px;overflow:hidden;transition:background .15s}
 .cfg-group[open]{background:var(--surface)}
-.cfg-group summary{padding:12px 14px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:10px;letter-spacing:.4px}
+.cfg-group summary{padding:12px 14px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:10px;letter-spacing:.4px}
 .cfg-group summary::-webkit-details-marker{display:none}
 .cfg-group summary::after{content:'▾';margin-left:auto;color:var(--muted);font-size:12px;transition:transform .2s}
 .cfg-group[open] summary::after{transform:rotate(180deg)}
@@ -454,7 +457,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="modal-body">
 
     <details class="cfg-group">
-      <summary>🔗 Links</summary>
+      <summary>Links</summary>
       <div class="cfg-group-body">
         <div class="modal-section">
           <h3>Links do cabeçalho</h3>
@@ -470,11 +473,17 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
           <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
+        <div class="modal-section">
+          <h3>Tipos de link personalizados</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Crie pílulas extras (ex: Vídeo, Anotação) que aparecem em cada tópico do ciclo e revisões. Emoji é opcional.</p>
+          <div id="cfg-clt-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button type="button" onclick="addCustomLinkTypeRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar tipo</button>
+        </div>
       </div>
     </details>
 
     <details class="cfg-group">
-      <summary>📅 Data de início</summary>
+      <summary>Data de início</summary>
       <div class="cfg-group-body">
         <div class="modal-row" style="flex-wrap:wrap;gap:8px;margin-top:6px">
           <label>Data de início</label>
@@ -485,7 +494,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </details>
 
     <details class="cfg-group">
-      <summary>🔹 Horários</summary>
+      <summary>Horários</summary>
       <div class="cfg-group-body">
         <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px">
           <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horários dos blocos</span>
@@ -500,14 +509,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </details>
 
     <details class="cfg-group">
-      <summary>🔹 Temporizador</summary>
+      <summary>Temporizador</summary>
       <div class="cfg-group-body">
         <div class="modal-row" style="margin-top:6px"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
       </div>
     </details>
 
     <details class="cfg-group">
-      <summary>🔹 Horas Líquidas</summary>
+      <summary>Horas Líquidas</summary>
       <div class="cfg-group-body">
         <p style="font-size:11px;color:var(--muted);margin:6px 0 8px">Tempo total estudado por disciplina. Edite manualmente se precisar ajustar.</p>
         <div id="timer-edit-list"></div>
@@ -784,6 +793,50 @@ async function loadVerse(){
 async function saveVerse(){
   try{localStorage.setItem('nav_verse',appVerse);}catch{}
   await sbUpsert('conteudo',{disc:'__verse__',topics:{text:appVerse}});
+}
+
+// Tipos de link personalizados: [{id, emoji, label}]
+let customLinkTypes=[];
+// URLs personalizadas por tópico: { itemId: { typeId: url } }
+let customLinks={};
+async function loadCustomLinkTypes(){
+  try{const s=localStorage.getItem('nav_clink_types');if(s)customLinkTypes=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_clinks');if(s)customLinks=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=disc,topics&disc=in.(__clink_types__,__clinks__)');
+    if(d){
+      d.forEach(r=>{
+        if(r.disc==='__clink_types__'&&Array.isArray(r.topics))customLinkTypes=r.topics;
+        if(r.disc==='__clinks__'&&r.topics&&typeof r.topics==='object'&&!Array.isArray(r.topics))customLinks=r.topics;
+      });
+      try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
+      try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
+    }
+  }catch{}
+  render();
+}
+async function saveCustomLinkTypesPersist(){
+  try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
+  await sbUpsert('conteudo',{disc:'__clink_types__',topics:customLinkTypes});
+}
+async function saveCustomLinksPersist(){
+  try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
+  await sbUpsert('conteudo',{disc:'__clinks__',topics:customLinks});
+}
+async function saveCustomLinkURL(itemId,typeId,url){
+  if(!customLinks[itemId])customLinks[itemId]={};
+  if(url)customLinks[itemId][typeId]=url;
+  else{delete customLinks[itemId][typeId];if(Object.keys(customLinks[itemId]).length===0)delete customLinks[itemId];}
+  showSync('saving','↺');
+  await saveCustomLinksPersist();
+  showSync('ok','✓ Link salvo');
+  const li=document.getElementById('li-cl-'+typeId+'-'+itemId);if(li)li.classList.add('hidden');
+  render();
+  if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
+}
+async function saveCustomLinkURLFromInput(itemId,typeId,inputId){
+  const el=document.getElementById(inputId);if(!el)return;
+  await saveCustomLinkURL(itemId,typeId,el.value.trim());
 }
 
 // Questões: { itemId: { a: acertos, t: total } }
@@ -1125,6 +1178,7 @@ function openSettings(){
   const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
   renderExtraLinksConfig();
   renderDriveLinksConfig();
+  renderCustomLinkTypesConfig();
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -1172,6 +1226,26 @@ function addExtraLinkRow(){
   wrap.appendChild(buildExtraLinkRow(nextId,{}));
 }
 function removeExtraLinkRow(btn){btn.closest('.cfg-extra-link-row').remove();}
+
+function _buildCltRow(type){
+  const row=document.createElement('div');
+  row.className='cfg-clt-row';
+  row.dataset.id=type.id;
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  const e=(type.emoji||'').replace(/"/g,'&quot;');
+  const l=(type.label||'').replace(/"/g,'&quot;');
+  row.innerHTML=`<input class="cfg-clt-emoji" type="text" maxlength="2" value="${e}" placeholder="🔗" style="width:44px;text-align:center;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--surface2);color:var(--text)"><input class="cfg-clt-label" type="text" value="${l}" placeholder="Nome do tipo..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><button type="button" onclick="this.parentElement.remove()" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>`;
+  return row;
+}
+function renderCustomLinkTypesConfig(){
+  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
+  wrap.innerHTML='';
+  customLinkTypes.forEach(t=>wrap.appendChild(_buildCltRow(t)));
+}
+function addCustomLinkTypeRow(){
+  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
+  wrap.appendChild(_buildCltRow({id:'clt-'+Date.now()+'-'+Math.floor(Math.random()*1000),emoji:'',label:''}));
+}
 
 function renderDriveLinksConfig(){
   const wrap=document.getElementById('cfg-drive-list');if(!wrap)return;
@@ -1293,6 +1367,25 @@ function saveSettings(){
     else delete driveLinks[disc];
   });
   linkSaves.push(saveDriveLinks());
+  // Tipos de link personalizados
+  const newTypes=[];
+  document.querySelectorAll('#cfg-clt-list .cfg-clt-row').forEach(row=>{
+    const id=row.dataset.id;
+    const emoji=row.querySelector('.cfg-clt-emoji').value.trim();
+    const label=row.querySelector('.cfg-clt-label').value.trim();
+    if(label)newTypes.push({id,emoji,label});
+  });
+  const newIdsSet=new Set(newTypes.map(t=>t.id));
+  const removedIds=customLinkTypes.map(t=>t.id).filter(id=>!newIdsSet.has(id));
+  if(removedIds.length>0){
+    Object.keys(customLinks).forEach(itemId=>{
+      removedIds.forEach(tid=>delete customLinks[itemId][tid]);
+      if(Object.keys(customLinks[itemId]).length===0)delete customLinks[itemId];
+    });
+    linkSaves.push(saveCustomLinksPersist());
+  }
+  customLinkTypes=newTypes;
+  linkSaves.push(saveCustomLinkTypesPersist());
   // Versículo
   const vEl=document.getElementById('cfg-verse');
   if(vEl){const newVerse=vEl.value.trim()||DEFAULT_VERSE;if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
@@ -1462,6 +1555,22 @@ function compactQuestoesHTML(itemId){
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
+function compactCustomLinksHTML(itemId){
+  if(!customLinkTypes||customLinkTypes.length===0)return '';
+  return customLinkTypes.map(type=>{
+    const url=(customLinks[itemId]||{})[type.id]||'';
+    const sid=`cl-input-${type.id}-${itemId}`;
+    const sv=url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const safeLabel=(type.label||'link').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    const safeEmoji=(type.emoji||'🔗').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const pill=url
+      ? `<div style="display:inline-flex;align-items:center;gap:2px"><a href="${url}" target="_blank" rel="noopener" class="link-pill" title="${safeLabel}">${safeEmoji}</a><button class="link-edit-icon" onclick="toggleLinkInput('cl-${type.id}',${itemId})" title="Editar link">✎</button></div>`
+      : `<button class="link-pill-add link-pill-add-res" onclick="toggleLinkInput('cl-${type.id}',${itemId})">＋ ${safeLabel}</button>`;
+    const edit=`<div class="link-edit-row hidden" id="li-cl-${type.id}-${itemId}"><input id="${sid}" value="${sv}" placeholder="cole o link..."><button class="link-confirm-btn" onclick="saveCustomLinkURLFromInput(${itemId},'${type.id}','${sid}')">✓ Salvar</button><button class="link-cancel-btn" onclick="toggleLinkInput('cl-${type.id}',${itemId})">✕</button></div>`;
+    return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
+  }).join('');
+}
+
 function compactDriveHTML(disc){
   const link=driveLinks[disc];
   if(!link||!link.url)return '';
@@ -1491,20 +1600,21 @@ function buildDayHTML(dateStr,days){
     let rc='bloco-row';if(done)rc+=' done';else if(late)rc+=' late-row';if(item.port)rc+=' port-row';
     const c=CORES[item.disc]||'#888';
     const discUrl=DISC_LINKS[item.disc];
-    const discDot=`<div style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0;margin-top:1px"></div>`;
+    const discDot=`<div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>`;
     const discNameEl=discUrl
-      ?`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<a href="${discUrl}" target="_blank" rel="noopener" class="bloco-disc-name" style="text-decoration:none" onclick="event.stopPropagation()">${item.disc}</a></div>`
-      :`<div style="display:flex;align-items:flex-start;gap:5px;margin-bottom:2px">${discDot}<div class="bloco-disc-name">${item.disc}</div></div>`;
+      ?`<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">${discDot}<a href="${discUrl}" target="_blank" rel="noopener" class="bloco-disc-name" style="text-decoration:none" onclick="event.stopPropagation()">${item.disc}</a></div>`
+      :`<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">${discDot}<div class="bloco-disc-name">${item.disc}</div></div>`;
     return`<div class="${rc}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
       <div style="flex:1;min-width:0">
         ${discNameEl}
-        <div class="bloco-topic-name ${done?'done-text':''}">${item.topico}</div>
-        <div style="display:flex;gap:8px;align-items:flex-start;margin-top:7px;flex-wrap:wrap">
+        <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px">${item.topico}</div>
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-top:7px;flex-wrap:wrap;padding-left:16px">
           ${compactResumoHTML(item.id)}
           ${compactCadernoHTML(item.id)}
           ${compactDriveHTML(item.disc)}
           ${compactQuestoesHTML(item.id)}
+          ${compactCustomLinksHTML(item.id)}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
@@ -1723,7 +1833,8 @@ function renderRev(){
             ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="link-pill link-pill-cad" title="Questões">🔗</a>`:''}
             ${(()=>{const dl=driveLinks[item.disc];return dl&&dl.url?`<a href="${dl.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-pill link-pill-drive" title="Drive">📁</a>`:'';})()}
             ${compactQuestoesHTML(item.id)}
-            ${!cadUrl&&!resUrl&&!driveLinks[item.disc]?.url?'<span style="font-size:10px;color:#444">sem links</span>':''}
+            ${compactCustomLinksHTML(item.id)}
+            ${!cadUrl&&!resUrl&&!driveLinks[item.disc]?.url&&(!customLinks[item.id]||Object.keys(customLinks[item.id]).length===0)?'<span style="font-size:10px;color:#444">sem links</span>':''}
           </div>
         </div>
         <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
@@ -2377,7 +2488,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadCustomLinkTypes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
