@@ -63,7 +63,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .spin-picker-item{padding:5px 10px;text-align:center;cursor:pointer;font-size:13px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
 .spin-picker-item:hover{background:var(--surface)}
 .spin-picker-item.sel{background:var(--accent);color:#fff;font-weight:700}
-.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
@@ -136,12 +136,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .link-pill-res,.link-pill-cad,.link-pill-drive,.link-pill-q{background:#0c2230;border-color:#3eb5c8;color:#7dd3e8}
 .link-pill-res:hover,.link-pill-cad:hover,.link-pill-drive:hover,.link-pill-q:hover{background:#3eb5c8;color:#fff}
 .link-pill-add-q{border-color:#2a4050;color:#4a7080}.link-pill-add-q:hover{border-color:#3eb5c8;color:#7dd3e8}
-.q-mini{display:inline-flex;align-items:center;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;user-select:none;letter-spacing:.3px;transition:transform .15s,filter .15s;border:1px solid;background:#0a1620}
-.q-mini:hover{transform:scale(1.06);filter:brightness(1.15)}
-.q-mini.q-none{color:#445566;border-color:#1e3a4a;font-weight:500}
-.q-mini.q-green{color:#86efac;border-color:#2dd4a0;background:#08160f}
-.q-mini.q-yellow{color:#fbbf24;border-color:#f5a623;background:#1a1100}
-.q-mini.q-red{color:#fca5a5;border-color:#ef4444;background:#1a0606}
 .q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .q-disc-row:hover{background:#0a1620}
 .q-disc-row:last-child{border-bottom:none}
@@ -340,7 +334,6 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <button class="timer-icon-btn tibtn-playpause" id="btn-playpause" onclick="timerPlayPause()" title="Iniciar / Pausar">▶</button>
   <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerStop()" title="Concluir e salvar">✓</button>
   <button class="timer-icon-btn tibtn-stop hidden" id="btn-cancel-time" onclick="timerCancel()" title="Cancelar sessão">✕</button>
-  <span class="q-mini q-none" id="q-mini" onclick="showTab('stats')" title="Aproveitamento — clique para abrir Estatísticas">—</span>
   <div class="sync-icons">
     <span class="s-ok hidden" id="sync-ok">✓</span>
     <span class="s-spin hidden" id="sync-spin">↺</span>
@@ -355,6 +348,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-done">–</div><div class="stat-lbl">Concluídos</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--muted)" id="s-pend">–</div><div class="stat-lbl">Pendentes</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--danger)" id="s-late">–</div><div class="stat-lbl">Atrasados</div></div>
+    <div class="stat" onclick="showTab('stats')" style="cursor:pointer" title="Aproveitamento — clique para ver detalhes em Estatísticas"><div class="stat-val" id="s-acertos">–</div><div class="stat-lbl">Acertos</div></div>
   </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
@@ -763,16 +757,19 @@ function renderQuestoesStatsCard(){
 }
 
 function renderQuestoesBanner(){
-  const el=document.getElementById('q-mini');if(!el)return;
+  const el=document.getElementById('s-acertos');if(!el)return;
   const tot=getQuestoesTotals();
-  el.classList.remove('q-none','q-green','q-yellow','q-red');
-  if(tot.t===0){el.textContent='—';el.classList.add('q-none');el.title='Sem dados de questões. Adicione acertos nos tópicos.';}
-  else{
+  const parent=el.parentElement;
+  if(tot.t===0){
+    el.textContent='–';
+    el.style.color='var(--muted)';
+    if(parent)parent.title='Sem dados de questões. Adicione acertos nos tópicos.';
+  }else{
     el.textContent=tot.pct+'%';
-    el.title=`${tot.a}/${tot.t} acertos — clique para abrir Estatísticas`;
-    if(tot.pct>=80)el.classList.add('q-green');
-    else if(tot.pct>=60)el.classList.add('q-yellow');
-    else el.classList.add('q-red');
+    if(tot.pct>=80)el.style.color='#2dd4a0';
+    else if(tot.pct>=60)el.style.color='#f5a623';
+    else el.style.color='#ef4444';
+    if(parent)parent.title=`${tot.a}/${tot.t} acertos — clique para abrir Estatísticas`;
   }
 }
 function buildQuestoesDrillHTML(){
