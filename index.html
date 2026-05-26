@@ -189,6 +189,16 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .modal h2{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text)}
 .modal-section{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
 .modal-section h3{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.cfg-group{border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-top:12px;overflow:hidden;transition:background .15s}
+.cfg-group[open]{background:var(--surface)}
+.cfg-group summary{padding:12px 14px;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;user-select:none;list-style:none;display:flex;align-items:center;gap:10px;letter-spacing:.4px}
+.cfg-group summary::-webkit-details-marker{display:none}
+.cfg-group summary::after{content:'▾';margin-left:auto;color:var(--muted);font-size:12px;transition:transform .2s}
+.cfg-group[open] summary::after{transform:rotate(180deg)}
+.cfg-group summary:hover{color:#7dd3e8}
+.cfg-group-body{padding:4px 14px 14px;border-top:1px solid var(--border)}
+.cfg-group-body .modal-section{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.cfg-group-body .modal-section:first-child{margin-top:6px;border-top:none;padding-top:2px}
 .modal-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .modal-row label{font-size:12px;color:var(--muted);width:130px;flex-shrink:0}
 .modal-row input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)}
@@ -438,66 +448,78 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
       </div>
     </div>
 
-    <div class="modal-section">
-      <h3>Links</h3>
-      <div style="display:flex;gap:6px;align-items:center;background:#071e30;border:1px solid var(--accent);border-radius:8px;padding:6px 8px;margin-bottom:8px">
-        <input id="cfg-tec-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:#7dd3e8;font-weight:600">
-        <input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:var(--text)">
+    <details class="cfg-group">
+      <summary>🔗 Links</summary>
+      <div class="cfg-group-body">
+        <div class="modal-section">
+          <h3>Links do cabeçalho</h3>
+          <div style="display:flex;gap:6px;align-items:center;background:#071e30;border:1px solid var(--accent);border-radius:8px;padding:6px 8px;margin-bottom:8px">
+            <input id="cfg-tec-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:#7dd3e8;font-weight:600">
+            <input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:var(--text)">
+          </div>
+          <div id="cfg-extra-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button type="button" onclick="addExtraLinkRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar link</button>
+        </div>
+
+        <div class="modal-section">
+          <h3>Links Drive por disciplina</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
+          <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
       </div>
-      <div id="cfg-extra-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
-      <button type="button" onclick="addExtraLinkRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar link</button>
-    </div>
+    </details>
 
-    <div class="modal-section">
-      <h3>Links Drive por disciplina</h3>
-      <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
-      <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
-    </div>
-
-    <div class="modal-section">
-      <h3>Data de início</h3>
-      <div class="modal-row" style="flex-wrap:wrap;gap:8px">
-        <label>Data de início</label>
-        <input id="cfg-start-date" type="date" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
-        <span id="cfg-subtitle" style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:4px;align-self:center">–</span>
+    <details class="cfg-group">
+      <summary>⏱ Tempos</summary>
+      <div class="cfg-group-body">
+        <div class="modal-section">
+          <h3>Data de início</h3>
+          <div class="modal-row" style="flex-wrap:wrap;gap:8px">
+            <label>Data de início</label>
+            <input id="cfg-start-date" type="date" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+            <span id="cfg-subtitle" style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:4px;align-self:center">–</span>
+          </div>
+        </div>
+        <div class="modal-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <h3 style="margin-bottom:0">Horários dos blocos</h3>
+            <span style="font-size:11px;color:var(--muted);white-space:nowrap">Total/dia <span id="cfg-block-total" style="color:#7dd3fc;font-weight:700">–</span></span>
+          </div>
+          <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1-sh">08</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b1-eh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-em">00</span></div></div>
+          <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2-sh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b2-eh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-em">00</span></div></div>
+          <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3-sh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b3-eh">11</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-em">00</span></div></div>
+          <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4-sh">13</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b4-eh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-em">40</span></div></div>
+          <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5-sh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b5-eh">15</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-em">40</span></div></div>
+        </div>
+        <div class="modal-section">
+          <h3>Temporizador</h3>
+          <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
+        </div>
+        <div class="modal-section">
+          <h3>Editar tempo por disciplina</h3>
+          <div id="timer-edit-list"></div>
+        </div>
       </div>
-    </div>
-    <div class="modal-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <h3 style="margin-bottom:0">Horários dos blocos</h3>
-        <span style="font-size:11px;color:var(--muted);white-space:nowrap">Total/dia <span id="cfg-block-total" style="color:#7dd3fc;font-weight:700">–</span></span>
+    </details>
+
+    <details class="cfg-group">
+      <summary>💾 Dados</summary>
+      <div class="cfg-group-body">
+        <div class="modal-section">
+          <h3>Backup de links</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte seus links de resumo e questões para um arquivo JSON. Guarde-o como backup antes de qualquer reset.</p>
+          <div style="display:flex;gap:8px">
+            <button onclick="exportLinks()" style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #3eb5c8;background:transparent;color:#3eb5c8">⬇ Exportar links</button>
+            <label style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #7dd3fc;background:transparent;color:#7dd3fc;text-align:center">⬆ Importar links<input type="file" accept=".json" style="display:none" onchange="importLinks(event)"></label>
+          </div>
+        </div>
+        <div class="modal-section">
+          <h3>Reset completo</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Apaga todo o progresso, revisões, cadernos, resumos e tempo salvo no Supabase e no navegador. Irreversível.</p>
+          <button onclick="resetCompleto()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
+        </div>
       </div>
-      <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1-sh">08</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b1-eh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-em">00</span></div></div>
-      <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2-sh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b2-eh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-em">00</span></div></div>
-      <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3-sh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b3-eh">11</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-em">00</span></div></div>
-      <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4-sh">13</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b4-eh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-em">40</span></div></div>
-      <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5-sh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b5-eh">15</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-em">40</span></div></div>
-    </div>
-
-    <div class="modal-section">
-      <h3>Temporizador</h3>
-      <div class="modal-row"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
-    </div>
-
-    <div class="modal-section">
-      <h3>Editar tempo por disciplina</h3>
-      <div id="timer-edit-list"></div>
-    </div>
-
-    <div class="modal-section">
-      <h3>Backup de links</h3>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte seus links de resumo e questões para um arquivo JSON. Guarde-o como backup antes de qualquer reset.</p>
-      <div style="display:flex;gap:8px">
-        <button onclick="exportLinks()" style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #3eb5c8;background:transparent;color:#3eb5c8">⬇ Exportar links</button>
-        <label style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #7dd3fc;background:transparent;color:#7dd3fc;text-align:center">⬆ Importar links<input type="file" accept=".json" style="display:none" onchange="importLinks(event)"></label>
-      </div>
-    </div>
-
-    <div class="modal-section">
-      <h3>Reset completo</h3>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Apaga todo o progresso, revisões, cadernos, resumos e tempo salvo no Supabase e no navegador. Irreversível.</p>
-      <button onclick="resetCompleto()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #ef4444;background:transparent;color:#ef4444">🗑️ Apagar todos os dados</button>
-    </div>
+    </details>
 
   </div>
 </div>
@@ -1730,6 +1752,11 @@ function timerCancel(){
   _timerButtonsUpdate();updateTimerUI();
 }
 function timerPlayPause(){
+  // Sessão concluída: o play reinicia o ciclo
+  if(!timerSt.running&&timerSt.remaining<=0){
+    timerSt.remaining=getBlockSecs();
+    timerSt.startedAt=null;
+  }
   if(!timerSt.running&&timerSt.remaining===getBlockSecs()&&!timerSt.startedAt){
     const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
     timerSt.currentDisc=sel.value;timerSt.running=true;
@@ -1829,7 +1856,7 @@ function scheduleContentSync() {
       for (const disc of Object.keys(customTopics))
         if (!baseDiscSet.has(disc) && disc !== '__colors__' && CORES[disc])
           customColors[disc] = CORES[disc];
-      const promises = Object.entries(customTopics).map(([disc, topics]) =>
+      const promises = Object.entries(customTopics).filter(([disc])=>!disc.startsWith('__')).map(([disc, topics]) =>
         sbUpsert('conteudo', {disc, topics})
       );
       if (Object.keys(customColors).length > 0)
@@ -1848,6 +1875,8 @@ function localLoad() {
     const raw = localStorage.getItem('plano_ct');
     if (raw) {
       customTopics = JSON.parse(raw);
+      // Remove chaves especiais (__drive_links__, __disc_links__, __questoes__, etc.)
+      if (customTopics) Object.keys(customTopics).forEach(k => { if (k.startsWith('__')) delete customTopics[k]; });
       const cols = localStorage.getItem('plano_cc');
       if (cols) Object.assign(CORES, JSON.parse(cols));
       return true;
@@ -1869,7 +1898,7 @@ async function loadCustomTopics() {
         if (r.disc === '__colors__') {
           if (r.topics && typeof r.topics === 'object' && !Array.isArray(r.topics))
             Object.assign(CORES, r.topics);
-        } else {
+        } else if (!r.disc.startsWith('__')) {
           sbTopics[r.disc] = r.topics;
         }
       }
@@ -1885,7 +1914,7 @@ function renderContent() {
   const allBase = [...new Set(AGENDA.filter(i=>!i.port).map(i => i.disc))];
   // oculta discs excluídas (null) da lista
   const baseDiscs = allBase.filter(d => !customTopics || customTopics[d] !== null);
-  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null && d !== '__colors__') : [];
+  const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null && !d.startsWith('__')) : [];
   const discNames = [...baseDiscs, ...customDiscs];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
@@ -1910,19 +1939,21 @@ function renderContent() {
         }
       </div>`;
     }).join('');
+    const curLink=(DISC_LINKS[disc]||'').replace(/"/g,'&quot;');
     return `<div class="content-disc-block">
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
-        <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0;box-shadow:0 0 6px ${c}88"></span>
-        <span class="content-disc-title" style="color:${c};font-weight:700">${disc}</span>
+        <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
+        <span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>
         <span class="content-disc-meta">${active} tópico${active!==1?'s':''}</span>
         <button class="del-disc-btn" onclick="event.stopPropagation();deleteDisc('${disc.replace(/'/g,"\\'")}')" title="Excluir disciplina">✕ Excluir</button>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
       <div class="content-disc-body" id="cdb-${di}">
-        <div style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1620">
+        <div class="dlnk-row" style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1620">
           <span style="font-size:11px;color:var(--muted);white-space:nowrap">🔗 Link da disciplina:</span>
-          <input type="url" id="dlnk-${di}" value="${(DISC_LINKS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do curso..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text)">
-          <button class="content-add-btn" style="padding:4px 10px;font-size:11px" onclick="saveDiscLinkInput('${disc.replace(/'/g,"\\'")}','dlnk-${di}')">Salvar</button>
+          <input type="url" id="dlnk-${di}" data-original="${curLink}" oninput="markDiscLinkModified(${di})" value="${curLink}" placeholder="cole o link do curso..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s">
+          <button id="dlnk-btn-${di}" class="content-add-btn" style="padding:4px 10px;font-size:11px;opacity:.5;cursor:default" onclick="saveDiscLinkInput('${disc.replace(/'/g,"\\'")}','dlnk-${di}')">Salvar</button>
+          <span id="dlnk-status-${di}" style="font-size:10px;color:var(--muted);min-width:60px"></span>
         </div>
         ${rows}
         <div class="content-add-row">
@@ -2054,13 +2085,38 @@ function toggleDeleteTopic(disc, idx) {
 }
 
 let newTopicCounter = 10000;
+function markDiscLinkModified(di){
+  const inp=document.getElementById('dlnk-'+di);if(!inp)return;
+  const btn=document.getElementById('dlnk-btn-'+di);
+  const st=document.getElementById('dlnk-status-'+di);
+  const orig=inp.dataset.original||'';
+  const changed=inp.value.trim()!==orig.trim();
+  if(changed){
+    inp.style.borderColor='var(--warn)';
+    if(btn){btn.style.opacity='1';btn.style.cursor='pointer';btn.style.background='var(--warn)';btn.style.color='#0a0a0a';}
+    if(st){st.textContent='● modificado';st.style.color='var(--warn)';}
+  }else{
+    inp.style.borderColor='var(--border)';
+    if(btn){btn.style.opacity='.5';btn.style.cursor='default';btn.style.background='';btn.style.color='';}
+    if(st){st.textContent='';st.style.color='var(--muted)';}
+  }
+}
 async function saveDiscLinkInput(disc, inputId) {
   const el = document.getElementById(inputId);
   if (!el) return;
   const url = el.value.trim();
+  const di=inputId.replace('dlnk-','');
+  const st=document.getElementById('dlnk-status-'+di);
+  const btn=document.getElementById('dlnk-btn-'+di);
+  if(st){st.textContent='⏳ salvando...';st.style.color='var(--muted)';}
   await saveDiscCourseLink(disc, url);
-  showSync('ok', '✓ Link da disciplina salvo');
-  render();  // atualiza badges no ciclo
+  el.dataset.original=url;
+  el.style.borderColor='#2dd4a0';
+  if(btn){btn.style.opacity='.5';btn.style.cursor='default';btn.style.background='';btn.style.color='';}
+  if(st){st.textContent='✓ salvo';st.style.color='#2dd4a0';}
+  setTimeout(()=>{if(el)el.style.borderColor='var(--border)';if(st)st.textContent='';},2500);
+  showSync('ok','✓ Link da disciplina salvo');
+  render();
 }
 
 function addTopic(disc, di) {
@@ -2240,29 +2296,6 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
-
-  <!-- Substituição em massa -->
-  <div class="bulk-top-card">
-    <h3>📋 Substituição em massa</h3>
-    <div class="bulk-disc-row">
-      <select class="bulk-disc-select" id="bulk-disc-select">
-        <option value="">-- Selecione a disciplina --</option>
-      </select>
-      <button class="bulk-load-btn" onclick="loadCurrentTopicsIntoTextarea()" title="Carrega os tópicos atuais da disciplina selecionada">Carregar atuais</button>
-      <button class="bulk-main-apply" onclick="applyBulkMain()">✔ Aplicar</button>
-      <button class="del-disc-btn" onclick="deleteBulkSelected()" title="Excluir disciplina selecionada">✕ Excluir</button>
-    </div>
-    <textarea class="bulk-main-textarea" id="bulk-main-textarea" placeholder="Digite um tópico por linha...&#10;Exemplo:&#10;Equivalências e Negações Lógicas&#10;Diagramas Lógicos&#10;Raciocínio Sequencial"></textarea>
-    <div style="font-size:11px;color:var(--muted)">💡 Um tópico por linha. Clique em <strong>Aplicar</strong> para substituir os tópicos da disciplina selecionada. Depois clique em <strong>Salvar alterações</strong>.</div>
-
-    <!-- Adicionar nova disciplina -->
-    <div class="add-disc-section">
-      <span class="add-disc-label">+ Nova disciplina:</span>
-      <input class="add-disc-input" id="new-disc-name" placeholder="Nome da disciplina..." onkeydown="if(event.key==='Enter')addNewDisc()">
-      <input type="color" class="add-disc-color" id="new-disc-color" value="#3eb5c8" title="Cor da disciplina">
-      <button class="add-disc-btn" onclick="addNewDisc()">+ Adicionar</button>
-    </div>
-  </div>
 
   <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
   <div id="content-disc-list"></div>
