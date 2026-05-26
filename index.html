@@ -136,6 +136,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .link-pill-res:hover{background:#3eb5c8;color:#fff}
 .link-pill-cad{background:#0c2230;border-color:#3eb5c8;color:#7dd3e8}
 .link-pill-cad:hover{background:#3eb5c8;color:#fff}
+.link-pill-drive{background:#1f2a08;border-color:#a8d04c;color:#d6e87f}
+.link-pill-drive:hover{background:#a8d04c;color:#0a0a0a}
 .link-pill-add{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:400;background:transparent;cursor:pointer;transition:all .15s;white-space:nowrap;border-style:dashed;border-width:1px}
 .link-pill-add-res{border-color:#2a4050;color:#4a7080}
 .link-pill-add-res:hover{border-color:#3eb5c8;color:#7dd3e8}
@@ -306,6 +308,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <button class="tab active" onclick="showTab('ciclo')">Ciclo</button>
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
+  <button class="tab" onclick="showTab('content')">Conteúdo</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações">⚙️</button>
 </div>
 
@@ -432,11 +435,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
         <input id="cfg-tec-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:#7dd3e8;font-weight:600">
         <input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:var(--text)">
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">1</label><input id="cfg-x1-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x1-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">2</label><input id="cfg-x2-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x2-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-        <div style="display:flex;gap:6px;align-items:center"><label style="font-size:12px;color:var(--muted);width:14px;flex-shrink:0;text-align:right">3</label><input id="cfg-x3-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input id="cfg-x3-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"></div>
-      </div>
+      <div id="cfg-extra-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      <button type="button" onclick="addExtraLinkRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar link</button>
+    </div>
+
+    <div class="modal-section">
+      <h3>Links Drive por disciplina</h3>
+      <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
+      <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
 
     <div class="modal-section">
@@ -618,7 +624,7 @@ function cadernoInputHTML(itemId, timeLabel) {
   return inputEl + saveBtn + timeEl + openBtn;
 }
 
-const DISC_LINKS={"Língua Portuguesa": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383548/aulas", "Raciocínio Lógico e Matemático": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384114/aulas", "Noções de Direito Administrativo": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383399/aulas", "Noções de Direito Constitucional": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383414/aulas", "Noções de Ética e Integridade": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383560/aulas", "Administração": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384352/aulas", "Gestão de Suprimentos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383401/aulas", "Orçamento Público e Análise Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383411/aulas", "Teoria Econômica Aplicada": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384586/aulas", "Licitações e Contratos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383576/aulas", "Matemática Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384115/aulas"};
+let DISC_LINKS={"Língua Portuguesa": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383548/aulas", "Raciocínio Lógico e Matemático": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384114/aulas", "Noções de Direito Administrativo": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383399/aulas", "Noções de Direito Constitucional": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383414/aulas", "Noções de Ética e Integridade": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383560/aulas", "Administração": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384352/aulas", "Gestão de Suprimentos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383401/aulas", "Orçamento Público e Análise Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383411/aulas", "Teoria Econômica Aplicada": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384586/aulas", "Licitações e Contratos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383576/aulas", "Matemática Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384115/aulas"};
 const MOTIVACOES={
 "0": {"frase": "\"Não são as circunstâncias que formam o homem, mas o homem que forma as circunstâncias.\" – Karl Marx", "mensagem": "Hoje é o dia 1. Não da sua vida, mas da decisão de não deixar mais o tempo trabalhar contra você. Cada bloco que você marcar hoje é uma declaração silenciosa: eu estou no controle. Abra o primeiro tópico e comece — o resto vem sozinho."},
 "1": {"frase": "\"A coragem não é a ausência do medo, mas a avaliação de que algo é mais importante do que o medo.\" – Franklin D. Roosevelt", "mensagem": "Dia 2. Ontem você provou que consegue começar. Hoje você prova que consegue continuar. Esses dois dias juntos já dizem mais sobre quem você é do que meses de planejamento no papel. Não quebre o ritmo agora."},
@@ -675,8 +681,37 @@ async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q
 async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
 
 let linksExtras={};
+let driveLinks={};
 let sessoesDiarias={};
 let dailyChart=null;
+
+async function loadDriveLinks(){
+  try{const s=localStorage.getItem('nav_drive_links');if(s)driveLinks=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__drive_links__');
+    if(d&&d.length>0&&d[0].topics){driveLinks=d[0].topics;try{localStorage.setItem('nav_drive_links',JSON.stringify(driveLinks));}catch{}}
+  }catch{}
+  render();
+}
+async function saveDriveLinks(){
+  try{localStorage.setItem('nav_drive_links',JSON.stringify(driveLinks));}catch{}
+  await sbUpsert('conteudo',{disc:'__drive_links__',topics:driveLinks});
+}
+
+async function loadDiscCourseLinks(){
+  try{const s=localStorage.getItem('nav_disc_course_links');if(s)Object.assign(DISC_LINKS,JSON.parse(s));}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__disc_links__');
+    if(d&&d.length>0&&d[0].topics){Object.assign(DISC_LINKS,d[0].topics);try{localStorage.setItem('nav_disc_course_links',JSON.stringify(DISC_LINKS));}catch{}}
+  }catch{}
+  render();
+}
+async function saveDiscCourseLink(disc,url){
+  DISC_LINKS[disc]=url;
+  const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
+  try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
+  await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
+}
 async function loadSessoesDiarias(){
   try{const s=localStorage.getItem('nav_sessoes_bkp');if(s)sessoesDiarias=JSON.parse(s);}catch{}
   try{
@@ -903,7 +938,8 @@ function openSettings(){
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
   const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=(linksExtras[0]&&linksExtras[0].url)||localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
   const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
-  [1,2,3].forEach(i=>{const d=linksExtras[i]||{};const n=document.getElementById('cfg-x'+i+'-nome'),u=document.getElementById('cfg-x'+i+'-url');if(n)n.value=d.nome||'';if(u)u.value=d.url||'';});
+  renderExtraLinksConfig();
+  renderDriveLinksConfig();
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
@@ -925,6 +961,48 @@ function openSettings(){
   calcBlockTotal();
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
+
+function renderExtraLinksConfig(){
+  const wrap=document.getElementById('cfg-extra-links-list');if(!wrap)return;
+  const ids=Object.keys(linksExtras).map(n=>parseInt(n)).filter(n=>n>=1).sort((a,b)=>a-b);
+  if(ids.length===0)ids.push(1,2,3);
+  wrap.innerHTML='';
+  ids.forEach(i=>{wrap.appendChild(buildExtraLinkRow(i,linksExtras[i]||{}));});
+}
+function buildExtraLinkRow(id,data){
+  const row=document.createElement('div');
+  row.className='cfg-extra-link-row';
+  row.dataset.id=id;
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  const safeNome=(data.nome||'').replace(/"/g,'&quot;');
+  const safeUrl=(data.url||'').replace(/"/g,'&quot;');
+  row.innerHTML=`<input class="cfg-x-nome" type="text" placeholder="Nome" value="${safeNome}" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input class="cfg-x-url" type="url" placeholder="https://..." value="${safeUrl}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><button type="button" onclick="removeExtraLinkRow(this)" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>`;
+  return row;
+}
+function addExtraLinkRow(){
+  const wrap=document.getElementById('cfg-extra-links-list');if(!wrap)return;
+  const used=Array.from(wrap.querySelectorAll('.cfg-extra-link-row')).map(r=>parseInt(r.dataset.id));
+  let nextId=1;while(used.includes(nextId))nextId++;
+  wrap.appendChild(buildExtraLinkRow(nextId,{}));
+}
+function removeExtraLinkRow(btn){btn.closest('.cfg-extra-link-row').remove();}
+
+function renderDriveLinksConfig(){
+  const wrap=document.getElementById('cfg-drive-list');if(!wrap)return;
+  const discs=getActiveDiscs();
+  wrap.innerHTML=discs.map(disc=>{
+    const dl=driveLinks[disc]||{};
+    const c=CORES[disc]||'#888';
+    const safeDisc=disc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const safeNome=(dl.nome||'D').replace(/"/g,'&quot;');
+    const safeUrl=(dl.url||'').replace(/"/g,'&quot;');
+    return `<div class="cfg-drive-row" data-disc="${safeDisc}" style="display:flex;gap:6px;align-items:center">
+      <span style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="font-size:11px;width:180px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safeDisc}">${disc}</span>
+      <input class="cfg-d-url" type="url" placeholder="https://drive.google.com/..." value="${safeUrl}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    </div>`;
+  }).join('');
+}
 
 function exportLinks() {
   const data = {
@@ -1000,16 +1078,35 @@ function saveSettings(){
   }
   const tecUrl=(document.getElementById('cfg-tec-url')||{}).value||'';
   const tecNome=(document.getElementById('cfg-tec-nome')||{}).value||'TEC';
+  const oldIds=Object.keys(linksExtras).map(n=>parseInt(n)).filter(n=>n>=1);
+  linksExtras={};
   linksExtras[0]={nome:tecNome,url:tecUrl};
   if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl){tl.href=tecUrl;tl.textContent=tecNome;}}
   const linkSaves=[sbUpsert('links_extras',{id:0,nome:tecNome,url:tecUrl})];
-  [1,2,3].forEach(i=>{
-    const nome=(document.getElementById('cfg-x'+i+'-nome')||{}).value||'';
-    const url=(document.getElementById('cfg-x'+i+'-url')||{}).value||'';
-    linksExtras[i]={nome,url};
-    linkSaves.push(sbUpsert('links_extras',{id:i,nome,url}));
+  const rows=document.querySelectorAll('#cfg-extra-links-list .cfg-extra-link-row');
+  const newIds=[];
+  rows.forEach(row=>{
+    const id=parseInt(row.dataset.id);
+    const nome=row.querySelector('.cfg-x-nome').value||'';
+    const url=row.querySelector('.cfg-x-url').value||'';
+    linksExtras[id]={nome,url};
+    newIds.push(id);
+    linkSaves.push(sbUpsert('links_extras',{id,nome,url}));
+  });
+  // Apaga IDs que foram removidos
+  oldIds.filter(i=>!newIds.includes(i)).forEach(id=>{
+    linkSaves.push(fetch(`${SB_URL}/rest/v1/links_extras?id=eq.${id}`,{method:'DELETE',headers:sbH}).catch(()=>{}));
   });
   localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
+  // Drive links
+  const driveRows=document.querySelectorAll('#cfg-drive-list .cfg-drive-row');
+  driveRows.forEach(row=>{
+    const disc=row.dataset.disc;
+    const url=row.querySelector('.cfg-d-url').value.trim();
+    if(url)driveLinks[disc]={url};
+    else delete driveLinks[disc];
+  });
+  linkSaves.push(saveDriveLinks());
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
   closeSettings();render();
@@ -1079,8 +1176,8 @@ function openSpinPicker(el,count,onSelect){
 
 function showTab(t){
   ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats'][i]===t));
-  if(t==='rev')renderRev();if(t==='stats')renderStats();
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content'][i]===t));
+  if(t==='rev')renderRev();if(t==='stats')renderStats();if(t==='content')renderContent();
 }
 let currentSubtab='pending';
 function showSubtab(s){
@@ -1136,6 +1233,13 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
+function compactDriveHTML(disc){
+  const link=driveLinks[disc];
+  if(!link||!link.url)return '';
+  const url=link.url.replace(/"/g,'&quot;');
+  return `<a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-drive" title="Drive — ${disc.replace(/"/g,'&quot;')}">📁 ↗</a>`;
+}
+
 function buildDayHTML(dateStr,days){
   const items=days[dateStr];
   const allDone=items.every(i=>isDone(i.id));
@@ -1170,6 +1274,7 @@ function buildDayHTML(dateStr,days){
         <div style="display:flex;gap:8px;align-items:flex-start;margin-top:7px;flex-wrap:wrap">
           ${compactResumoHTML(item.id)}
           ${compactCadernoHTML(item.id)}
+          ${compactDriveHTML(item.disc)}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
@@ -1385,7 +1490,8 @@ function renderRev(){
           <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
             ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📎 Questões ↗</a>`:''}
             ${resUrl?`<a href="${resUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📄 Resumo ↗</a>`:''}
-            ${!cadUrl&&!resUrl?'<span style="font-size:10px;color:#444">sem links</span>':''}
+            ${(()=>{const dl=driveLinks[item.disc];return dl&&dl.url?`<a href="${dl.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#1f2a08;border-color:#a8d04c;color:#d6e87f">📁 ↗</a>`:'';})()}
+            ${!cadUrl&&!resUrl&&!driveLinks[item.disc]?.url?'<span style="font-size:10px;color:#444">sem links</span>':''}
           </div>
         </div>
         <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
@@ -1691,6 +1797,11 @@ function renderContent() {
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
       <div class="content-disc-body" id="cdb-${di}">
+        <div style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1620">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">🔗 Link da disciplina:</span>
+          <input type="url" id="dlnk-${di}" value="${(DISC_LINKS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do curso..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text)">
+          <button class="content-add-btn" style="padding:4px 10px;font-size:11px" onclick="saveDiscLinkInput('${disc.replace(/'/g,"\\'")}','dlnk-${di}')">Salvar</button>
+        </div>
         ${rows}
         <div class="content-add-row">
           <input class="content-add-input" id="add-inp-${di}" placeholder="+ Novo tópico..."
@@ -1821,6 +1932,15 @@ function toggleDeleteTopic(disc, idx) {
 }
 
 let newTopicCounter = 10000;
+async function saveDiscLinkInput(disc, inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  const url = el.value.trim();
+  await saveDiscCourseLink(disc, url);
+  showSync('ok', '✓ Link da disciplina salvo');
+  render();  // atualiza badges no ciclo
+}
+
 function addTopic(disc, di) {
   const inp = document.getElementById('add-inp-'+di);
   if (!inp || !inp.value.trim()) return;
@@ -1991,7 +2111,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
