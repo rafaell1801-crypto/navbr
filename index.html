@@ -315,7 +315,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <div class="app-header-row">
     <span class="app-subtitle">Serviços de Navegação Aérea S.A.</span>
     <div class="app-header-links">
-      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#a8d8b9;text-decoration:none;background:#0e1d14;padding:2px 8px;border-radius:99px;border:1px solid #5ba572">TEC</a>
+      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#7dd3fc;text-decoration:none;background:#071a28;padding:2px 8px;border-radius:99px;border:1px solid #3eb5c8">TEC</a>
       <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
     </div>
   </div>
@@ -815,7 +815,7 @@ function renderQuestoesStatsCard(){
   const el=document.getElementById('q-stats-content');if(!el)return;
   const tot=getQuestoesTotals();
   const header=tot.t>0
-    ? `<div onclick="document.getElementById('q-stats-detail').classList.toggle('hidden');this.querySelector('.q-stats-chev').textContent=document.getElementById('q-stats-detail').classList.contains('hidden')?'▾':'▴';" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border)"><span style="font-size:24px;font-weight:700;color:#c4b5fd">${tot.pct}%</span><span style="font-size:12px;color:var(--muted)">${tot.a}/${tot.t} acertos</span><span class="q-stats-chev" style="margin-left:auto;color:var(--muted)">▾</span></div>`
+    ? `<div onclick="document.getElementById('q-stats-detail').classList.toggle('hidden');this.querySelector('.q-stats-chev').textContent=document.getElementById('q-stats-detail').classList.contains('hidden')?'▾':'▴';" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border)"><span style="font-size:24px;font-weight:700;color:#fff">${tot.pct}%</span><span style="font-size:12px;color:var(--muted)">${tot.a}/${tot.t} acertos</span><span class="q-stats-chev" style="margin-left:auto;color:var(--muted)">▾</span></div>`
     : `<div style="padding:10px 4px;font-size:12px;color:var(--muted)">Sem dados ainda. Adicione acertos nos tópicos do Ciclo ou Revisões.</div>`;
   el.innerHTML=`${header}<div id="q-stats-detail" class="hidden" style="padding-top:8px">${tot.t>0?buildQuestoesDrillHTML():''}</div>`;
 }
