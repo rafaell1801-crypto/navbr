@@ -138,6 +138,19 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .link-pill-cad:hover{background:#3eb5c8;color:#fff}
 .link-pill-drive{background:#1f2a08;border-color:#a8d04c;color:#d6e87f}
 .link-pill-drive:hover{background:#a8d04c;color:#0a0a0a}
+.link-pill-q{background:#1a0f2e;border-color:#a78bfa;color:#c4b5fd;cursor:pointer}
+.link-pill-q:hover{background:#a78bfa;color:#0a0a0a}
+.link-pill-add-q{border-color:#3a2a4a;color:#5a4070}.link-pill-add-q:hover{border-color:#a78bfa;color:#c4b5fd}
+.q-banner{display:flex;align-items:center;gap:10px;padding:6px 20px;background:#0a0f1c;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;user-select:none;transition:background .15s}
+.q-banner:hover{background:#0e1424}
+.q-banner-pct{color:#c4b5fd;font-weight:700;font-size:14px}
+.q-banner-totals{color:var(--muted);font-size:11px;margin-left:auto}
+.q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
+.q-disc-row:hover{background:#0a1620}
+.q-disc-row:last-child{border-bottom:none}
+.q-topics{padding:4px 14px 8px 30px;background:#070d18}
+.q-topic-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:#c8e6f0}
+.q-topic-row.zero{color:#445566}
 .link-pill-add{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:400;background:transparent;cursor:pointer;transition:all .15s;white-space:nowrap;border-style:dashed;border-width:1px}
 .link-pill-add-res{border-color:#2a4050;color:#4a7080}
 .link-pill-add-res:hover{border-color:#3eb5c8;color:#7dd3e8}
@@ -335,6 +348,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <span class="s-spin hidden" id="sync-spin">↺</span>
   </div>
 </div>
+<div class="q-banner" id="q-banner" onclick="toggleQBannerDetails()">
+  <span>🎯 Acerto geral:</span>
+  <span class="q-banner-pct" id="qb-pct">—</span>
+  <span class="q-banner-totals" id="qb-totals">sem dados</span>
+  <span id="qb-chevron" style="color:var(--muted);font-size:11px">▾</span>
+</div>
+<div id="q-banner-details" class="hidden" style="background:#070d18;border-bottom:1px solid var(--border);padding:8px 20px;max-height:320px;overflow-y:auto"></div>
 </div><!-- /sticky-shell -->
 
 <!-- TAB CICLO -->
@@ -412,6 +432,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </div>
   </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
+  <div class="stats-card">
+    <h3>🎯 Aproveitamento em questões</h3>
+    <div id="q-stats-content"></div>
+  </div>
   <div class="stats-card">
     <h3>Editar horas por dia</h3>
     <div id="cal-edit-wrap"></div>
@@ -711,6 +735,101 @@ async function saveDiscCourseLink(disc,url){
   const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
   try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
   await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
+}
+
+// Questões: { itemId: { a: acertos, t: total } }
+let questoesState={};
+async function loadQuestoes(){
+  try{const s=localStorage.getItem('nav_questoes_bkp');if(s)questoesState=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__questoes__');
+    if(d&&d.length>0&&d[0].topics){questoesState=d[0].topics;try{localStorage.setItem('nav_questoes_bkp',JSON.stringify(questoesState));}catch{}}
+  }catch{}
+  render();
+  renderQuestoesBanner();
+}
+async function saveQuestoesPersist(){
+  try{localStorage.setItem('nav_questoes_bkp',JSON.stringify(questoesState));}catch{}
+  await sbUpsert('conteudo',{disc:'__questoes__',topics:questoesState});
+}
+function getQuestoesTotals(filterFn){
+  let a=0,t=0;
+  for(const id in questoesState){
+    if(!filterFn||filterFn(+id)){
+      a+=questoesState[id].a||0;
+      t+=questoesState[id].t||0;
+    }
+  }
+  return {a,t,pct:t>0?Math.round(a/t*100):0};
+}
+function renderQuestoesStatsCard(){
+  const el=document.getElementById('q-stats-content');if(!el)return;
+  const tot=getQuestoesTotals();
+  const header=tot.t>0
+    ? `<div onclick="document.getElementById('q-stats-detail').classList.toggle('hidden');this.querySelector('.q-stats-chev').textContent=document.getElementById('q-stats-detail').classList.contains('hidden')?'▾':'▴';" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border)"><span style="font-size:24px;font-weight:700;color:#c4b5fd">${tot.pct}%</span><span style="font-size:12px;color:var(--muted)">${tot.a}/${tot.t} acertos</span><span class="q-stats-chev" style="margin-left:auto;color:var(--muted)">▾</span></div>`
+    : `<div style="padding:10px 4px;font-size:12px;color:var(--muted)">Sem dados ainda. Adicione acertos nos tópicos do Ciclo ou Revisões.</div>`;
+  el.innerHTML=`${header}<div id="q-stats-detail" class="hidden" style="padding-top:8px">${tot.t>0?buildQuestoesDrillHTML():''}</div>`;
+}
+
+function renderQuestoesBanner(){
+  const pctEl=document.getElementById('qb-pct'),totEl=document.getElementById('qb-totals');
+  if(!pctEl||!totEl)return;
+  const tot=getQuestoesTotals();
+  if(tot.t===0){pctEl.textContent='—';totEl.textContent='sem dados ainda';}
+  else{pctEl.textContent=tot.pct+'%';totEl.textContent=`${tot.a}/${tot.t} acertos`;}
+}
+function buildQuestoesDrillHTML(){
+  const tot=getQuestoesTotals();
+  if(tot.t===0)return '<div style="font-size:11px;color:var(--muted);padding:6px 0">Registre acertos em algum tópico para ver as estatísticas aqui.</div>';
+  const discs=getActiveDiscs();
+  const perDisc=discs.map(disc=>{
+    const ids=new Set(getEffectiveAgenda().filter(i=>i.disc===disc).map(i=>i.id));
+    const dt=getQuestoesTotals(id=>ids.has(id));
+    return {disc,ids,...dt};
+  }).filter(x=>x.t>0).sort((a,b)=>b.pct-a.pct);
+  return perDisc.map((d,i)=>{
+    const c=CORES[d.disc]||'#888';
+    const items=getEffectiveAgenda().filter(i=>i.disc===d.disc&&questoesState[i.id]&&questoesState[i.id].t>0);
+    items.sort((a,b)=>{
+      const qa=questoesState[a.id],qb=questoesState[b.id];
+      return (qb.a/qb.t)-(qa.a/qa.t);
+    });
+    return `<div class="q-disc-row" onclick="toggleQDiscDetails(${i})">
+      <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="flex:1;font-size:12px;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.disc}</span>
+      <strong style="color:${c};font-size:13px">${d.pct}%</strong>
+      <span style="color:var(--muted);font-size:11px">${d.a}/${d.t}</span>
+      <span id="qd-chev-${i}" style="color:var(--muted);font-size:10px">▾</span>
+    </div>
+    <div id="qd-${i}" class="hidden q-topics">
+      ${items.map(item=>{const q=questoesState[item.id],qa=q.a||0,qt=q.t||0,qp=qt>0?Math.round(qa/qt*100):0;return `<div class="q-topic-row"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${item.topico.replace(/"/g,'&quot;')}">${item.topico}</span><span style="color:${c};font-weight:600;white-space:nowrap">${qa}/${qt} · ${qp}%</span></div>`;}).join('')}
+    </div>`;
+  }).join('');
+}
+function toggleQBannerDetails(){
+  const el=document.getElementById('q-banner-details');if(!el)return;
+  const hidden=el.classList.toggle('hidden');
+  document.getElementById('qb-chevron').textContent=hidden?'▾':'▴';
+  if(!hidden)el.innerHTML=buildQuestoesDrillHTML();
+}
+function toggleQDiscDetails(i){
+  const el=document.getElementById('qd-'+i);if(!el)return;
+  const hidden=el.classList.toggle('hidden');
+  const chev=document.getElementById('qd-chev-'+i);if(chev)chev.textContent=hidden?'▾':'▴';
+}
+
+async function saveQuestaoItem(id,a,t){
+  a=Math.max(0,parseInt(a)||0);t=Math.max(0,parseInt(t)||0);
+  if(t===0&&a===0)delete questoesState[id];
+  else questoesState[id]={a:Math.min(a,t||a),t};
+  showSync('saving','↺');
+  await saveQuestoesPersist();
+  showSync('ok','✓ Questões salvas');
+  const li=document.getElementById('li-q-'+id);if(li)li.classList.add('hidden');
+  render();
+  if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
+  if(!document.getElementById('tab-stats').classList.contains('hidden'))renderStats();
+  renderQuestoesBanner();
 }
 async function loadSessoesDiarias(){
   try{const s=localStorage.getItem('nav_sessoes_bkp');if(s)sessoesDiarias=JSON.parse(s);}catch{}
@@ -1233,6 +1352,18 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
+function compactQuestoesHTML(itemId){
+  const q=questoesState[itemId]||{};
+  const a=q.a||0,t=q.t||0;
+  const pct=t>0?Math.round(a/t*100):0;
+  const sidA=`qa-${itemId}`,sidT=`qt-${itemId}`;
+  const pill=t>0
+    ? `<div style="display:inline-flex;align-items:center;gap:4px"><span class="link-pill link-pill-q" onclick="toggleLinkInput('q',${itemId})">🎯 ${a}/${t} · ${pct}%</span><button class="link-edit-icon" onclick="toggleLinkInput('q',${itemId})" title="Editar">✎</button></div>`
+    : `<button class="link-pill-add link-pill-add-q" onclick="toggleLinkInput('q',${itemId})">＋ acertos</button>`;
+  const edit=`<div class="link-edit-row hidden" id="li-q-${itemId}" style="gap:4px"><input id="${sidA}" type="number" min="0" value="${a}" placeholder="acertos" style="width:60px;flex:none"><span style="color:var(--muted)">/</span><input id="${sidT}" type="number" min="0" value="${t}" placeholder="total" style="width:60px;flex:none"><button class="link-confirm-btn" onclick="saveQuestaoItem(${itemId},document.getElementById('${sidA}').value,document.getElementById('${sidT}').value)">✓</button><button class="link-cancel-btn" onclick="toggleLinkInput('q',${itemId})">✕</button></div>`;
+  return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
+}
+
 function compactDriveHTML(disc){
   const link=driveLinks[disc];
   if(!link||!link.url)return '';
@@ -1275,6 +1406,7 @@ function buildDayHTML(dateStr,days){
           ${compactResumoHTML(item.id)}
           ${compactCadernoHTML(item.id)}
           ${compactDriveHTML(item.disc)}
+          ${compactQuestoesHTML(item.id)}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
@@ -1360,6 +1492,7 @@ function renderStats(){
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
   renderDailyChart();
   renderCalEdit();
+  renderQuestoesStatsCard();
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
     const isPort=disc==='Língua Portuguesa';
     const di=getEffectiveAgenda().filter(i=>i.disc===disc&&(isPort?i.port:!i.port));
@@ -1491,6 +1624,7 @@ function renderRev(){
             ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📎 Questões ↗</a>`:''}
             ${resUrl?`<a href="${resUrl}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#0f2535;border-color:#3eb5c8;color:#7dd3e8">📄 Resumo ↗</a>`:''}
             ${(()=>{const dl=driveLinks[item.disc];return dl&&dl.url?`<a href="${dl.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="caderno-link-btn" style="background:#1f2a08;border-color:#a8d04c;color:#d6e87f">📁 ↗</a>`:'';})()}
+            ${compactQuestoesHTML(item.id)}
             ${!cadUrl&&!resUrl&&!driveLinks[item.disc]?.url?'<span style="font-size:10px;color:#444">sem links</span>':''}
           </div>
         </div>
@@ -2111,7 +2245,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
