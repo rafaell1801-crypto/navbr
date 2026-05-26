@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1442,7 +1442,7 @@ function updateTimerUI(){
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
   if(timerSt.running){
-    document.title=' ';
+    document.title='NAV Brasil | Plano de Estudos';
     const total=getBlockSecs();
     const pct=Math.max(0,Math.min(1,rem/total));
     const C=100.53;
@@ -1450,7 +1450,7 @@ function updateTimerUI(){
     const favSvg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='16' fill='none' stroke='%231e3f5c' stroke-width='5'/><circle cx='20' cy='20' r='16' fill='none' stroke='%233eb5c8' stroke-width='5' stroke-dasharray='${C}' stroke-dashoffset='${off}' stroke-linecap='round' transform='rotate(-90 20 20)'/></svg>`;
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,${favSvg}`;
   }else if(rem===0){
-    document.title=' ';
+    document.title='NAV Brasil | Plano de Estudos';
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>`;
   }else{
     document.title='NAV Brasil | Plano de Estudos';
