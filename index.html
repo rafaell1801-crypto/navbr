@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>⚡ NAV Brasil Serviços de Navegação Aérea S.A.</title>
+<title>NAV Brasil | Plano de Estudos</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -19,9 +19,11 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .sticky-shell{position:sticky;top:0;z-index:100}
-.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.app-verse{font-size:11px;font-style:italic;color:#7fb3c8;text-align:right;line-height:1.4;max-width:100%}
-.app-header-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;flex-direction:column;gap:4px}
+.app-verse{font-size:11px;font-style:italic;color:#7fb3c8;text-align:right;line-height:1.4}
+.app-header-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.app-subtitle{font-size:13px;font-weight:600;color:#c8e6f0;letter-spacing:.2px}
+.app-header-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sync-icons{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
 .s-ok{font-size:15px;font-weight:700;color:#2dd4a0}
 .s-spin{font-size:15px;color:var(--accent)}
@@ -291,9 +293,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <div class="sticky-shell">
 <div class="app-header">
   <div class="app-verse">"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12</div>
-  <div class="app-header-links">
-    <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d">TEC</a>
-    <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
+  <div class="app-header-row">
+    <span class="app-subtitle">Serviços de Navegação Aérea S.A.</span>
+    <div class="app-header-links">
+      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d">TEC</a>
+      <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
+    </div>
   </div>
 </div>
 
@@ -1449,7 +1454,7 @@ function updateTimerUI(){
     document.title='✅';
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>`;
   }else{
-    document.title='⚡ NAV Brasil Serviços de Navegação Aérea S.A.';
+    document.title='NAV Brasil | Plano de Estudos';
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>`;
   }
   updateDiscTimerTags();
