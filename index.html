@@ -51,8 +51,9 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .tibtn-stop{color:#ef4444;border-color:#ef4444;border-radius:50%!important;font-size:14px}.tibtn-stop:hover{background:#2a0a0a}
 .hidden{display:none!important}
 .spin-wrap{display:flex;align-items:center;gap:4px}
-.spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;width:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 6px;text-align:center;cursor:ns-resize;user-select:none;transition:border-color .15s}
+.spin-val{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;width:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 6px;text-align:center;cursor:text;transition:border-color .15s;outline:none;-webkit-user-modify:read-write-plaintext-only;user-modify:read-write-plaintext-only}
 .spin-val:hover{border-color:var(--accent)}
+.spin-val:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(62,181,200,.15)}
 .spin-sep{font-size:13px;color:var(--muted);padding:0 1px;user-select:none}
 .xlink-wrap{display:inline-block;margin-left:4px;vertical-align:middle}
 .xlink-pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;text-decoration:none;display:inline-block;line-height:1.6;transition:border-color .15s,color .15s}
@@ -63,7 +64,8 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .spin-picker-item{padding:5px 10px;text-align:center;cursor:pointer;font-size:13px;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}
 .spin-picker-item:hover{background:var(--surface)}
 .spin-picker-item.sel{background:var(--accent);color:#fff;font-weight:700}
-.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 20px;border-bottom:1px solid var(--border)}
+.stats-bar .stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
@@ -309,11 +311,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 
 <div class="sticky-shell">
 <div class="app-header">
-  <div class="app-verse">"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12</div>
+  <div class="app-verse" id="app-verse">"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12</div>
   <div class="app-header-row">
     <span class="app-subtitle">Serviços de Navegação Aérea S.A.</span>
     <div class="app-header-links">
-      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d">TEC</a>
+      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#a8d8b9;text-decoration:none;background:#0e1d14;padding:2px 8px;border-radius:99px;border:1px solid #5ba572">TEC</a>
       <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
     </div>
   </div>
@@ -483,7 +485,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </details>
 
     <details class="cfg-group">
-      <summary>⏰ Horários</summary>
+      <summary>🔹 Horários</summary>
       <div class="cfg-group-body">
         <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px">
           <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horários dos blocos</span>
@@ -498,14 +500,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     </details>
 
     <details class="cfg-group">
-      <summary>⏱ Temporizador</summary>
+      <summary>🔹 Temporizador</summary>
       <div class="cfg-group-body">
         <div class="modal-row" style="margin-top:6px"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
       </div>
     </details>
 
     <details class="cfg-group">
-      <summary>🧮 Horas Líquidas</summary>
+      <summary>🔹 Horas Líquidas</summary>
       <div class="cfg-group-body">
         <p style="font-size:11px;color:var(--muted);margin:6px 0 8px">Tempo total estudado por disciplina. Edite manualmente se precisar ajustar.</p>
         <div id="timer-edit-list"></div>
@@ -515,6 +517,11 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
     <details class="cfg-group">
       <summary>💾 Dados</summary>
       <div class="cfg-group-body">
+        <div class="modal-section">
+          <h3>Versículo do cabeçalho</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Texto exibido em itálico no topo. Salva automaticamente em todos os dispositivos.</p>
+          <textarea id="cfg-verse" rows="2" placeholder='"texto do versículo" — Referência' style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-style:italic;background:var(--surface2);color:var(--text);resize:vertical;line-height:1.4;font-family:inherit"></textarea>
+        </div>
         <div class="modal-section">
           <h3>Backup de links</h3>
           <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte seus links de resumo e questões para um arquivo JSON. Guarde-o como backup antes de qualquer reset.</p>
@@ -754,6 +761,29 @@ async function saveDiscCourseLink(disc,url){
   const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
   try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
   await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
+}
+
+// Versículo do cabeçalho
+const DEFAULT_VERSE='"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12';
+let appVerse=DEFAULT_VERSE;
+function applyVerseToUI(){
+  const el=document.getElementById('app-verse');if(el)el.textContent=appVerse;
+}
+async function loadVerse(){
+  try{const s=localStorage.getItem('nav_verse');if(s)appVerse=s;}catch{}
+  applyVerseToUI();
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__verse__');
+    if(d&&d.length>0&&d[0].topics&&typeof d[0].topics.text==='string'){
+      appVerse=d[0].topics.text;
+      try{localStorage.setItem('nav_verse',appVerse);}catch{}
+      applyVerseToUI();
+    }
+  }catch{}
+}
+async function saveVerse(){
+  try{localStorage.setItem('nav_verse',appVerse);}catch{}
+  await sbUpsert('conteudo',{disc:'__verse__',topics:{text:appVerse}});
 }
 
 // Questões: { itemId: { a: acertos, t: total } }
@@ -1095,6 +1125,7 @@ function openSettings(){
   const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
   renderExtraLinksConfig();
   renderDriveLinksConfig();
+  const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
     const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
@@ -1262,6 +1293,9 @@ function saveSettings(){
     else delete driveLinks[disc];
   });
   linkSaves.push(saveDriveLinks());
+  // Versículo
+  const vEl=document.getElementById('cfg-verse');
+  if(vEl){const newVerse=vEl.value.trim()||DEFAULT_VERSE;if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
   closeSettings();render();
@@ -1317,16 +1351,44 @@ function openSpinPicker(el,count,onSelect){
   const sel=p.querySelector('.sel');if(sel)sel.scrollIntoView({block:'center'});
   setTimeout(()=>document.addEventListener('click',()=>{if(_picker){_picker.remove();_picker=null;}},{once:true}),0);
 }
+function _enableSpinEdit(el,max,onChange){
+  el.contentEditable='true';
+  el.spellcheck=false;
+  el.setAttribute('inputmode','numeric');
+  el.addEventListener('focus',()=>{
+    const r=document.createRange();r.selectNodeContents(el);
+    const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  });
+  el.addEventListener('input',()=>{
+    let v=el.textContent.replace(/\D/g,'').slice(0,2);
+    if(v!==el.textContent)el.textContent=v;
+    if(onChange)onChange();
+  });
+  el.addEventListener('blur',()=>{
+    let v=parseInt(el.textContent)||0;v=Math.max(0,Math.min(max-1,v));
+    el.textContent=String(v).padStart(2,'0');
+    if(onChange)onChange();
+  });
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();el.blur();}
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+      e.preventDefault();
+      let v=(parseInt(el.textContent)||0)+(e.key==='ArrowUp'?1:-1);
+      v=((v%max)+max)%max;
+      el.textContent=String(v).padStart(2,'0');
+      if(onChange)onChange();
+    }
+  });
+}
 ['b1','b2','b3','b4','b5'].forEach(k=>{
-  [['sh',true],['sm',false],['eh',true],['em',false]].forEach(([f,isH])=>{
-    const id='spin-'+k+'-'+f;
-    const el=document.getElementById(id);if(!el)return;
-    el.addEventListener('click',e=>{e.stopPropagation();openSpinPicker(el,isH?24:60,v=>{el.textContent=String(v).padStart(2,'0');calcBlockTotal();});});
+  [['sh',24],['sm',60],['eh',24],['em',60]].forEach(([f,max])=>{
+    const el=document.getElementById('spin-'+k+'-'+f);if(!el)return;
+    _enableSpinEdit(el,max,calcBlockTotal);
   });
 });
 ['h','m'].forEach(f=>{
-  const id='spin-timer-'+f;const el=document.getElementById(id);if(!el)return;
-  el.addEventListener('click',e=>{e.stopPropagation();openSpinPicker(el,f==='h'?24:60,v=>{el.textContent=String(v).padStart(2,'0');});});
+  const el=document.getElementById('spin-timer-'+f);if(!el)return;
+  _enableSpinEdit(el,f==='h'?24:60,null);
 });
 
 function showTab(t){
@@ -2315,7 +2377,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
