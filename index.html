@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Plano de Estudos – NAV Brasil</title>
+<title>NAV Brasil</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -19,10 +19,11 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 .sticky-shell{position:sticky;top:0;z-index:100}
-.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;-webkit-app-region:drag;padding-left:calc(env(titlebar-area-x,0px) + 20px);padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 20px)}
-.app-header h1{font-size:15px;font-weight:700;color:#e8f4f8;letter-spacing:.2px;white-space:nowrap;margin:0}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;-webkit-app-region:drag;padding-left:calc(env(titlebar-area-x,0px) + 20px);padding-right:calc(100vw - env(titlebar-area-x,0px) - env(titlebar-area-width,100vw) + 20px)}
+.app-header h1{font-size:15px;font-weight:700;color:#e8f4f8;letter-spacing:.2px;margin:0;text-align:center}
+.app-verse{font-size:11px;font-style:italic;color:#7fb3c8;text-align:center;max-width:680px;line-height:1.4}
 .app-header a,.app-header button,.app-header .xlink-wrap,.app-header .xlink-pill{-webkit-app-region:no-drag}
-.app-header-links{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.app-header-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2px}
 .sync-icons{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
 .s-ok{font-size:15px;font-weight:700;color:#2dd4a0}
 .s-spin{font-size:15px;color:var(--accent)}
@@ -292,6 +293,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <div class="sticky-shell">
 <div class="app-header">
   <h1>⚡ NAV Brasil Serviços de Navegação Aérea S.A.</h1>
+  <div class="app-verse">"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12</div>
   <div class="app-header-links">
     <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#e65100;text-decoration:none;background:#fff3e0;padding:2px 8px;border-radius:99px;border:1px solid #ffb74d">TEC</a>
     <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
@@ -1437,9 +1439,19 @@ function updateTimerUI(){
   const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
   document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
-  document.title=timerSt.running?'⏳':rem===0?'✅':'Plano de Estudos – NAV Brasil';
-  const emoji=timerSt.running?'⏳':rem===0?'✅':'⚡';
-  document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${emoji}</text></svg>`;
+  document.title=timerSt.running?`${fmtFull(rem)} — NAV Brasil`:rem===0?'✓ Concluído — NAV Brasil':'NAV Brasil';
+  let favSvg;
+  if(timerSt.running){
+    const total=getBlockSecs();
+    const pct=Math.max(0,Math.min(1,rem/total));
+    const C=100.53;
+    const off=(C*(1-pct)).toFixed(2);
+    favSvg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><circle cx='20' cy='20' r='16' fill='none' stroke='%231e3f5c' stroke-width='5'/><circle cx='20' cy='20' r='16' fill='none' stroke='%233eb5c8' stroke-width='5' stroke-dasharray='${C}' stroke-dashoffset='${off}' stroke-linecap='round' transform='rotate(-90 20 20)'/></svg>`;
+  }else{
+    const emoji=rem===0?'✅':'⚡';
+    favSvg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${emoji}</text></svg>`;
+  }
+  document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,${favSvg}`;
   updateDiscTimerTags();
 }
 function getActiveDiscs(){
