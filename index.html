@@ -1983,7 +1983,7 @@ function updateDiscTimerTags(){
     const secs=getTodayDiscTime(disc);
     const isActive=disc===activeDisc;
     const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);
-    el.innerHTML='<img src="duracao.png" alt="" style="width:13px;height:13px;vertical-align:middle;margin-right:2px"> '+h+':'+String(m).padStart(2,'0');
+    el.textContent=h+':'+String(m).padStart(2,'0');
     el.style.opacity=(secs>0||isActive)?'1':'0.3';
     el.classList.add('has-time');
   });
@@ -2606,7 +2606,7 @@ function getEffectiveAgenda() {
 
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
-populateDiscSelect();loadTodayByDisc();updateTimerUI();
+populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
