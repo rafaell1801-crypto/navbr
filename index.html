@@ -138,11 +138,20 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .disc-bar-wrap{height:6px;background:#1e3f5c;border-radius:99px;overflow:hidden}
 
 /* COMPACT LINKS (bloco-row) */
-.link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;text-decoration:none;white-space:nowrap;transition:all .15s;border:1px solid #3eb5c8;background:#0c2230;color:#7dd3e8;cursor:pointer;line-height:1.3}
-.link-pill:hover{background:#3eb5c8;color:#fff}
-.link-pill-res,.link-pill-cad,.link-pill-drive,.link-pill-q{background:#0c2230;border-color:#3eb5c8;color:#7dd3e8}
-.link-pill-res:hover,.link-pill-cad:hover,.link-pill-drive:hover,.link-pill-q:hover{background:#3eb5c8;color:#fff}
-.link-pill-add-q{border-color:#2a4050;color:#4a7080}.link-pill-add-q:hover{border-color:#3eb5c8;color:#7dd3e8}
+.link-icon{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;font-size:15px;text-decoration:none;cursor:pointer;transition:opacity .15s,transform .15s;background:transparent;border:none;line-height:1;padding:0;color:#7dd3e8}
+.link-icon:hover{opacity:.7;transform:scale(1.1)}
+.link-icon.empty{opacity:.18;cursor:default;filter:grayscale(1)}
+.link-pct{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:#7dd3e8;padding:0 6px;min-width:32px;text-align:center;line-height:1}
+.link-pct.empty{color:#3a5066}
+.link-edit-all{background:transparent;border:none;color:#3a6070;cursor:pointer;font-size:11px;padding:0 4px;opacity:.55;transition:opacity .15s,color .15s;line-height:1;margin-left:2px}
+.link-edit-all:hover{opacity:1;color:#7dd3e8}
+.link-edit-all-row{margin-top:6px;padding:10px;background:#071e30;border:1px solid #1e3a4a;border-radius:8px}
+.link-edit-all-row input{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text)}
+.link-edit-all-row input:focus{outline:none;border-color:var(--accent)}
+.link-edit-all-row .lea-field{display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.link-edit-all-row .lea-emoji{font-size:13px;width:18px;flex-shrink:0;text-align:center}
+.link-edit-all-row .lea-input{flex:1;min-width:0}
+.links-row-display{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .q-disc-row:hover{background:#0a1620}
 .q-disc-row:last-child{border-bottom:none}
@@ -1572,6 +1581,78 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
+function renderLinksRow(itemId, disc){
+  const resUrl=resumosState[itemId]||'';
+  const cadUrl=cadernosState[itemId]||'';
+  const dl=driveLinks[disc];
+  const drvUrl=(dl&&dl.url)||'';
+  const q=questoesState[itemId]||{};
+  const qa=q.a||0,qt=q.t||0;
+  const qpct=qt>0?Math.round(qa/qt*100):0;
+  const safeRes=resUrl.replace(/"/g,'&quot;');
+  const safeCad=cadUrl.replace(/"/g,'&quot;');
+  const safeDrv=drvUrl.replace(/"/g,'&quot;');
+  const safeDisc=disc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const display=`<div class="links-row-display">
+    ${resUrl?`<a href="${safeRes}" target="_blank" rel="noopener" class="link-icon" title="Resumo">📃</a>`:`<span class="link-icon empty" title="sem resumo">📃</span>`}
+    ${cadUrl?`<a href="${safeCad}" target="_blank" rel="noopener" class="link-icon" title="Questões">🔗</a>`:`<span class="link-icon empty" title="sem questões">🔗</span>`}
+    ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">📁</a>`:`<span class="link-icon empty" title="sem Drive">📁</span>`}
+    ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
+    <button class="link-edit-all" onclick="toggleEditAll(${itemId})" title="Editar todos os links">✎</button>
+  </div>`;
+  const editForm=`<div class="link-edit-all-row hidden" id="lea-${itemId}">
+    <div class="lea-field"><span class="lea-emoji">📃</span><input class="lea-input" id="lea-res-${itemId}" value="${safeRes}" placeholder="link do resumo..."></div>
+    <div class="lea-field"><span class="lea-emoji">🔗</span><input class="lea-input" id="lea-cad-${itemId}" value="${safeCad}" placeholder="link das questões..."></div>
+    <div class="lea-field"><span class="lea-emoji">📁</span><input class="lea-input" id="lea-drv-${itemId}" value="${safeDrv}" placeholder="link do Drive..." title="Aplica a toda a disciplina"></div>
+    <div class="lea-field"><span class="lea-emoji">🎯</span><input id="lea-qa-${itemId}" type="number" min="0" value="${qa}" placeholder="acertos" style="width:64px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${itemId}" type="number" min="0" value="${qt}" placeholder="total" style="width:64px;flex:none"><span style="font-size:10px;color:var(--muted)">${qt>0?qpct+'%':''}</span></div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="link-confirm-btn" onclick="saveAllLinksForItem(${itemId},'${safeDisc}')">✓ Salvar</button>
+      <button class="link-cancel-btn" onclick="toggleEditAll(${itemId})">✕ Cancelar</button>
+    </div>
+  </div>`;
+  return display+editForm;
+}
+
+function toggleEditAll(itemId){
+  const el=document.getElementById('lea-'+itemId);if(!el)return;
+  const hidden=el.classList.toggle('hidden');
+  if(!hidden){const inp=el.querySelector('input');if(inp)inp.focus();}
+}
+
+async function saveAllLinksForItem(itemId,disc){
+  const res=(document.getElementById(`lea-res-${itemId}`)||{}).value?.trim()||'';
+  const cad=(document.getElementById(`lea-cad-${itemId}`)||{}).value?.trim()||'';
+  const drv=(document.getElementById(`lea-drv-${itemId}`)||{}).value?.trim()||'';
+  const qa=parseInt((document.getElementById(`lea-qa-${itemId}`)||{}).value)||0;
+  const qt=parseInt((document.getElementById(`lea-qt-${itemId}`)||{}).value)||0;
+  showSync('saving','⏳ Salvando...');
+  const promises=[];
+  if(res!==(resumosState[itemId]||'')){
+    resumosState[itemId]=res;lsLinksSave('resumos_backup',resumosState);
+    promises.push(sbUpsert('resumos',{item_id:itemId,url:res}));
+  }
+  if(cad!==(cadernosState[itemId]||'')){
+    cadernosState[itemId]=cad;lsLinksSave('cadernos_backup',cadernosState);
+    promises.push(sbUpsert('cadernos',{item_id:itemId,url:cad}));
+  }
+  const curDrv=(driveLinks[disc]&&driveLinks[disc].url)||'';
+  if(drv!==curDrv){
+    if(drv)driveLinks[disc]={url:drv};else delete driveLinks[disc];
+    promises.push(saveDriveLinks());
+  }
+  const curQ=questoesState[itemId]||{a:0,t:0};
+  if(qa!==(curQ.a||0)||qt!==(curQ.t||0)){
+    if(qt===0&&qa===0)delete questoesState[itemId];
+    else questoesState[itemId]={a:Math.min(qa,qt||qa),t:qt};
+    promises.push(saveQuestoesPersist());
+  }
+  await Promise.all(promises);
+  showSync('ok','✓ Salvo');
+  toggleEditAll(itemId);
+  render();
+  if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
+}
+
 function compactQuestoesHTML(itemId){
   const q=questoesState[itemId]||{};
   const a=q.a||0,t=q.t||0;
@@ -1638,11 +1719,8 @@ function buildDayHTML(dateStr,days){
       <div style="flex:1;min-width:0">
         ${discNameEl}
         <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px">${item.topico}</div>
-        <div style="display:flex;gap:8px;align-items:flex-start;margin-top:7px;flex-wrap:wrap;padding-left:16px">
-          ${compactResumoHTML(item.id)}
-          ${compactCadernoHTML(item.id)}
-          ${compactDriveHTML(item.disc)}
-          ${compactQuestoesHTML(item.id)}
+        <div style="margin-top:7px;padding-left:16px">
+          ${renderLinksRow(item.id, item.disc)}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
@@ -1856,12 +1934,8 @@ function renderRev(){
             <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
           </span>
           <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
-          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
-            ${resUrl?`<a href="${resUrl}" target="_blank" rel="noopener" class="link-pill link-pill-res" title="Resumo">📃</a>`:''}
-            ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" class="link-pill link-pill-cad" title="Questões">🔗</a>`:''}
-            ${(()=>{const dl=driveLinks[item.disc];return dl&&dl.url?`<a href="${dl.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-pill link-pill-drive" title="Drive">📁</a>`:'';})()}
-            ${compactQuestoesHTML(item.id)}
-            ${!cadUrl&&!resUrl&&!driveLinks[item.disc]?.url?'<span style="font-size:10px;color:#444">sem links</span>':''}
+          <div style="margin-top:5px">
+            ${renderLinksRow(item.id, item.disc)}
           </div>
         </div>
         <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
