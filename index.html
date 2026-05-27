@@ -766,6 +766,40 @@ async function saveDiscCourseLink(disc,url){
   await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
 }
 
+// Configurações do app (data de início, duração do timer, blocos) — sincronizadas via Supabase
+async function loadAppSettings(){
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__settings__');
+    if(d&&d.length>0&&d[0].topics){
+      const s=d[0].topics;
+      let changed=false;
+      if(s.startDate&&s.startDate!==localStorage.getItem('nav_start_date')){
+        localStorage.setItem('nav_start_date',s.startDate);changed=true;
+      }
+      if(s.timerSecs&&parseInt(s.timerSecs)!==parseInt(localStorage.getItem('nav_timer_secs')||0)){
+        localStorage.setItem('nav_timer_secs',String(s.timerSecs));changed=true;
+      }
+      if(Array.isArray(s.blocos)&&JSON.stringify(s.blocos)!==localStorage.getItem('nav_blocos_v2')){
+        localStorage.setItem('nav_blocos_v2',JSON.stringify(s.blocos));
+        customBlocos=s.blocos;changed=true;
+      }
+      if(changed){
+        if(!timerSt.running){timerSt.remaining=getBlockSecs();updateTimerUI();}
+        const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
+        render();
+      }
+    }
+  }catch{}
+}
+async function saveAppSettings(){
+  const s={
+    startDate:loadStartDate(),
+    timerSecs:getBlockSecs(),
+    blocos:customBlocos||null
+  };
+  await sbUpsert('conteudo',{disc:'__settings__',topics:s});
+}
+
 // Versículo do cabeçalho
 const DEFAULT_VERSE='"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12';
 let appVerse=DEFAULT_VERSE;
@@ -1360,6 +1394,8 @@ function saveSettings(){
     else delete driveLinks[disc];
   });
   linkSaves.push(saveDriveLinks());
+  // Configurações do app (data, timer, blocos) → sincroniza entre dispositivos
+  linkSaves.push(saveAppSettings());
   // Versículo
   const vEl=document.getElementById('cfg-verse');
   if(vEl){const newVerse=vEl.value.trim()||DEFAULT_VERSE;if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
@@ -2471,7 +2507,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
