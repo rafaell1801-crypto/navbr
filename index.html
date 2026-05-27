@@ -142,12 +142,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .link-pct.empty{color:#3a5066;opacity:.55}
 .link-edit-all{background:transparent;border:none;color:#3a6070;cursor:pointer;font-size:11px;padding:0 4px;opacity:.55;transition:opacity .15s,color .15s;line-height:1;margin-left:2px}
 .link-edit-all:hover{opacity:1;color:#7dd3e8}
-.link-edit-all-row{margin-top:6px;padding:10px;background:#071e30;border:1px solid #1e3a4a;border-radius:8px}
-.link-edit-all-row input{padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text)}
+.link-edit-all-row{margin-top:4px;padding:6px 8px;background:#071e30;border:1px solid #1e3a4a;border-radius:6px}
+.link-edit-all-row input{padding:3px 7px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px}
 .link-edit-all-row input:focus{outline:none;border-color:var(--accent)}
-.link-edit-all-row .lea-field{display:flex;gap:6px;align-items:center;margin-bottom:5px}
-.link-edit-all-row .lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:20px;flex-shrink:0;color:#7dd3e8}
+.link-edit-all-row .lea-field{display:flex;gap:5px;align-items:center;margin-bottom:3px}
+.link-edit-all-row .lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;color:#7dd3e8}
+.link-edit-all-row .lea-emoji img{width:14px;height:14px;object-fit:contain;display:block}
 .link-edit-all-row .lea-input{flex:1;min-width:0}
+.link-edit-all-row .link-confirm-btn,.link-edit-all-row .link-cancel-btn{padding:3px 9px;font-size:10.5px;height:24px}
 .links-row-display{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .q-disc-row:hover{background:#0a1620}
@@ -481,6 +483,12 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
           <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
+        <div class="modal-section">
+          <h3>Tipos de link personalizados</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Crie pílulas extras (ex: Vídeo, Anotação). Upload de PNG para o ícone — será redimensionado para 48×48.</p>
+          <div id="cfg-clt-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button type="button" onclick="addCustomLinkTypeRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar tipo</button>
+        </div>
       </div>
     </details>
 
@@ -808,6 +816,34 @@ async function saveAppSettings(){
     blocos:customBlocos||null
   };
   await sbUpsert('conteudo',{disc:'__settings__',topics:s});
+}
+
+// Tipos de link personalizados: [{id, label, icon (base64 ou filename)}]
+let customLinkTypes=[];
+let customLinks={}; // {itemId: {typeId: url}}
+async function loadCustomLinkTypes(){
+  try{const s=localStorage.getItem('nav_clink_types');if(s)customLinkTypes=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_clinks');if(s)customLinks=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=disc,topics&disc=in.(__clink_types__,__clinks__)');
+    if(d){
+      d.forEach(r=>{
+        if(r.disc==='__clink_types__'&&Array.isArray(r.topics))customLinkTypes=r.topics;
+        if(r.disc==='__clinks__'&&r.topics&&typeof r.topics==='object'&&!Array.isArray(r.topics))customLinks=r.topics;
+      });
+      try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
+      try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
+    }
+  }catch{}
+  render();
+}
+async function saveCustomLinkTypesPersist(){
+  try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
+  await sbUpsert('conteudo',{disc:'__clink_types__',topics:customLinkTypes});
+}
+async function saveCustomLinksPersist(){
+  try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
+  await sbUpsert('conteudo',{disc:'__clinks__',topics:customLinks});
 }
 
 // Versículo do cabeçalho
@@ -1216,6 +1252,7 @@ function openSettings(){
   const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
   renderExtraLinksConfig();
   renderDriveLinksConfig();
+  renderCustomLinkTypesConfig();
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -1282,6 +1319,67 @@ function renderCustomLinkTypesConfig(){
 function addCustomLinkTypeRow(){
   const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
   wrap.appendChild(_buildCltRow({id:'clt-'+Date.now()+'-'+Math.floor(Math.random()*1000),emoji:'',label:''}));
+}
+
+function _buildCltRow(type){
+  const row=document.createElement('div');
+  row.className='cfg-clt-row';
+  row.dataset.id=type.id;
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  const l=(type.label||'').replace(/"/g,'&quot;');
+  const iconSrc=(type.icon||'').replace(/"/g,'&quot;');
+  row.innerHTML=`
+    <label class="cfg-clt-icon-pick" style="width:32px;height:32px;flex-shrink:0;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface2);overflow:hidden" title="Clique para enviar PNG">
+      ${iconSrc?`<img class="cfg-clt-icon-preview" src="${iconSrc}" style="width:24px;height:24px;object-fit:contain">`:'<span class="cfg-clt-icon-preview" style="font-size:12px;color:var(--muted)">+png</span>'}
+      <input type="file" accept="image/*" style="display:none" onchange="onCltIconChange(this)">
+    </label>
+    <input class="cfg-clt-label" type="text" value="${l}" placeholder="Nome do tipo..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    <button type="button" onclick="this.parentElement.remove()" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>
+  `;
+  row.dataset.icon=type.icon||'';
+  return row;
+}
+function renderCustomLinkTypesConfig(){
+  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
+  wrap.innerHTML='';
+  customLinkTypes.forEach(t=>wrap.appendChild(_buildCltRow(t)));
+}
+function addCustomLinkTypeRow(){
+  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
+  wrap.appendChild(_buildCltRow({id:'clt-'+Date.now()+'-'+Math.floor(Math.random()*1000),label:'',icon:''}));
+}
+function onCltIconChange(input){
+  const file=input.files[0];if(!file)return;
+  const row=input.closest('.cfg-clt-row');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const SIZE=48;canvas.width=SIZE;canvas.height=SIZE;
+      const ctx=canvas.getContext('2d');
+      ctx.clearRect(0,0,SIZE,SIZE);
+      // Mantém proporção
+      const scale=Math.min(SIZE/img.width,SIZE/img.height);
+      const w=img.width*scale,h=img.height*scale;
+      ctx.drawImage(img,(SIZE-w)/2,(SIZE-h)/2,w,h);
+      const dataUrl=canvas.toDataURL('image/png');
+      row.dataset.icon=dataUrl;
+      const preview=row.querySelector('.cfg-clt-icon-preview');
+      if(preview){
+        if(preview.tagName==='IMG')preview.src=dataUrl;
+        else{
+          const newImg=document.createElement('img');
+          newImg.className='cfg-clt-icon-preview';
+          newImg.src=dataUrl;
+          newImg.style.cssText='width:24px;height:24px;object-fit:contain';
+          preview.replaceWith(newImg);
+        }
+      }
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function renderDriveLinksConfig(){
@@ -1419,6 +1517,25 @@ function saveSettings(){
     else delete driveLinks[disc];
   });
   linkSaves.push(saveDriveLinks());
+  // Tipos de link personalizados
+  const newTypes=[];
+  document.querySelectorAll('#cfg-clt-list .cfg-clt-row').forEach(row=>{
+    const id=row.dataset.id;
+    const label=row.querySelector('.cfg-clt-label').value.trim();
+    const icon=row.dataset.icon||'';
+    if(label)newTypes.push({id,label,icon});
+  });
+  const newIdsSet=new Set(newTypes.map(t=>t.id));
+  const removedIds=customLinkTypes.map(t=>t.id).filter(id=>!newIdsSet.has(id));
+  if(removedIds.length>0){
+    Object.keys(customLinks).forEach(itemId=>{
+      removedIds.forEach(tid=>delete customLinks[itemId][tid]);
+      if(Object.keys(customLinks[itemId]).length===0)delete customLinks[itemId];
+    });
+    linkSaves.push(saveCustomLinksPersist());
+  }
+  customLinkTypes=newTypes;
+  linkSaves.push(saveCustomLinkTypesPersist());
   // Configurações do app (data, timer, blocos) → sincroniza entre dispositivos
   linkSaves.push(saveAppSettings());
   // Versículo
@@ -1596,10 +1713,25 @@ function renderLinksRow(itemId, disc){
   const safeCad=cadUrl.replace(/"/g,'&quot;');
   const safeDrv=drvUrl.replace(/"/g,'&quot;');
   const safeDisc=disc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const customIconsHtml=customLinkTypes.map(t=>{
+    const url=((customLinks[itemId]||{})[t.id])||'';
+    const iconImg=`<img src="${(t.icon||'').replace(/"/g,'&quot;')}" alt="" style="width:20px;height:20px;display:block;object-fit:contain">`;
+    const safeLabel=(t.label||'link').replace(/"/g,'&quot;');
+    if(url){
+      return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${safeLabel}">${iconImg}</a>`;
+    }
+    return `<span class="link-icon empty" title="sem ${safeLabel}">${iconImg}</span>`;
+  }).join('');
+  const customEditFields=customLinkTypes.map(t=>{
+    const url=((customLinks[itemId]||{})[t.id])||'';
+    const iconImg=`<img src="${(t.icon||'').replace(/"/g,'&quot;')}" alt="" style="width:14px;height:14px;object-fit:contain">`;
+    return `<div class="lea-field"><span class="lea-emoji">${iconImg}</span><input class="lea-input" id="lea-cl-${t.id}-${itemId}" value="${url.replace(/"/g,'&quot;')}" placeholder="link ${(t.label||'').replace(/"/g,'&quot;')}..."></div>`;
+  }).join('');
   const display=`<div class="links-row-display">
     ${resUrl?`<a href="${safeRes}" target="_blank" rel="noopener" class="link-icon" title="Resumo">${ICON_FOLDER}</a>`:`<span class="link-icon empty" title="sem resumo">${ICON_FOLDER}</span>`}
     ${cadUrl?`<a href="${safeCad}" target="_blank" rel="noopener" class="link-icon" title="Questões">${ICON_CHART}</a>`:`<span class="link-icon empty" title="sem questões">${ICON_CHART}</span>`}
     ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${ICON_CLIPBOARD}</a>`:`<span class="link-icon empty" title="sem Drive">${ICON_CLIPBOARD}</span>`}
+    ${customIconsHtml}
     ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
     <button class="link-edit-all" onclick="toggleEditAll(${itemId})" title="Adicionar ou editar links">✎</button>
   </div>`;
@@ -1607,8 +1739,9 @@ function renderLinksRow(itemId, disc){
     <div class="lea-field"><span class="lea-emoji">${ICON_FOLDER}</span><input class="lea-input" id="lea-res-${itemId}" value="${safeRes}" placeholder="link do resumo..."></div>
     <div class="lea-field"><span class="lea-emoji">${ICON_CHART}</span><input class="lea-input" id="lea-cad-${itemId}" value="${safeCad}" placeholder="link das questões..."></div>
     <div class="lea-field"><span class="lea-emoji">${ICON_CLIPBOARD}</span><input class="lea-input" id="lea-drv-${itemId}" value="${safeDrv}" placeholder="link do Drive..." title="Aplica a toda a disciplina"></div>
-    <div class="lea-field"><span class="lea-emoji">🎯</span><input id="lea-qa-${itemId}" type="number" min="0" value="${qa}" placeholder="acertos" style="width:64px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${itemId}" type="number" min="0" value="${qt}" placeholder="total" style="width:64px;flex:none"><span style="font-size:10px;color:var(--muted)">${qt>0?qpct+'%':''}</span></div>
-    <div style="display:flex;gap:6px;margin-top:6px">
+    ${customEditFields}
+    <div class="lea-field"><span class="lea-emoji">🎯</span><input id="lea-qa-${itemId}" type="number" min="0" value="${qa}" placeholder="acertos" style="width:54px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${itemId}" type="number" min="0" value="${qt}" placeholder="total" style="width:54px;flex:none"><span style="font-size:10px;color:var(--muted);margin-left:auto">${qt>0?qpct+'%':''}</span></div>
+    <div style="display:flex;gap:5px;margin-top:4px">
       <button class="link-confirm-btn" onclick="saveAllLinksForItem(${itemId},'${safeDisc}')">✓ Salvar</button>
       <button class="link-cancel-btn" onclick="toggleEditAll(${itemId})">✕ Cancelar</button>
     </div>
@@ -1649,6 +1782,21 @@ async function saveAllLinksForItem(itemId,disc){
     else questoesState[itemId]={a:Math.min(qa,qt||qa),t:qt};
     promises.push(saveQuestoesPersist());
   }
+  // Custom link types
+  let customChanged=false;
+  for(const t of customLinkTypes){
+    const inp=document.getElementById(`lea-cl-${t.id}-${itemId}`);
+    if(!inp)continue;
+    const u=inp.value.trim();
+    const cur=(customLinks[itemId]||{})[t.id]||'';
+    if(u!==cur){
+      if(!customLinks[itemId])customLinks[itemId]={};
+      if(u)customLinks[itemId][t.id]=u;
+      else{delete customLinks[itemId][t.id];if(Object.keys(customLinks[itemId]).length===0)delete customLinks[itemId];}
+      customChanged=true;
+    }
+  }
+  if(customChanged)promises.push(saveCustomLinksPersist());
   await Promise.all(promises);
   showSync('ok','✓ Salvo');
   toggleEditAll(itemId);
@@ -2607,7 +2755,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
