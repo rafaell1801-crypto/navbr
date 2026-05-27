@@ -527,11 +527,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
         </div>
         <div class="modal-section">
           <h3>Backup de links</h3>
-          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte seus links de resumo e questões para um arquivo JSON. Guarde-o como backup antes de qualquer reset.</p>
-          <div style="display:flex;gap:8px">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Exporte/importe links de resumo e questões em JSON.</p>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
             <button onclick="exportLinks()" style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #3eb5c8;background:transparent;color:#3eb5c8">⬇ Exportar links</button>
             <label style="flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #7dd3fc;background:transparent;color:#7dd3fc;text-align:center">⬆ Importar links<input type="file" accept=".json" style="display:none" onchange="importLinks(event)"></label>
           </div>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0 6px">Se você adicionou resumos/questões num dispositivo e eles não aparecem nos outros, clique abaixo para forçar a sincronização do localStorage local com o Supabase:</p>
+          <button onclick="forcePushLinksToSupabase()" style="padding:8px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #f5a623;background:transparent;color:#f5a623">⇪ Sincronizar links locais → Supabase</button>
         </div>
         <div class="modal-section">
           <h3>Reset completo</h3>
@@ -1304,6 +1306,21 @@ function exportLinks() {
   a.download = 'plano_links_' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+async function forcePushLinksToSupabase(){
+  const resBkp=JSON.parse(localStorage.getItem('resumos_backup')||'{}');
+  const cadBkp=JSON.parse(localStorage.getItem('cadernos_backup')||'{}');
+  const total=Object.keys(resBkp).length+Object.keys(cadBkp).length;
+  if(total===0){alert('Nenhum link salvo localmente neste dispositivo.');return;}
+  if(!confirm(`Vai enviar ${Object.keys(resBkp).length} resumos e ${Object.keys(cadBkp).length} questões locais para o Supabase. Continuar?`))return;
+  showSync('saving','⏳ Sincronizando...');
+  const ups=[];
+  for(const[id,url] of Object.entries(resBkp))if(url)ups.push(sbUpsert('resumos',{item_id:+id,url}));
+  for(const[id,url] of Object.entries(cadBkp))if(url)ups.push(sbUpsert('cadernos',{item_id:+id,url}));
+  await Promise.all(ups);
+  showSync('ok','✓ Sincronizado');
+  alert(`${ups.length} links enviados ao Supabase. Recarregue os outros dispositivos para vê-los.`);
 }
 
 async function importLinks(event) {
