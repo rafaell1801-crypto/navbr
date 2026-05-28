@@ -140,17 +140,18 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .link-icon.empty{opacity:.28;cursor:default;filter:saturate(.2)}
 .link-pct{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:#7dd3e8;padding:0 6px;line-height:1}
 .link-pct.empty{color:#3a5066;opacity:.55}
-.link-edit-all{background:transparent;border:none;color:#3a6070;cursor:pointer;font-size:11px;padding:0 4px;opacity:.55;transition:opacity .15s,color .15s;line-height:1;margin-left:2px}
+.link-edit-all{background:transparent;border:none;color:#3a6070;cursor:pointer;font-size:11px;padding:0 4px;opacity:.55;transition:opacity .15s,color .15s;line-height:1;margin-left:auto}
 .link-edit-all:hover{opacity:1;color:#7dd3e8}
 .link-edit-all-row{margin-top:4px;padding:6px 8px;background:#071e30;border:1px solid #1e3a4a;border-radius:6px}
-.link-edit-all-row input{padding:3px 7px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px}
+.link-edit-all-row input{padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px;min-width:0}
 .link-edit-all-row input:focus{outline:none;border-color:var(--accent)}
-.link-edit-all-row .lea-field{display:flex;gap:5px;align-items:center;margin-bottom:3px}
-.link-edit-all-row .lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;color:#7dd3e8}
-.link-edit-all-row .lea-emoji img{width:14px;height:14px;object-fit:contain;display:block}
-.link-edit-all-row .lea-input{flex:1;min-width:0}
+.lea-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.lea-cell{display:flex;align-items:center;gap:3px;flex:1 1 100px;min-width:80px}
+.lea-cell input{flex:1;width:100%}
+.lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;color:#7dd3e8}
+.lea-emoji img{width:14px;height:14px;object-fit:contain;display:block}
 .link-edit-all-row .link-confirm-btn,.link-edit-all-row .link-cancel-btn{padding:3px 9px;font-size:10.5px;height:24px}
-.links-row-display{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.links-row-display{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%}
 .q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .q-disc-row:hover{background:#0a1620}
 .q-disc-row:last-child{border-bottom:none}
@@ -1657,7 +1658,9 @@ const ICON_DRIVE=`<img src="drive.png" alt="Drive" style="width:20px;height:20px
 // Aliases mantidos pra compatibilidade
 const ICON_FOLDER=ICON_RESUMO,ICON_CHART=ICON_QUESTOES,ICON_CLIPBOARD=ICON_DRIVE;
 
-function renderLinksRow(itemId, disc){
+function renderLinksRow(itemId, disc, ctx){
+  ctx=ctx||'c';
+  const idp=ctx+'-'+itemId;
   const resUrl=resumosState[itemId]||'';
   const cadUrl=cadernosState[itemId]||'';
   const dl=driveLinks[disc];
@@ -1681,7 +1684,7 @@ function renderLinksRow(itemId, disc){
   const customEditFields=customLinkTypes.map(t=>{
     const url=((customLinks[itemId]||{})[t.id])||'';
     const iconImg=`<img src="${(t.icon||'').replace(/"/g,'&quot;')}" alt="" style="width:14px;height:14px;object-fit:contain">`;
-    return `<div class="lea-field"><span class="lea-emoji">${iconImg}</span><input class="lea-input" id="lea-cl-${t.id}-${itemId}" value="${url.replace(/"/g,'&quot;')}" placeholder="link ${(t.label||'').replace(/"/g,'&quot;')}..."></div>`;
+    return `<div class="lea-cell"><span class="lea-emoji">${iconImg}</span><input id="lea-cl-${t.id}-${idp}" value="${url.replace(/"/g,'&quot;')}" placeholder="${(t.label||'').replace(/"/g,'&quot;')}"></div>`;
   }).join('');
   const display=`<div class="links-row-display">
     ${resUrl?`<a href="${safeRes}" target="_blank" rel="noopener" class="link-icon" title="Resumo">${ICON_FOLDER}</a>`:`<span class="link-icon empty" title="sem resumo">${ICON_FOLDER}</span>`}
@@ -1689,34 +1692,37 @@ function renderLinksRow(itemId, disc){
     ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${ICON_CLIPBOARD}</a>`:`<span class="link-icon empty" title="sem Drive">${ICON_CLIPBOARD}</span>`}
     ${customIconsHtml}
     ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
-    <button class="link-edit-all" onclick="toggleEditAll(${itemId})" title="Adicionar ou editar links">✎</button>
+    <button class="link-edit-all" onclick="toggleEditAll('${ctx}',${itemId})" title="Adicionar ou editar links">✎</button>
   </div>`;
-  const editForm=`<div class="link-edit-all-row hidden" id="lea-${itemId}">
-    <div class="lea-field"><span class="lea-emoji">${ICON_FOLDER}</span><input class="lea-input" id="lea-res-${itemId}" value="${safeRes}" placeholder="link do resumo..."></div>
-    <div class="lea-field"><span class="lea-emoji">${ICON_CHART}</span><input class="lea-input" id="lea-cad-${itemId}" value="${safeCad}" placeholder="link das questões..."></div>
-    <div class="lea-field"><span class="lea-emoji">${ICON_CLIPBOARD}</span><input class="lea-input" id="lea-drv-${itemId}" value="${safeDrv}" placeholder="link do Drive..." title="Aplica a toda a disciplina"></div>
-    ${customEditFields}
-    <div class="lea-field"><span class="lea-emoji">🎯</span><input id="lea-qa-${itemId}" type="number" min="0" value="${qa}" placeholder="acertos" style="width:54px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${itemId}" type="number" min="0" value="${qt}" placeholder="total" style="width:54px;flex:none"><span style="font-size:10px;color:var(--muted);margin-left:auto">${qt>0?qpct+'%':''}</span></div>
-    <div style="display:flex;gap:5px;margin-top:4px">
-      <button class="link-confirm-btn" onclick="saveAllLinksForItem(${itemId},'${safeDisc}')">✓ Salvar</button>
-      <button class="link-cancel-btn" onclick="toggleEditAll(${itemId})">✕ Cancelar</button>
+  const editForm=`<div class="link-edit-all-row hidden" id="lea-${idp}">
+    <div class="lea-inline">
+      <div class="lea-cell"><span class="lea-emoji">${ICON_FOLDER}</span><input id="lea-res-${idp}" value="${safeRes}" placeholder="resumo"></div>
+      <div class="lea-cell"><span class="lea-emoji">${ICON_CHART}</span><input id="lea-cad-${idp}" value="${safeCad}" placeholder="questões"></div>
+      <div class="lea-cell"><span class="lea-emoji">${ICON_CLIPBOARD}</span><input id="lea-drv-${idp}" value="${safeDrv}" placeholder="drive" title="Aplica a toda a disciplina"></div>
+      ${customEditFields}
+      <div class="lea-cell" style="flex:0 0 auto;min-width:0"><span class="lea-emoji">🎯</span><input id="lea-qa-${idp}" type="number" min="0" value="${qa}" style="width:42px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${idp}" type="number" min="0" value="${qt}" style="width:42px;flex:none"></div>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:5px">
+      <button class="link-confirm-btn" onclick="saveAllLinksForItem('${ctx}',${itemId},'${safeDisc}')">✓ Salvar</button>
+      <button class="link-cancel-btn" onclick="toggleEditAll('${ctx}',${itemId})">✕ Cancelar</button>
     </div>
   </div>`;
   return display+editForm;
 }
 
-function toggleEditAll(itemId){
-  const el=document.getElementById('lea-'+itemId);if(!el)return;
+function toggleEditAll(ctx,itemId){
+  const el=document.getElementById('lea-'+ctx+'-'+itemId);if(!el)return;
   const hidden=el.classList.toggle('hidden');
   if(!hidden){const inp=el.querySelector('input');if(inp)inp.focus();}
 }
 
-async function saveAllLinksForItem(itemId,disc){
-  const res=(document.getElementById(`lea-res-${itemId}`)||{}).value?.trim()||'';
-  const cad=(document.getElementById(`lea-cad-${itemId}`)||{}).value?.trim()||'';
-  const drv=(document.getElementById(`lea-drv-${itemId}`)||{}).value?.trim()||'';
-  const qa=parseInt((document.getElementById(`lea-qa-${itemId}`)||{}).value)||0;
-  const qt=parseInt((document.getElementById(`lea-qt-${itemId}`)||{}).value)||0;
+async function saveAllLinksForItem(ctx,itemId,disc){
+  const idp=ctx+'-'+itemId;
+  const res=(document.getElementById(`lea-res-${idp}`)||{}).value?.trim()||'';
+  const cad=(document.getElementById(`lea-cad-${idp}`)||{}).value?.trim()||'';
+  const drv=(document.getElementById(`lea-drv-${idp}`)||{}).value?.trim()||'';
+  const qa=parseInt((document.getElementById(`lea-qa-${idp}`)||{}).value)||0;
+  const qt=parseInt((document.getElementById(`lea-qt-${idp}`)||{}).value)||0;
   showSync('saving','⏳ Salvando...');
   const promises=[];
   if(res!==(resumosState[itemId]||'')){
@@ -1741,7 +1747,7 @@ async function saveAllLinksForItem(itemId,disc){
   // Custom link types
   let customChanged=false;
   for(const t of customLinkTypes){
-    const inp=document.getElementById(`lea-cl-${t.id}-${itemId}`);
+    const inp=document.getElementById(`lea-cl-${t.id}-${idp}`);
     if(!inp)continue;
     const u=inp.value.trim();
     const cur=(customLinks[itemId]||{})[t.id]||'';
@@ -1755,7 +1761,7 @@ async function saveAllLinksForItem(itemId,disc){
   if(customChanged)promises.push(saveCustomLinksPersist());
   await Promise.all(promises);
   showSync('ok','✓ Salvo');
-  toggleEditAll(itemId);
+  toggleEditAll(ctx,itemId);
   render();
   if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
 }
@@ -1827,7 +1833,7 @@ function buildDayHTML(dateStr,days){
         ${discNameEl}
         <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px">${item.topico}</div>
         <div style="margin-top:7px;padding-left:16px">
-          ${renderLinksRow(item.id, item.disc)}
+          ${renderLinksRow(item.id, item.disc, 'c')}
         </div>
       </div>
       <div style="flex-shrink:0;text-align:right;padding-top:2px">
@@ -2042,7 +2048,7 @@ function renderRev(){
           </span>
           <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
           <div style="margin-top:5px">
-            ${renderLinksRow(item.id, item.disc)}
+            ${renderLinksRow(item.id, item.disc, 'r')}
           </div>
         </div>
         <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
