@@ -353,7 +353,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('content')">Conteúdo</button>
-  <button class="settings-btn" onclick="openSettings()" title="Configurações">⚙️</button>
+  <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
 
 <!-- TIMER -->
@@ -1425,7 +1425,7 @@ function onHeaderIconChange(input){
 const ICON_INVERT_PREVIEW={editar:1,atrasados:0};
 function renderBuiltinIconsConfig(){
   const wrap=document.getElementById('cfg-builtin-icons');if(!wrap)return;
-  const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive'],['editar','Editar'],['atrasados','Atrasados']];
+  const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive'],['editar','Editar'],['atrasados','Atrasados'],['config','Configurações']];
   wrap.innerHTML=items.map(([key,label])=>{
     const src=(builtinIcons[key]||BUILTIN_DEFAULTS[key]).replace(/"/g,'&quot;');
     const inv=!builtinIcons[key]&&ICON_INVERT_PREVIEW[key]?';filter:invert(1)':'';
@@ -1439,7 +1439,7 @@ function renderBuiltinIconsConfig(){
     </div>`;
   }).join('');
 }
-function applyLateIcon(){const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';}
+function applyLateIcon(){const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';const cg=document.getElementById('config-icon');if(cg)cg.src=builtinIcons['config']||'config.png';}
 function renderTimerIconsConfig(){
   const wrap=document.getElementById('cfg-timer-icons');if(!wrap)return;
   const items=[['play','Play'],['pausa','Pausar'],['concluir','Concluir'],['cancelar','Cancelar'],['refazer','Reiniciar']];
@@ -1844,7 +1844,7 @@ function compactCadernoHTML(itemId) {
 }
 
 let builtinIcons={}; // {resumo, questoes, drive, play, pausa, concluir, cancelar, refazer} → base64
-const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png',editar:'editar.png',atrasados:'atrasados.png'};
+const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png',editar:'editar.png',atrasados:'atrasados.png',config:'config.png'};
 function editIconHTML(){
   if(builtinIcons['editar'])return `<img src="${builtinIcons['editar'].replace(/"/g,'&quot;')}" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block">`;
   return `<img src="editar.png" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block;filter:invert(1) opacity(.55)">`;
