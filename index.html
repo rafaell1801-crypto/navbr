@@ -26,7 +26,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .app-verse{font-size:11px;font-style:italic;color:#7fb3c8;text-align:right;line-height:1.4}
 .app-header-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .app-subtitle{font-size:13px;font-weight:600;color:#c8e6f0;letter-spacing:.2px}
-.app-header-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.app-header-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.xlink-item{display:inline-flex;align-items:center;color:#7dd3fc;text-decoration:none;font-size:12px;font-weight:600;transition:opacity .15s}
+.xlink-item:hover{opacity:.7}
 .sync-icons{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto}
 .s-ok{font-size:15px;font-weight:700;color:#2dd4a0}
 .s-spin{font-size:15px;color:var(--accent)}
@@ -328,10 +330,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
   <div class="app-verse" id="app-verse">"onde semeou, colheu cem por um, porque o SENHOR o abençoava" — Gênesis 26:12</div>
   <div class="app-header-row">
     <span class="app-subtitle">Serviços de Navegação Aérea S.A.</span>
-    <div class="app-header-links">
-      <a id="tec-link" href="https://www.tecconcursos.com.br/questoes/pastas/6787931" target="_blank" rel="noopener" style="font-size:12px;font-weight:600;color:#7dd3fc;text-decoration:none;background:#071a28;padding:2px 8px;border-radius:99px;border:1px solid #3eb5c8">TEC</a>
-      <span id="xwrap-1" class="xlink-wrap"></span><span id="xwrap-2" class="xlink-wrap"></span><span id="xwrap-3" class="xlink-wrap"></span>
-    </div>
+    <div class="app-header-links" id="app-header-links"></div>
   </div>
 </div>
 
@@ -472,17 +471,19 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <div class="cfg-group-body">
         <div class="modal-section">
           <h3>Links do cabeçalho</h3>
-          <div style="display:flex;gap:6px;align-items:center;background:#071e30;border:1px solid var(--accent);border-radius:8px;padding:6px 8px;margin-bottom:8px">
-            <input id="cfg-tec-nome" type="text" placeholder="Nome" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:#7dd3e8;font-weight:600">
-            <input id="cfg-tec-url" type="url" placeholder="https://..." style="flex:1;padding:5px 8px;border:1px solid #2a6070;border-radius:6px;font-size:12px;background:#0a2535;color:var(--text)">
-          </div>
-          <div id="cfg-extra-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button type="button" onclick="addExtraLinkRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar link</button>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cada link pode ter um ícone PNG OU um texto. Se enviar PNG, ele aparece no lugar do texto.</p>
+          <div id="cfg-header-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button type="button" onclick="addHeaderLinkRow()" style="margin-top:8px;padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Adicionar link</button>
         </div>
         <div class="modal-section">
           <h3>Links Drive por disciplina</h3>
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da pasta do Google Drive de cada disciplina. Aparece como pílula "📁" ao lado de questões no ciclo e nas revisões.</p>
           <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="modal-section">
+          <h3>Ícones dos links (resumo / questões / drive)</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Clique no ícone para enviar um PNG personalizado. Será redimensionado para 48×48.</p>
+          <div id="cfg-builtin-icons" style="display:flex;gap:14px;flex-wrap:wrap"></div>
         </div>
         <div class="modal-section">
           <h3>Tipos de link personalizados</h3>
@@ -1041,29 +1042,36 @@ function renderDailyChart(){
 }
 async function loadLinksExtras(){
   const backup=JSON.parse(localStorage.getItem('nav_xlinks')||'{}');
+  linksExtras=backup;
   try{
-    const d=await sbGet('links_extras','select=id,nome,url');
-    if(d&&d.length>0){
-      linksExtras={};
-      d.forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||''};});
-      localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
-    }else{linksExtras=backup;}
-  }catch{linksExtras=backup;}
-  const tec=linksExtras[0]||{};
-  const tecUrl=tec.url||localStorage.getItem('nav_tec_url')||'';
-  if(tecUrl){const tl=document.getElementById('tec-link');if(tl){tl.href=tecUrl;if(tec.nome)tl.textContent=tec.nome;}}
+    const d=await sbGet('conteudo','select=topics&disc=eq.__header_links__');
+    if(d&&d.length>0&&d[0].topics&&typeof d[0].topics==='object'){
+      linksExtras=d[0].topics;
+    }else{
+      // Migra da tabela antiga links_extras (sem ícone)
+      const old=await sbGet('links_extras','select=id,nome,url');
+      if(old&&old.length>0){linksExtras={};old.forEach(r=>{linksExtras[r.id]={nome:r.nome||'',url:r.url||'',icon:''};});}
+    }
+    localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
+  }catch{}
+  if(!linksExtras[0])linksExtras[0]={nome:'TEC',url:localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931',icon:''};
   renderXLinks();
 }
+async function saveHeaderLinks(){
+  try{localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));}catch{}
+  await sbUpsert('conteudo',{disc:'__header_links__',topics:linksExtras});
+}
 function renderXLinks(){
-  [1,2,3].forEach(i=>{
-    const wrap=document.getElementById('xwrap-'+i);if(!wrap)return;
-    const d=linksExtras[i];
-    if(d&&d.url){
-      wrap.innerHTML=`<a href="${d.url}" target="_blank" rel="noopener" class="xlink-pill set">${d.nome||'Link '+i}</a>`;
-    }else{
-      wrap.innerHTML='';
-    }
-  });
+  const wrap=document.getElementById('app-header-links');if(!wrap)return;
+  const ids=Object.keys(linksExtras).map(Number).sort((a,b)=>a-b);
+  wrap.innerHTML=ids.map(id=>{
+    const d=linksExtras[id];
+    if(!d||!d.url)return '';
+    const content=d.icon
+      ?`<img src="${d.icon.replace(/"/g,'&quot;')}" alt="${(d.nome||'').replace(/"/g,'&quot;')}" style="height:22px;width:auto;max-width:64px;display:block;object-fit:contain">`
+      :(d.nome||'Link').replace(/</g,'&lt;');
+    return `<a href="${d.url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="xlink-item">${content}</a>`;
+  }).join('');
 }
 let state={},revState={},timerSt={timeByDisc:{},remaining:getBlockSecs(),running:false,interval:null,currentDisc:''};
 let syncTimer=null;
@@ -1205,11 +1213,10 @@ function spinTimerM(dir){
 function openSettings(){
   const b=customBlocos||DEFAULT_BLOCOS;
   const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
-  const tecEl=document.getElementById('cfg-tec-url');if(tecEl)tecEl.value=(linksExtras[0]&&linksExtras[0].url)||localStorage.getItem('nav_tec_url')||'https://www.tecconcursos.com.br/questoes/pastas/6787931';
-  const tecNomeEl=document.getElementById('cfg-tec-nome');if(tecNomeEl)tecNomeEl.value=(linksExtras[0]&&linksExtras[0].nome)||'TEC';
-  renderExtraLinksConfig();
+  renderHeaderLinksConfig();
   renderDriveLinksConfig();
   renderCustomLinkTypesConfig();
+  renderBuiltinIconsConfig();
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -1233,49 +1240,75 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 
-function renderExtraLinksConfig(){
-  const wrap=document.getElementById('cfg-extra-links-list');if(!wrap)return;
-  const ids=Object.keys(linksExtras).map(n=>parseInt(n)).filter(n=>n>=1).sort((a,b)=>a-b);
-  if(ids.length===0)ids.push(1,2,3);
+function renderHeaderLinksConfig(){
+  const wrap=document.getElementById('cfg-header-links-list');if(!wrap)return;
+  const ids=Object.keys(linksExtras).map(Number).sort((a,b)=>a-b);
+  if(!ids.includes(0))ids.unshift(0);
   wrap.innerHTML='';
-  ids.forEach(i=>{wrap.appendChild(buildExtraLinkRow(i,linksExtras[i]||{}));});
+  ids.forEach(id=>wrap.appendChild(buildHeaderLinkRow(id,linksExtras[id]||{})));
 }
-function buildExtraLinkRow(id,data){
+function buildHeaderLinkRow(id,data){
   const row=document.createElement('div');
-  row.className='cfg-extra-link-row';
+  row.className='cfg-hl-row';
   row.dataset.id=id;
+  row.dataset.icon=data.icon||'';
   row.style.cssText='display:flex;gap:6px;align-items:center';
-  const safeNome=(data.nome||'').replace(/"/g,'&quot;');
-  const safeUrl=(data.url||'').replace(/"/g,'&quot;');
-  row.innerHTML=`<input class="cfg-x-nome" type="text" placeholder="Nome" value="${safeNome}" style="width:84px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><input class="cfg-x-url" type="url" placeholder="https://..." value="${safeUrl}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><button type="button" onclick="removeExtraLinkRow(this)" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>`;
+  const nome=(data.nome||'').replace(/"/g,'&quot;');
+  const url=(data.url||'').replace(/"/g,'&quot;');
+  const iconSrc=(data.icon||'').replace(/"/g,'&quot;');
+  const delBtn=id===0?'<span style="width:26px;flex-shrink:0"></span>':`<button type="button" onclick="removeHeaderLinkRow(this)" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>`;
+  row.innerHTML=`
+    <label class="cfg-hl-icon" style="width:32px;height:32px;flex-shrink:0;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface2);overflow:hidden" title="Enviar PNG (opcional)">
+      ${iconSrc?`<img class="cfg-hl-preview" src="${iconSrc}" style="width:24px;height:24px;object-fit:contain">`:'<span class="cfg-hl-preview" style="font-size:9px;color:var(--muted)">+png</span>'}
+      <input type="file" accept="image/*" style="display:none" onchange="onHeaderIconChange(this)">
+    </label>
+    <input class="cfg-hl-nome" type="text" placeholder="Texto" value="${nome}" style="width:90px;flex-shrink:0;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    <input class="cfg-hl-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    ${delBtn}
+  `;
   return row;
 }
-function addExtraLinkRow(){
-  const wrap=document.getElementById('cfg-extra-links-list');if(!wrap)return;
-  const used=Array.from(wrap.querySelectorAll('.cfg-extra-link-row')).map(r=>parseInt(r.dataset.id));
+function addHeaderLinkRow(){
+  const wrap=document.getElementById('cfg-header-links-list');if(!wrap)return;
+  const used=Array.from(wrap.querySelectorAll('.cfg-hl-row')).map(r=>parseInt(r.dataset.id));
   let nextId=1;while(used.includes(nextId))nextId++;
-  wrap.appendChild(buildExtraLinkRow(nextId,{}));
+  wrap.appendChild(buildHeaderLinkRow(nextId,{}));
 }
-function removeExtraLinkRow(btn){btn.closest('.cfg-extra-link-row').remove();}
+function removeHeaderLinkRow(btn){
+  if(!confirm('Excluir esse link do cabeçalho? Essa ação remove o PNG e o link juntos.'))return;
+  btn.closest('.cfg-hl-row').remove();
+}
+function onHeaderIconChange(input){
+  const file=input.files[0];if(!file)return;
+  const row=input.closest('.cfg-hl-row');
+  readIconFile(file,dataUrl=>{
+    row.dataset.icon=dataUrl;
+    const prev=row.querySelector('.cfg-hl-preview');
+    if(prev){const img=document.createElement('img');img.className='cfg-hl-preview';img.src=dataUrl;img.style.cssText='width:24px;height:24px;object-fit:contain';prev.replaceWith(img);}
+  });
+}
 
-function _buildCltRow(type){
-  const row=document.createElement('div');
-  row.className='cfg-clt-row';
-  row.dataset.id=type.id;
-  row.style.cssText='display:flex;gap:6px;align-items:center';
-  const e=(type.emoji||'').replace(/"/g,'&quot;');
-  const l=(type.label||'').replace(/"/g,'&quot;');
-  row.innerHTML=`<input class="cfg-clt-emoji" type="text" maxlength="2" value="${e}" placeholder="🔗" style="width:44px;text-align:center;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--surface2);color:var(--text)"><input class="cfg-clt-label" type="text" value="${l}" placeholder="Nome do tipo..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)"><button type="button" onclick="this.parentElement.remove()" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>`;
-  return row;
+function renderBuiltinIconsConfig(){
+  const wrap=document.getElementById('cfg-builtin-icons');if(!wrap)return;
+  const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive']];
+  wrap.innerHTML=items.map(([key,label])=>{
+    const src=(builtinIcons[key]||BUILTIN_DEFAULTS[key]).replace(/"/g,'&quot;');
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <label style="width:44px;height:44px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface2);overflow:hidden" title="Enviar PNG para ${label}">
+        <img src="${src}" style="width:32px;height:32px;object-fit:contain">
+        <input type="file" accept="image/*" style="display:none" onchange="onBuiltinIconChange('${key}',this)">
+      </label>
+      <span style="font-size:10px;color:var(--muted)">${label}</span>
+      ${builtinIcons[key]?`<button type="button" onclick="resetBuiltinIcon('${key}')" style="font-size:9px;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">restaurar</button>`:''}
+    </div>`;
+  }).join('');
 }
-function renderCustomLinkTypesConfig(){
-  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
-  wrap.innerHTML='';
-  customLinkTypes.forEach(t=>wrap.appendChild(_buildCltRow(t)));
+function onBuiltinIconChange(key,input){
+  const file=input.files[0];if(!file)return;
+  readIconFile(file,dataUrl=>{builtinIcons[key]=dataUrl;renderBuiltinIconsConfig();});
 }
-function addCustomLinkTypeRow(){
-  const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
-  wrap.appendChild(_buildCltRow({id:'clt-'+Date.now()+'-'+Math.floor(Math.random()*1000),emoji:'',label:''}));
+function resetBuiltinIcon(key){
+  delete builtinIcons[key];renderBuiltinIconsConfig();
 }
 
 function _buildCltRow(type){
@@ -1291,7 +1324,7 @@ function _buildCltRow(type){
       <input type="file" accept="image/*" style="display:none" onchange="onCltIconChange(this)">
     </label>
     <input class="cfg-clt-label" type="text" value="${l}" placeholder="Nome do tipo..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
-    <button type="button" onclick="this.parentElement.remove()" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>
+    <button type="button" onclick="removeCltRow(this)" title="Remover" style="padding:4px 8px;font-size:14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--danger);cursor:pointer">✕</button>
   `;
   row.dataset.icon=type.icon||'';
   return row;
@@ -1304,6 +1337,10 @@ function renderCustomLinkTypesConfig(){
 function addCustomLinkTypeRow(){
   const wrap=document.getElementById('cfg-clt-list');if(!wrap)return;
   wrap.appendChild(_buildCltRow({id:'clt-'+Date.now()+'-'+Math.floor(Math.random()*1000),label:'',icon:''}));
+}
+function removeCltRow(btn){
+  if(!confirm('Excluir esse tipo de link? Essa ação remove o PNG e o nome juntos.'))return;
+  btn.closest('.cfg-clt-row').remove();
 }
 function onCltIconChange(input){
   const file=input.files[0];if(!file)return;
@@ -1443,28 +1480,19 @@ function saveSettings(){
     const secs=parseInt(thEl.textContent)*3600+parseInt(tmEl.textContent)*60;
     if(secs>0){localStorage.setItem('nav_timer_secs',secs);if(!timerSt.running){timerSt.remaining=secs;updateTimerUI();}}
   }
-  const tecUrl=(document.getElementById('cfg-tec-url')||{}).value||'';
-  const tecNome=(document.getElementById('cfg-tec-nome')||{}).value||'TEC';
-  const oldIds=Object.keys(linksExtras).map(n=>parseInt(n)).filter(n=>n>=1);
-  linksExtras={};
-  linksExtras[0]={nome:tecNome,url:tecUrl};
-  if(tecUrl){localStorage.setItem('nav_tec_url',tecUrl);const tl=document.getElementById('tec-link');if(tl){tl.href=tecUrl;tl.textContent=tecNome;}}
-  const linkSaves=[sbUpsert('links_extras',{id:0,nome:tecNome,url:tecUrl})];
-  const rows=document.querySelectorAll('#cfg-extra-links-list .cfg-extra-link-row');
-  const newIds=[];
-  rows.forEach(row=>{
+  // Links do cabeçalho (ícone PNG ou texto)
+  const newExtras={};
+  document.querySelectorAll('#cfg-header-links-list .cfg-hl-row').forEach(row=>{
     const id=parseInt(row.dataset.id);
-    const nome=row.querySelector('.cfg-x-nome').value||'';
-    const url=row.querySelector('.cfg-x-url').value||'';
-    linksExtras[id]={nome,url};
-    newIds.push(id);
-    linkSaves.push(sbUpsert('links_extras',{id,nome,url}));
+    const nome=row.querySelector('.cfg-hl-nome').value.trim();
+    const url=row.querySelector('.cfg-hl-url').value.trim();
+    const icon=row.dataset.icon||'';
+    newExtras[id]={nome,url,icon};
   });
-  // Apaga IDs que foram removidos
-  oldIds.filter(i=>!newIds.includes(i)).forEach(id=>{
-    linkSaves.push(fetch(`${SB_URL}/rest/v1/links_extras?id=eq.${id}`,{method:'DELETE',headers:sbH}).catch(()=>{}));
-  });
-  localStorage.setItem('nav_xlinks',JSON.stringify(linksExtras));
+  linksExtras=newExtras;
+  if(linksExtras[0]&&linksExtras[0].url)localStorage.setItem('nav_tec_url',linksExtras[0].url);
+  const linkSaves=[saveHeaderLinks()];
+  renderXLinks();
   // Drive links
   const driveRows=document.querySelectorAll('#cfg-drive-list .cfg-drive-row');
   driveRows.forEach(row=>{
@@ -1493,6 +1521,7 @@ function saveSettings(){
   }
   customLinkTypes=newTypes;
   linkSaves.push(saveCustomLinkTypesPersist());
+  linkSaves.push(saveBuiltinIcons());
   // Configurações do app (data, timer, blocos) → sincroniza entre dispositivos
   linkSaves.push(saveAppSettings());
   // Versículo
@@ -1652,11 +1681,41 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
-const ICON_RESUMO=`<img src="resumo.png" alt="Resumo" style="width:20px;height:20px;display:block;object-fit:contain">`;
-const ICON_QUESTOES=`<img src="questoes.png" alt="Questões" style="width:20px;height:20px;display:block;object-fit:contain">`;
-const ICON_DRIVE=`<img src="drive.png" alt="Drive" style="width:20px;height:20px;display:block;object-fit:contain">`;
-// Aliases mantidos pra compatibilidade
-const ICON_FOLDER=ICON_RESUMO,ICON_CHART=ICON_QUESTOES,ICON_CLIPBOARD=ICON_DRIVE;
+let builtinIcons={}; // {resumo, questoes, drive} → base64 (vazio = usa o .png padrão)
+const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png'};
+function iconImg(key,size){
+  size=size||20;
+  const src=(builtinIcons[key]||BUILTIN_DEFAULTS[key]).replace(/"/g,'&quot;');
+  return `<img src="${src}" alt="" style="width:${size}px;height:${size}px;display:block;object-fit:contain">`;
+}
+async function loadBuiltinIcons(){
+  try{const s=localStorage.getItem('nav_builtin_icons');if(s)builtinIcons=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__builtin_icons__');
+    if(d&&d.length>0&&d[0].topics&&typeof d[0].topics==='object'){builtinIcons=d[0].topics;try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}}
+  }catch{}
+  render();
+}
+async function saveBuiltinIcons(){
+  try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}
+  await sbUpsert('conteudo',{disc:'__builtin_icons__',topics:builtinIcons});
+}
+// Util: lê arquivo de imagem e redimensiona para 48x48 base64
+function readIconFile(file,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas');const S=48;c.width=S;c.height=S;
+      const ctx=c.getContext('2d');ctx.clearRect(0,0,S,S);
+      const sc=Math.min(S/img.width,S/img.height),w=img.width*sc,h=img.height*sc;
+      ctx.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+      cb(c.toDataURL('image/png'));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 function renderLinksRow(itemId, disc, ctx){
   ctx=ctx||'c';
@@ -1687,18 +1746,18 @@ function renderLinksRow(itemId, disc, ctx){
     return `<div class="lea-cell"><span class="lea-emoji">${iconImg}</span><input id="lea-cl-${t.id}-${idp}" value="${url.replace(/"/g,'&quot;')}" placeholder="${(t.label||'').replace(/"/g,'&quot;')}"></div>`;
   }).join('');
   const display=`<div class="links-row-display">
-    ${resUrl?`<a href="${safeRes}" target="_blank" rel="noopener" class="link-icon" title="Resumo">${ICON_FOLDER}</a>`:`<span class="link-icon empty" title="sem resumo">${ICON_FOLDER}</span>`}
-    ${cadUrl?`<a href="${safeCad}" target="_blank" rel="noopener" class="link-icon" title="Questões">${ICON_CHART}</a>`:`<span class="link-icon empty" title="sem questões">${ICON_CHART}</span>`}
-    ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${ICON_CLIPBOARD}</a>`:`<span class="link-icon empty" title="sem Drive">${ICON_CLIPBOARD}</span>`}
+    ${resUrl?`<a href="${safeRes}" target="_blank" rel="noopener" class="link-icon" title="Resumo">${iconImg('resumo')}</a>`:`<span class="link-icon empty" title="sem resumo">${iconImg('resumo')}</span>`}
+    ${cadUrl?`<a href="${safeCad}" target="_blank" rel="noopener" class="link-icon" title="Questões">${iconImg('questoes')}</a>`:`<span class="link-icon empty" title="sem questões">${iconImg('questoes')}</span>`}
+    ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${iconImg('drive')}</a>`:`<span class="link-icon empty" title="sem Drive">${iconImg('drive')}</span>`}
     ${customIconsHtml}
     ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
     <button class="link-edit-all" onclick="toggleEditAll('${ctx}',${itemId})" title="Adicionar ou editar links">✎</button>
   </div>`;
   const editForm=`<div class="link-edit-all-row hidden" id="lea-${idp}">
     <div class="lea-inline">
-      <div class="lea-cell"><span class="lea-emoji">${ICON_FOLDER}</span><input id="lea-res-${idp}" value="${safeRes}" placeholder="resumo"></div>
-      <div class="lea-cell"><span class="lea-emoji">${ICON_CHART}</span><input id="lea-cad-${idp}" value="${safeCad}" placeholder="questões"></div>
-      <div class="lea-cell"><span class="lea-emoji">${ICON_CLIPBOARD}</span><input id="lea-drv-${idp}" value="${safeDrv}" placeholder="drive" title="Aplica a toda a disciplina"></div>
+      <div class="lea-cell"><span class="lea-emoji">${iconImg('resumo',14)}</span><input id="lea-res-${idp}" value="${safeRes}" placeholder="resumo"></div>
+      <div class="lea-cell"><span class="lea-emoji">${iconImg('questoes',14)}</span><input id="lea-cad-${idp}" value="${safeCad}" placeholder="questões"></div>
+      <div class="lea-cell"><span class="lea-emoji">${iconImg('drive',14)}</span><input id="lea-drv-${idp}" value="${safeDrv}" placeholder="drive" title="Aplica a toda a disciplina"></div>
       ${customEditFields}
       <div class="lea-cell" style="flex:0 0 auto;min-width:0"><span class="lea-emoji">🎯</span><input id="lea-qa-${idp}" type="number" min="0" value="${qa}" style="width:42px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${idp}" type="number" min="0" value="${qt}" style="width:42px;flex:none"></div>
     </div>
@@ -2717,7 +2776,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
