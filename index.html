@@ -154,6 +154,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;color:#7dd3e8}
 .lea-emoji img{width:14px;height:14px;object-fit:contain;display:block}
 .link-edit-all-row .link-confirm-btn,.link-edit-all-row .link-cancel-btn{padding:3px 9px;font-size:10.5px;height:24px}
+.lea-ok,.lea-x{width:26px;height:24px;flex:0 0 auto;border-radius:5px;border:1px solid;background:transparent;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.lea-ok{color:#2dd4a0;border-color:#2dd4a0}.lea-ok:hover{background:#08160f}
+.lea-x{color:#f26b5e;border-color:#f26b5e}.lea-x:hover{background:#2a0a0a}
 .links-row-display{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%}
 .q-disc-row{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:.5px solid var(--border);cursor:pointer;transition:background .12s}
 .q-disc-row:hover{background:#0a1620}
@@ -1932,13 +1935,10 @@ function renderLinksRow(itemId, disc, ctx){
     <div class="lea-inline">
       <div class="lea-cell"><span class="lea-emoji">${iconImg('resumo',14)}</span><input id="lea-res-${idp}" value="${safeRes}" placeholder="resumo"></div>
       <div class="lea-cell"><span class="lea-emoji">${iconImg('questoes',14)}</span><input id="lea-cad-${idp}" value="${safeCad}" placeholder="questões"></div>
-      <div class="lea-cell"><span class="lea-emoji">${iconImg('drive',14)}</span><input id="lea-drv-${idp}" value="${safeDrv}" placeholder="drive" title="Aplica a toda a disciplina"></div>
       ${customEditFields}
       <div class="lea-cell" style="flex:0 0 auto;min-width:0"><span class="lea-emoji">🎯</span><input id="lea-qa-${idp}" type="text" inputmode="numeric" maxlength="4" value="${qa}" style="width:40px;flex:none;text-align:center"><span style="color:var(--muted)">/</span><input id="lea-qt-${idp}" type="text" inputmode="numeric" maxlength="4" value="${qt}" style="width:40px;flex:none;text-align:center"></div>
-    </div>
-    <div style="display:flex;gap:5px;margin-top:5px">
-      <button class="link-confirm-btn" onclick="saveAllLinksForItem('${ctx}',${itemId},'${safeDisc}')">✓ Salvar</button>
-      <button class="link-cancel-btn" onclick="toggleEditAll('${ctx}',${itemId})">✕ Cancelar</button>
+      <button class="lea-ok" onclick="saveAllLinksForItem('${ctx}',${itemId},'${safeDisc}')" title="Salvar">✓</button>
+      <button class="lea-x" onclick="toggleEditAll('${ctx}',${itemId})" title="Cancelar">✕</button>
     </div>
   </div>`;
   return display+editForm;
@@ -1954,7 +1954,6 @@ async function saveAllLinksForItem(ctx,itemId,disc){
   const idp=ctx+'-'+itemId;
   const res=(document.getElementById(`lea-res-${idp}`)||{}).value?.trim()||'';
   const cad=(document.getElementById(`lea-cad-${idp}`)||{}).value?.trim()||'';
-  const drv=(document.getElementById(`lea-drv-${idp}`)||{}).value?.trim()||'';
   const qa=parseInt((document.getElementById(`lea-qa-${idp}`)||{}).value)||0;
   const qt=parseInt((document.getElementById(`lea-qt-${idp}`)||{}).value)||0;
   showSync('saving','⏳ Salvando...');
@@ -1966,11 +1965,6 @@ async function saveAllLinksForItem(ctx,itemId,disc){
   if(cad!==(cadernosState[itemId]||'')){
     cadernosState[itemId]=cad;lsLinksSave('cadernos_backup',cadernosState);
     promises.push(sbUpsert('cadernos',{item_id:itemId,url:cad}));
-  }
-  const curDrv=(driveLinks[disc]&&driveLinks[disc].url)||'';
-  if(drv!==curDrv){
-    if(drv)driveLinks[disc]={url:drv};else delete driveLinks[disc];
-    promises.push(saveDriveLinks());
   }
   const curQ=questoesState[itemId]||{a:0,t:0};
   if(qa!==(curQ.a||0)||qt!==(curQ.t||0)){
