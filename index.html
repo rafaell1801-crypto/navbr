@@ -116,10 +116,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .disc-timer-tag{font-size:11px;color:#c8e6f0;margin-top:3px;text-align:right;font-weight:600;white-space:nowrap;display:none;letter-spacing:.3px;display:none;align-items:center;justify-content:flex-end;gap:2px}
 .disc-timer-tag.has-time{display:block}
 /* MOTIVAÇÃO */
-.motiv-box{margin:8px 14px 4px;padding:10px 12px;background:#0a1d2e;border-left:3px solid var(--accent);border-radius:6px;cursor:pointer;user-select:none}
-.motiv-hint{font-size:11px;color:#3a7a8a;font-style:italic;display:flex;align-items:center;gap:5px}
-.motiv-quote{font-size:12px;font-style:italic;color:#a8d8ea;line-height:1.5;font-weight:500;display:none}
-.motiv-msg{font-size:11px;color:#8fafc0;margin-top:6px;line-height:1.6;display:none}
+.motiv-box{margin:8px 14px 4px;padding:10px 12px;background:#0a1d2e;border-left:3px solid var(--accent);border-radius:6px}
+.motiv-quote{font-size:12px;font-style:italic;color:#a8d8ea;line-height:1.5;font-weight:500}
+.motiv-msg{font-size:11px;color:#8fafc0;margin-top:6px;line-height:1.6}
 .motiv-loading{font-size:11px;color:var(--muted);font-style:italic}
 /* STATS */
 .stats-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px}
@@ -201,15 +200,15 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .rev-info{min-width:0}.rev-disc{font-size:12px;font-weight:700;margin-bottom:2px}
 .rev-topico{font-size:12px;font-weight:400;line-height:1.3;color:#e8f4f8}.rev-topico.done-text{text-decoration:line-through;color:var(--muted)}
 .rev-meta{text-align:right;flex-shrink:0}.rev-interval{font-size:11px;font-weight:600;white-space:nowrap}.rev-date{font-size:10px;color:var(--muted)}
-.rev-item-fsrs{display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--border)}
+.rev-item-fsrs{display:flex;gap:14px;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--border)}
 .rev-item-fsrs:last-child{border-bottom:none}
-.rev-left{flex:1;min-width:0}
-.rev-right{flex-shrink:0;display:flex;align-items:center}
+.rev-left{flex:1 1 50%;min-width:0}
+.rev-right{flex:1 1 50%;min-width:0;display:flex;align-items:center}
 .fsrs-metrics{display:flex;gap:8px;font-size:10px;color:var(--muted);align-items:center;margin-left:6px}
-.fsrs-grades{display:flex;gap:5px}
-.fsrs-btn{width:58px;padding:5px 2px;border-radius:6px;border:1px solid;background:transparent;cursor:pointer;font-size:10px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
-.fsrs-iv{font-size:9px;opacity:.75;font-weight:500}
-@media(max-width:600px){.rev-item-fsrs{flex-direction:column;align-items:stretch}.rev-right{justify-content:flex-start}.fsrs-btn{flex:1;width:auto}}
+.fsrs-grades{display:flex;gap:6px;width:100%}
+.fsrs-btn{flex:1;min-width:0;padding:9px 4px;border-radius:7px;border:1px solid;background:transparent;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.15}
+.fsrs-iv{font-size:10px;opacity:.75;font-weight:500}
+@media(max-width:600px){.rev-item-fsrs{flex-direction:column;align-items:stretch;gap:8px}.rev-left,.rev-right{flex:1 1 auto}}
 .fsrs-again{color:#f26b5e;border-color:#f26b5e}.fsrs-again:hover{background:#2a0a0a}
 .fsrs-hard{color:#f5a623;border-color:#f5a623}.fsrs-hard:hover{background:#1a1100}
 .fsrs-good{color:#2dd4a0;border-color:#2dd4a0}.fsrs-good:hover{background:#08160f}
@@ -402,7 +401,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
     </div>
   </div>
   <div class="late-section hidden" id="late-section">
-    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<span class="late-count" id="late-count">0</span></div>
+    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
   <div class="subtabs">
@@ -819,6 +818,13 @@ function fsrsReview(card,g){
 function fsrsPreviewIv(card,g){return fsrsReview(card,g).lastIv;}
 function fsrsCurR(card){if(!card||!card.state)return 1;return fsrsRetr(fsrsDaysSince(card.last),card.S);}
 function fsrsDiff(card){return (!card||!card.state)?0:diffDays(parseDate(card.due));}
+function fsrsItemDiff(itemId){
+  const card=fsrsState[itemId];
+  if(card&&card.state)return diffDays(parseDate(card.due));
+  // card novo: só fica disponível no dia SEGUINTE ao da conclusão
+  const dd=revState[itemId]&&revState[itemId].doneDate;
+  return dd?diffDays(addDays(dd,1)):0;
+}
 
 async function loadFsrs(){
   try{const s=localStorage.getItem('nav_fsrs');if(s)fsrsState=JSON.parse(s);}catch{}
@@ -1255,22 +1261,36 @@ function buildTimerEditList(containerId){
   if(!containerEl)return;
   containerEl.innerHTML='<div class="timer-edit-grid">'+discNames.map(disc=>{
     const secs=timerSt.timeByDisc[disc]||0;
-    const tStr=secs>0?fmtHMS(secs):'–';
+    const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);
     const c=CORES[disc]||'#888';
     const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
-    const safeDisc=disc.replace(/'/g,"\'");
+    const safeDisc=disc.replace(/'/g,"\\'");
     return`<div class="edit-time-card" style="border-color:${c}44;background:${c}08">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
         <div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>
         <span style="font-size:12px;font-weight:700;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${disc}">${disc}</span>
-        <span style="font-size:11px;font-weight:600;color:${secs>0?'#7dd3fc':'var(--muted)'};white-space:nowrap">${tStr}</span>
       </div>
-      <div class="edit-time-card-bottom">
-        <input class="edit-time-input" id="${safeId}" value="${fmtHM(secs)}" placeholder="hh:mm">
-        <button class="edit-time-btn" onclick="applyTimerEdit('${safeDisc}')">✓ Ok</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="spin-wrap"><span class="spin-val" id="${safeId}-h">${String(h).padStart(2,'0')}</span><span class="spin-sep">:</span><span class="spin-val" id="${safeId}-m">${String(m).padStart(2,'0')}</span></div>
+        <button class="edit-time-btn" onclick="applyTimerEditSpin('${safeDisc}','${safeId}')">✓ Ok</button>
       </div>
     </div>`;
   }).join('')+'</div>';
+  discNames.forEach(disc=>{
+    const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
+    const hEl=document.getElementById(safeId+'-h'),mEl=document.getElementById(safeId+'-m');
+    if(hEl)_enableSpinEdit(hEl,100,null);
+    if(mEl)_enableSpinEdit(mEl,60,null);
+  });
+}
+async function applyTimerEditSpin(disc,safeId){
+  const hEl=document.getElementById(safeId+'-h'),mEl=document.getElementById(safeId+'-m');
+  if(!hEl||!mEl)return;
+  const secs=(parseInt(hEl.textContent)||0)*3600+(parseInt(mEl.textContent)||0)*60;
+  timerSt.timeByDisc[disc]=secs;
+  await sbUpsert('timer_disc',{disc,segundos:secs});
+  showSync('ok','✓ Tempo atualizado');
+  renderStats();
 }
 
 function blockMinsFromStr(s){
@@ -1402,14 +1422,16 @@ function onHeaderIconChange(input){
   });
 }
 
+const ICON_INVERT_PREVIEW={editar:1,atrasados:0};
 function renderBuiltinIconsConfig(){
   const wrap=document.getElementById('cfg-builtin-icons');if(!wrap)return;
-  const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive']];
+  const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive'],['editar','Editar'],['atrasados','Atrasados']];
   wrap.innerHTML=items.map(([key,label])=>{
     const src=(builtinIcons[key]||BUILTIN_DEFAULTS[key]).replace(/"/g,'&quot;');
+    const inv=!builtinIcons[key]&&ICON_INVERT_PREVIEW[key]?';filter:invert(1)':'';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
       <label style="width:44px;height:44px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface2);overflow:hidden" title="Enviar PNG para ${label}">
-        <img src="${src}" style="width:32px;height:32px;object-fit:contain">
+        <img src="${src}" style="width:32px;height:32px;object-fit:contain${inv}">
         <input type="file" accept="image/*" style="display:none" onchange="onBuiltinIconChange('${key}',this)">
       </label>
       <span style="font-size:10px;color:var(--muted)">${label}</span>
@@ -1417,6 +1439,7 @@ function renderBuiltinIconsConfig(){
     </div>`;
   }).join('');
 }
+function applyLateIcon(){const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';}
 function renderTimerIconsConfig(){
   const wrap=document.getElementById('cfg-timer-icons');if(!wrap)return;
   const items=[['play','Play'],['pausa','Pausar'],['concluir','Concluir'],['cancelar','Cancelar'],['refazer','Reiniciar']];
@@ -1668,7 +1691,7 @@ function saveSettings(){
   if(vEl){const newVerse=vEl.value.trim();if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
-  closeSettings();render();
+  closeSettings();render();_timerButtonsUpdate();applyLateIcon();
 }
 async function applyTimerEdit(disc){
   const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
@@ -1821,7 +1844,11 @@ function compactCadernoHTML(itemId) {
 }
 
 let builtinIcons={}; // {resumo, questoes, drive, play, pausa, concluir, cancelar, refazer} → base64
-const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png'};
+const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png',editar:'editar.png',atrasados:'atrasados.png'};
+function editIconHTML(){
+  if(builtinIcons['editar'])return `<img src="${builtinIcons['editar'].replace(/"/g,'&quot;')}" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block">`;
+  return `<img src="editar.png" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block;filter:invert(1) opacity(.55)">`;
+}
 const TIMER_ICON_DEFAULTS={play:'play.png',pausa:'pausa.png',refazer:'refazer.png',concluir:'',cancelar:''};
 const TIMER_ICON_INVERT={play:1,pausa:1,refazer:1}; // pngs pretos padrão precisam inverter
 function timerIconHTML(key,fallbackText){
@@ -1841,7 +1868,7 @@ async function loadBuiltinIcons(){
     const d=await sbGet('conteudo','select=topics&disc=eq.__builtin_icons__');
     if(d&&d.length>0&&d[0].topics&&typeof d[0].topics==='object'){builtinIcons=d[0].topics;try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}}
   }catch{}
-  render();_timerButtonsUpdate();
+  render();_timerButtonsUpdate();applyLateIcon();
 }
 async function saveBuiltinIcons(){
   try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}
@@ -1898,7 +1925,7 @@ function renderLinksRow(itemId, disc, ctx){
     ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${iconImg('drive')}</a>`:`<span class="link-icon empty" title="sem Drive">${iconImg('drive')}</span>`}
     ${customIconsHtml}
     ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
-    <button class="link-edit-all" onclick="toggleEditAll('${ctx}',${itemId})" title="Adicionar ou editar links">✎</button>
+    <button class="link-edit-all" onclick="toggleEditAll('${ctx}',${itemId})" title="Adicionar ou editar links">${editIconHTML()}</button>
   </div>`;
   const editForm=`<div class="link-edit-all-row hidden" id="lea-${idp}">
     <div class="lea-inline">
@@ -2054,8 +2081,7 @@ function buildDayHTML(dateStr,days){
       <span class="day-date">${dayName}, ${dateStr}</span>${tag}
       <span class="day-meta">${dayDone}/${items.length}</span>
     </div>
-    <div class="motiv-box" onclick="(function(b){const h=b.querySelector('.motiv-hint'),q=b.querySelector('.motiv-quote'),m=b.querySelector('.motiv-msg');const show=q.style.display!=='block';h.style.display=show?'none':'flex';q.style.display=show?'block':'none';m.style.display=show?'block':'none';})(this)">
-      <div class="motiv-hint">✨ Clique para revelar a motivação do dia</div>
+    <div class="motiv-box">
       <div class="motiv-quote">${motiv.frase}</div>
       <div class="motiv-msg">${motiv.mensagem}</div>
     </div>
@@ -2103,7 +2129,7 @@ function render(){
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
-  const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsDiff(fsrsState[i.id])<=0).length;
+  const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
 }
@@ -2221,7 +2247,7 @@ function renderRev(){
   const doneItems=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id));
   const rows=doneItems.map(item=>{
     const card=fsrsState[item.id];
-    const diff=fsrsDiff(card);
+    const diff=fsrsItemDiff(item.id);
     return {item,card,diff};
   });
   const over=rows.filter(r=>r.diff<0).length;
@@ -2261,7 +2287,7 @@ function renderRev(){
         <div class="rev-left">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
             <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
-            <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
+            ${DISC_LINKS[item.disc]?`<a href="${DISC_LINKS[item.disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="rev-disc" style="color:#c8e6f0;text-decoration:none">${item.disc}</a>`:`<span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>`}
             <span class="fsrs-metrics">${metrics}</span>
           </div>
           <div class="rev-topico">${item.topico}</div>
