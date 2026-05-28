@@ -201,10 +201,15 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .rev-info{min-width:0}.rev-disc{font-size:12px;font-weight:700;margin-bottom:2px}
 .rev-topico{font-size:12px;font-weight:400;line-height:1.3;color:#e8f4f8}.rev-topico.done-text{text-decoration:line-through;color:var(--muted)}
 .rev-meta{text-align:right;flex-shrink:0}.rev-interval{font-size:11px;font-weight:600;white-space:nowrap}.rev-date{font-size:10px;color:var(--muted)}
-.fsrs-metrics{display:flex;gap:10px;font-size:10px;color:var(--muted);align-items:center}
-.fsrs-grades{display:flex;gap:6px;margin-top:7px}
-.fsrs-btn{flex:1;min-width:0;padding:6px 2px;border-radius:6px;border:1px solid;background:transparent;cursor:pointer;font-size:11px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+.rev-item-fsrs{display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:.5px solid var(--border)}
+.rev-item-fsrs:last-child{border-bottom:none}
+.rev-left{flex:1;min-width:0}
+.rev-right{flex-shrink:0;display:flex;align-items:center}
+.fsrs-metrics{display:flex;gap:8px;font-size:10px;color:var(--muted);align-items:center;margin-left:6px}
+.fsrs-grades{display:flex;gap:5px}
+.fsrs-btn{width:58px;padding:5px 2px;border-radius:6px;border:1px solid;background:transparent;cursor:pointer;font-size:10px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
 .fsrs-iv{font-size:9px;opacity:.75;font-weight:500}
+@media(max-width:600px){.rev-item-fsrs{flex-direction:column;align-items:stretch}.rev-right{justify-content:flex-start}.fsrs-btn{flex:1;width:auto}}
 .fsrs-again{color:#f26b5e;border-color:#f26b5e}.fsrs-again:hover{background:#2a0a0a}
 .fsrs-hard{color:#f5a623;border-color:#f5a623}.fsrs-hard:hover{background:#1a1100}
 .fsrs-good{color:#2dd4a0;border-color:#2dd4a0}.fsrs-good:hover{background:#08160f}
@@ -534,6 +539,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <summary>Temporizador</summary>
       <div class="cfg-group-body">
         <div class="modal-row" style="margin-top:6px"><label>Duração da sessão</label><div class="spin-wrap"><span class="spin-val" id="spin-timer-h">01</span><span class="spin-sep">:</span><span class="spin-val" id="spin-timer-m">20</span></div></div>
+        <div class="modal-section">
+          <h3>Ícones do temporizador</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Clique para enviar um PNG. Será redimensionado para 48×48.</p>
+          <div id="cfg-timer-icons" style="display:flex;gap:14px;flex-wrap:wrap"></div>
+        </div>
       </div>
     </details>
 
@@ -1318,6 +1328,7 @@ function openSettings(){
   renderDriveLinksConfig();
   renderCustomLinkTypesConfig();
   renderBuiltinIconsConfig();
+  renderTimerIconsConfig();
   const retEl=document.getElementById('cfg-fsrs-ret');if(retEl)retEl.value=Math.round(fsrsCfg.retention*100);
   const maxEl=document.getElementById('cfg-fsrs-max');if(maxEl)maxEl.value=fsrsCfg.maxInterval;
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
@@ -1406,12 +1417,32 @@ function renderBuiltinIconsConfig(){
     </div>`;
   }).join('');
 }
+function renderTimerIconsConfig(){
+  const wrap=document.getElementById('cfg-timer-icons');if(!wrap)return;
+  const items=[['play','Play'],['pausa','Pausar'],['concluir','Concluir'],['cancelar','Cancelar'],['refazer','Reiniciar']];
+  wrap.innerHTML=items.map(([key,label])=>{
+    const custom=builtinIcons[key];
+    const def=TIMER_ICON_DEFAULTS[key];
+    let preview;
+    if(custom)preview=`<img src="${custom.replace(/"/g,'&quot;')}" style="width:30px;height:30px;object-fit:contain">`;
+    else if(def)preview=`<img src="${def}" style="width:30px;height:30px;object-fit:contain${TIMER_ICON_INVERT[key]?';filter:invert(1)':''}">`;
+    else preview=`<span style="font-size:16px;color:var(--muted)">${key==='concluir'?'✓':key==='cancelar'?'✕':'?'}</span>`;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <label style="width:44px;height:44px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface2);overflow:hidden" title="Enviar PNG para ${label}">
+        ${preview}
+        <input type="file" accept="image/*" style="display:none" onchange="onBuiltinIconChange('${key}',this)">
+      </label>
+      <span style="font-size:10px;color:var(--muted)">${label}</span>
+      ${custom?`<button type="button" onclick="resetBuiltinIcon('${key}')" style="font-size:9px;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">restaurar</button>`:''}
+    </div>`;
+  }).join('');
+}
 function onBuiltinIconChange(key,input){
   const file=input.files[0];if(!file)return;
-  readIconFile(file,dataUrl=>{builtinIcons[key]=dataUrl;renderBuiltinIconsConfig();});
+  readIconFile(file,dataUrl=>{builtinIcons[key]=dataUrl;renderBuiltinIconsConfig();renderTimerIconsConfig();});
 }
 function resetBuiltinIcon(key){
-  delete builtinIcons[key];renderBuiltinIconsConfig();
+  delete builtinIcons[key];renderBuiltinIconsConfig();renderTimerIconsConfig();
 }
 
 function _buildCltRow(type){
@@ -1789,8 +1820,16 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
-let builtinIcons={}; // {resumo, questoes, drive} → base64 (vazio = usa o .png padrão)
+let builtinIcons={}; // {resumo, questoes, drive, play, pausa, concluir, cancelar, refazer} → base64
 const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png'};
+const TIMER_ICON_DEFAULTS={play:'play.png',pausa:'pausa.png',refazer:'refazer.png',concluir:'',cancelar:''};
+const TIMER_ICON_INVERT={play:1,pausa:1,refazer:1}; // pngs pretos padrão precisam inverter
+function timerIconHTML(key,fallbackText){
+  if(builtinIcons[key])return `<img src="${builtinIcons[key].replace(/"/g,'&quot;')}" alt="" style="width:20px;height:20px;display:block;object-fit:contain">`;
+  const def=TIMER_ICON_DEFAULTS[key];
+  if(def)return `<img src="${def}" alt="" style="width:20px;height:20px;display:block;object-fit:contain${TIMER_ICON_INVERT[key]?';filter:invert(1)':''}">`;
+  return fallbackText;
+}
 function iconImg(key,size){
   size=size||20;
   const src=(builtinIcons[key]||BUILTIN_DEFAULTS[key]).replace(/"/g,'&quot;');
@@ -1802,7 +1841,7 @@ async function loadBuiltinIcons(){
     const d=await sbGet('conteudo','select=topics&disc=eq.__builtin_icons__');
     if(d&&d.length>0&&d[0].topics&&typeof d[0].topics==='object'){builtinIcons=d[0].topics;try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}}
   }catch{}
-  render();
+  render();_timerButtonsUpdate();
 }
 async function saveBuiltinIcons(){
   try{localStorage.setItem('nav_builtin_icons',JSON.stringify(builtinIcons));}catch{}
@@ -2213,20 +2252,22 @@ function renderRev(){
         ? `<span title="Novo card — primeira revisão">🆕 novo</span>`
         : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span>`;
       const grades=due?`<div class="fsrs-grades">
-        <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Errei<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
+        <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Reaprender<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
         <button class="fsrs-btn fsrs-hard" onclick="rateCard(${item.id},2)">Difícil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,2))}</span></button>
         <button class="fsrs-btn fsrs-good" onclick="rateCard(${item.id},3)">Bom<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,3))}</span></button>
         <button class="fsrs-btn fsrs-easy" onclick="rateCard(${item.id},4)">Fácil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,4))}</span></button>
-      </div>`:`<div class="rev-date" style="margin-top:5px">Próxima revisão em ${diff}d (${card.due})</div>`;
-      return`<div class="rev-item" style="grid-template-columns:1fr;display:block">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
-          <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
-          <span class="fsrs-metrics" style="margin-left:auto">${metrics}</span>
+      </div>`:`<div class="rev-date" style="white-space:nowrap">em ${diff}d</div>`;
+      return`<div class="rev-item-fsrs">
+        <div class="rev-left">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
+            <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
+            <span class="fsrs-metrics">${metrics}</span>
+          </div>
+          <div class="rev-topico">${item.topico}</div>
+          <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}</div>
         </div>
-        <div class="rev-topico">${item.topico}</div>
-        <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}</div>
-        ${grades}
+        <div class="rev-right">${grades}</div>
       </div>`;}).join('');
     const n=bucket.rows.length;return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}<span style="margin-left:auto;font-weight:400;font-size:11px">${n} ${n>1?'itens':'item'}</span></div>${items}</div>`;
   }).join('');
@@ -2327,10 +2368,12 @@ function _timerButtonsUpdate(){
   const save=document.getElementById('btn-save-time');
   const cancel=document.getElementById('btn-cancel-time');
   if(pp){
-    if(timerSt.running){pp.innerHTML='⏸';pp.title='Pausar';}
-    else if(timerSt.remaining<=0){pp.innerHTML='<img src="refazer.png" alt="" style="width:22px;height:22px;display:block;filter:invert(1)">';pp.title='Reiniciar';}
-    else{pp.innerHTML='<img src="play.png" alt="" style="width:22px;height:22px;display:block;filter:invert(1)">';pp.title='Iniciar';}
+    if(timerSt.running){pp.innerHTML=timerIconHTML('pausa','⏸');pp.title='Pausar';}
+    else if(timerSt.remaining<=0){pp.innerHTML=timerIconHTML('refazer','↻');pp.title='Reiniciar';}
+    else{pp.innerHTML=timerIconHTML('play','▶');pp.title='Iniciar';}
   }
+  if(save)save.innerHTML=timerIconHTML('concluir','✓');
+  if(cancel)cancel.innerHTML=timerIconHTML('cancelar','✕');
   const started=timerSt.running||(timerSt.remaining>0&&timerSt.remaining<getBlockSecs());
   if(save)save.classList.toggle('hidden',!started);
   if(cancel)cancel.classList.toggle('hidden',!started);
