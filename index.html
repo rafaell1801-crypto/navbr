@@ -469,7 +469,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 <div id="settings-modal" class="modal-overlay hidden">
   <div class="modal">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">
-      <h2 style="margin:0">⚙️ Configurações</h2>
+      <h2 style="margin:0;display:flex;align-items:center;gap:8px"><img src="config.png" id="cfg-title-icon" alt="" style="width:20px;height:20px;object-fit:contain">Configurações</h2>
       <div style="display:flex;gap:8px">
         <button class="timer-icon-btn tibtn-pause" onclick="closeSettings()" title="Fechar">✕</button>
         <button class="timer-icon-btn tibtn-save" onclick="saveSettings()" title="Salvar">✓</button>
@@ -1436,7 +1436,11 @@ function renderBuiltinIconsConfig(){
     </div>`;
   }).join('');
 }
-function applyLateIcon(){const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';const cg=document.getElementById('config-icon');if(cg)cg.src=builtinIcons['config']||'config.png';}
+function applyLateIcon(){
+  const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';
+  const cg=document.getElementById('config-icon');if(cg)cg.src=builtinIcons['config']||'config.png';
+  const ct=document.getElementById('cfg-title-icon');if(ct)ct.src=builtinIcons['config']||'config.png';
+}
 function renderTimerIconsConfig(){
   const wrap=document.getElementById('cfg-timer-icons');if(!wrap)return;
   const items=[['play','Play'],['pausa','Pausar'],['concluir','Concluir'],['cancelar','Cancelar'],['refazer','Reiniciar']];
@@ -1453,7 +1457,6 @@ function renderTimerIconsConfig(){
         <input type="file" accept="image/*" style="display:none" onchange="onBuiltinIconChange('${key}',this)">
       </label>
       <span style="font-size:10px;color:var(--muted)">${label}</span>
-      ${custom?`<button type="button" onclick="resetBuiltinIcon('${key}')" style="font-size:9px;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">restaurar</button>`:''}
     </div>`;
   }).join('');
 }
