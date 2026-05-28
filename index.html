@@ -73,11 +73,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
-.prog-wrap{padding:8px 20px 6px;background:var(--surface);border-bottom:1px solid var(--border)}
+.prog-wrap{padding:8px 20px 6px;background:var(--bg);border-bottom:1px solid var(--border)}
 .prog-outer{height:8px;background:#1e3f5c;border-radius:99px;overflow:hidden}
 .prog-inner{height:100%;background:linear-gradient(90deg,#1d5fa8,#15803d);border-radius:99px;transition:width .4s}
 .prog-label{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
-.subtabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px}
+.subtabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border);padding:0 20px}
 .subtab{padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .15s}
 .subtab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .subtab-count{display:inline-block;font-size:10px;padding:1px 5px;border-radius:99px;margin-left:3px;background:#1e3f5c;color:var(--muted);font-weight:600}
@@ -148,8 +148,10 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .link-edit-all-row input{padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px;min-width:0}
 .link-edit-all-row input:focus{outline:none;border-color:var(--accent)}
 .lea-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.lea-cell{display:flex;align-items:center;gap:3px;flex:1 1 100px;min-width:80px}
-.lea-cell input{flex:1;width:100%}
+.lea-cell{display:flex;align-items:center;gap:3px;flex:0 1 130px;min-width:90px}
+.lea-cell input{flex:1;width:100%;min-width:0}
+.link-edit-all-row input[type=number]::-webkit-inner-spin-button,.link-edit-all-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.link-edit-all-row input[type=number]{-moz-appearance:textfield}
 .lea-emoji{display:inline-flex;align-items:center;justify-content:center;width:18px;flex-shrink:0;color:#7dd3e8}
 .lea-emoji img{width:14px;height:14px;object-fit:contain;display:block}
 .link-edit-all-row .link-confirm-btn,.link-edit-all-row .link-cancel-btn{padding:3px 9px;font-size:10.5px;height:24px}
@@ -395,7 +397,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
     </div>
   </div>
   <div class="late-section hidden" id="late-section">
-    <div class="late-header" onclick="toggleLate()">⏰ Assuntos atrasados<span class="late-count" id="late-count">0</span></div>
+    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
   <div class="subtabs">
@@ -567,7 +569,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
         <div class="modal-section">
           <h3>Cabeçalho</h3>
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Texto exibido em itálico no topo. Salva automaticamente em todos os dispositivos.</p>
-          <textarea id="cfg-verse" rows="2" placeholder='"texto do versículo" — Referência' style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-style:italic;background:var(--surface2);color:var(--text);resize:vertical;line-height:1.4;font-family:inherit"></textarea>
+          <textarea id="cfg-verse" rows="2" placeholder="Deixe vazio para ocultar o texto do cabeçalho" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-style:italic;background:var(--surface2);color:var(--text);resize:vertical;line-height:1.4;font-family:inherit"></textarea>
         </div>
         <div class="modal-section">
           <h3>Backup de links</h3>
@@ -954,7 +956,7 @@ function applyVerseToUI(){
   const el=document.getElementById('app-verse');if(el)el.textContent=appVerse;
 }
 async function loadVerse(){
-  try{const s=localStorage.getItem('nav_verse');if(s)appVerse=s;}catch{}
+  try{const s=localStorage.getItem('nav_verse');if(s!==null)appVerse=s;}catch{}
   applyVerseToUI();
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__verse__');
@@ -1632,7 +1634,7 @@ function saveSettings(){
   linkSaves.push(saveAppSettings());
   // Versículo
   const vEl=document.getElementById('cfg-verse');
-  if(vEl){const newVerse=vEl.value.trim()||DEFAULT_VERSE;if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
+  if(vEl){const newVerse=vEl.value.trim();if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
   closeSettings();render();
@@ -1865,7 +1867,7 @@ function renderLinksRow(itemId, disc, ctx){
       <div class="lea-cell"><span class="lea-emoji">${iconImg('questoes',14)}</span><input id="lea-cad-${idp}" value="${safeCad}" placeholder="questões"></div>
       <div class="lea-cell"><span class="lea-emoji">${iconImg('drive',14)}</span><input id="lea-drv-${idp}" value="${safeDrv}" placeholder="drive" title="Aplica a toda a disciplina"></div>
       ${customEditFields}
-      <div class="lea-cell" style="flex:0 0 auto;min-width:0"><span class="lea-emoji">🎯</span><input id="lea-qa-${idp}" type="number" min="0" value="${qa}" style="width:42px;flex:none"><span style="color:var(--muted)">/</span><input id="lea-qt-${idp}" type="number" min="0" value="${qt}" style="width:42px;flex:none"></div>
+      <div class="lea-cell" style="flex:0 0 auto;min-width:0"><span class="lea-emoji">🎯</span><input id="lea-qa-${idp}" type="text" inputmode="numeric" maxlength="4" value="${qa}" style="width:40px;flex:none;text-align:center"><span style="color:var(--muted)">/</span><input id="lea-qt-${idp}" type="text" inputmode="numeric" maxlength="4" value="${qt}" style="width:40px;flex:none;text-align:center"></div>
     </div>
     <div style="display:flex;gap:5px;margin-top:5px">
       <button class="link-confirm-btn" onclick="saveAllLinksForItem('${ctx}',${itemId},'${safeDisc}')">✓ Salvar</button>
