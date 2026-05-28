@@ -199,6 +199,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .rev-info{min-width:0}.rev-disc{font-size:12px;font-weight:700;margin-bottom:2px}
 .rev-topico{font-size:12px;font-weight:400;line-height:1.3;color:#e8f4f8}.rev-topico.done-text{text-decoration:line-through;color:var(--muted)}
 .rev-meta{text-align:right;flex-shrink:0}.rev-interval{font-size:11px;font-weight:600;white-space:nowrap}.rev-date{font-size:10px;color:var(--muted)}
+.fsrs-metrics{display:flex;gap:10px;font-size:10px;color:var(--muted);align-items:center}
+.fsrs-grades{display:flex;gap:6px;margin-top:7px}
+.fsrs-btn{flex:1;min-width:0;padding:6px 2px;border-radius:6px;border:1px solid;background:transparent;cursor:pointer;font-size:11px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+.fsrs-iv{font-size:9px;opacity:.75;font-weight:500}
+.fsrs-again{color:#f26b5e;border-color:#f26b5e}.fsrs-again:hover{background:#2a0a0a}
+.fsrs-hard{color:#f5a623;border-color:#f5a623}.fsrs-hard:hover{background:#1a1100}
+.fsrs-good{color:#2dd4a0;border-color:#2dd4a0}.fsrs-good:hover{background:#08160f}
+.fsrs-easy{color:#3eb5c8;border-color:#3eb5c8}.fsrs-easy:hover{background:#071a28}
 .c-over{color:#f26b5e}.c-today{color:#7dd3e8}.c-soon{color:#2dd4a0}.c-future{color:var(--muted)}
 .rev-empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
 /* MODAL */
@@ -536,6 +544,24 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
     </details>
 
     <details class="cfg-group">
+      <summary>Revisão (FSRS)</summary>
+      <div class="cfg-group-body">
+        <p style="font-size:11px;color:var(--muted);margin:6px 0 10px">As revisões usam o algoritmo FSRS-6: cada item é reagendado conforme a curva de aprendizagem, com base em quão bem você lembrou.</p>
+        <div class="modal-row" style="flex-wrap:wrap;gap:8px">
+          <label>Retenção alvo</label>
+          <input id="cfg-fsrs-ret" type="number" min="80" max="99" step="1" style="width:64px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+          <span style="font-size:11px;color:var(--muted)">% (recomendado: 90)</span>
+        </div>
+        <p style="font-size:10px;color:var(--muted);margin:2px 0 10px">Maior = revisa mais cedo (mais esforço). Menor = intervalos maiores.</p>
+        <div class="modal-row" style="flex-wrap:wrap;gap:8px">
+          <label>Intervalo máximo</label>
+          <input id="cfg-fsrs-max" type="number" min="1" max="36500" step="1" style="width:84px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+          <span style="font-size:11px;color:var(--muted)">dias (padrão: 36500 = 100 anos)</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="cfg-group">
       <summary>Dados</summary>
       <div class="cfg-group-body">
         <div class="modal-section">
@@ -748,6 +774,79 @@ const BLOCOS_DIA=4, BLOCK_SECS=4800;
 function getBlockSecs(){try{const v=parseInt(localStorage.getItem('nav_timer_secs'));return v>0?v:BLOCK_SECS;}catch{return BLOCK_SECS;}}
 const REV_INTERVALS=[1,3,5,10,14,20,28,30,60,90,120];
 const REV_LIMIT=new Date(2026,7,2);
+
+// ── FSRS-6 (Free Spaced Repetition Scheduler) ────────────────────────────
+const FSRS_W=[0.212,1.2931,2.3065,8.2956,6.4133,0.8334,3.0194,0.001,1.8722,0.1666,0.796,1.4835,0.0614,0.2629,1.6483,0.6014,1.8729,0.5425,0.0912,0.0658,0.1542];
+let fsrsCfg={retention:0.9,maxInterval:36500};
+let fsrsState={}; // {itemId: {S,D,last,due,reps,lapses,state,lastIv}}
+function _fDecay(){return -FSRS_W[20];}
+function _fFactor(){return Math.pow(0.9,1/_fDecay())-1;}
+function fsrsClampD(d){return Math.min(10,Math.max(1,d));}
+function fsrsInitS(g){return Math.max(0.1,FSRS_W[g-1]);}
+function fsrsInitD(g){return fsrsClampD(FSRS_W[4]-Math.exp(FSRS_W[5]*(g-1))+1);}
+function fsrsRetr(t,S){if(S<=0)return 0;return Math.pow(1+_fFactor()*t/S,_fDecay());}
+function fsrsInterval(S){const r=fsrsCfg.retention;const i=(S/_fFactor())*(Math.pow(r,1/_fDecay())-1);return Math.min(fsrsCfg.maxInterval,Math.max(1,Math.round(i)));}
+function fsrsNextD(D,g){const dd=-FSRS_W[6]*(g-3);const dDamp=D+dd*(10-D)/9;return fsrsClampD(FSRS_W[7]*fsrsInitD(4)+(1-FSRS_W[7])*dDamp);}
+function fsrsRecallS(D,S,R,g){const hard=g===2?FSRS_W[15]:1,easy=g===4?FSRS_W[16]:1;const inc=Math.exp(FSRS_W[8])*(11-D)*Math.pow(S,-FSRS_W[9])*(Math.exp(FSRS_W[10]*(1-R))-1)*hard*easy;return Math.max(0.1,S*(1+inc));}
+function fsrsLapseS(D,S,R){const sf=FSRS_W[11]*Math.pow(D,-FSRS_W[12])*(Math.pow(S+1,FSRS_W[13])-1)*Math.exp(FSRS_W[14]*(1-R));return Math.max(0.1,Math.min(sf,S));}
+function fsrsDaysSince(ds){return Math.max(0,Math.round((TODAY_D-parseDate(ds))/86400000));}
+function fsrsReview(card,g){
+  if(!card||!card.state){
+    const S=fsrsInitS(g),D=fsrsInitD(g),iv=fsrsInterval(S);
+    return {S,D,last:TODAY,due:dtStr(addDays(TODAY,iv)),reps:1,lapses:0,state:'review',lastIv:iv};
+  }
+  const t=fsrsDaysSince(card.last);
+  const R=fsrsRetr(t,card.S);
+  const D=fsrsNextD(card.D,g);
+  let S,lapses=card.lapses||0;
+  if(g===1){S=fsrsLapseS(card.D,card.S,R);lapses++;}
+  else S=fsrsRecallS(card.D,card.S,R,g);
+  const iv=fsrsInterval(S);
+  return {S,D,last:TODAY,due:dtStr(addDays(TODAY,iv)),reps:(card.reps||0)+1,lapses,state:'review',lastIv:iv};
+}
+function fsrsPreviewIv(card,g){return fsrsReview(card,g).lastIv;}
+function fsrsCurR(card){if(!card||!card.state)return 1;return fsrsRetr(fsrsDaysSince(card.last),card.S);}
+function fsrsDiff(card){return (!card||!card.state)?0:diffDays(parseDate(card.due));}
+
+async function loadFsrs(){
+  try{const s=localStorage.getItem('nav_fsrs');if(s)fsrsState=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_fsrs_cfg');if(s)fsrsCfg={...fsrsCfg,...JSON.parse(s)};}catch{}
+  try{
+    const d=await sbGet('conteudo','select=disc,topics&disc=in.(__fsrs__,__fsrs_cfg__)');
+    if(d){
+      d.forEach(r=>{
+        if(r.disc==='__fsrs__'&&r.topics&&typeof r.topics==='object')fsrsState=r.topics;
+        if(r.disc==='__fsrs_cfg__'&&r.topics)fsrsCfg={...fsrsCfg,...r.topics};
+      });
+      try{localStorage.setItem('nav_fsrs',JSON.stringify(fsrsState));}catch{}
+      try{localStorage.setItem('nav_fsrs_cfg',JSON.stringify(fsrsCfg));}catch{}
+    }
+  }catch{}
+  render();
+  if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
+}
+async function saveFsrs(){
+  try{localStorage.setItem('nav_fsrs',JSON.stringify(fsrsState));}catch{}
+  await sbUpsert('conteudo',{disc:'__fsrs__',topics:fsrsState});
+}
+async function saveFsrsCfg(){
+  try{localStorage.setItem('nav_fsrs_cfg',JSON.stringify(fsrsCfg));}catch{}
+  await sbUpsert('conteudo',{disc:'__fsrs_cfg__',topics:fsrsCfg});
+}
+async function rateCard(itemId,g){
+  fsrsState[itemId]=fsrsReview(fsrsState[itemId],g);
+  showSync('saving','↺');
+  await saveFsrs();
+  showSync('ok','✓ Revisão registrada');
+  renderRev();
+  render();
+}
+function fmtIvShort(d){
+  if(d<1)return '<1d';
+  if(d<30)return d+'d';
+  if(d<365){const m=Math.round(d/30);return m+(m>1?' meses':' mês');}
+  const y=d/365;return (y>=10?Math.round(y):y.toFixed(1))+'a';
+}
 
 const sbH={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'};
 async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():null;}catch{return null;}}
@@ -1217,6 +1316,8 @@ function openSettings(){
   renderDriveLinksConfig();
   renderCustomLinkTypesConfig();
   renderBuiltinIconsConfig();
+  const retEl=document.getElementById('cfg-fsrs-ret');if(retEl)retEl.value=Math.round(fsrsCfg.retention*100);
+  const maxEl=document.getElementById('cfg-fsrs-max');if(maxEl)maxEl.value=fsrsCfg.maxInterval;
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
   ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
@@ -1522,6 +1623,11 @@ function saveSettings(){
   customLinkTypes=newTypes;
   linkSaves.push(saveCustomLinkTypesPersist());
   linkSaves.push(saveBuiltinIcons());
+  // FSRS config
+  const retEl=document.getElementById('cfg-fsrs-ret'),maxEl=document.getElementById('cfg-fsrs-max');
+  if(retEl){const r=Math.min(99,Math.max(80,parseInt(retEl.value)||90));fsrsCfg.retention=r/100;}
+  if(maxEl){fsrsCfg.maxInterval=Math.min(36500,Math.max(1,parseInt(maxEl.value)||36500));}
+  linkSaves.push(saveFsrsCfg());
   // Configurações do app (data, timer, blocos) → sincroniza entre dispositivos
   linkSaves.push(saveAppSettings());
   // Versículo
@@ -1956,7 +2062,7 @@ function render(){
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
-  const alertCount=AGENDA.filter(i=>{if(!isDone(i.id))return false;const rs=revState[i.id];if(!rs)return false;return REV_INTERVALS.some(d=>{const dt=addDays(rs.doneDate,d);return dt<=REV_LIMIT&&diffDays(dt)<=0&&!(rs.completedRevs||[]).includes(d);});}).length;
+  const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsDiff(fsrsState[i.id])<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
 }
@@ -2070,50 +2176,57 @@ async function saveCalEdit(iso){
 
 let revFilter='pending_today';
 function setRevFilter(f,el){revFilter=f;document.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderRev();}
-function getRevSchedule(itemId){const rs=revState[itemId];if(!rs||!rs.doneDate)return[];return REV_INTERVALS.map(d=>{const dt=addDays(rs.doneDate,d);if(dt>REV_LIMIT)return null;return{days:d,dt,done:(rs.completedRevs||[]).includes(d),diff:diffDays(dt)};}).filter(Boolean);}
-async function toggleRevCheck(itemId,days){if(!revState[itemId])return;const cr=revState[itemId].completedRevs||[];const idx=cr.indexOf(days);if(idx>=0)cr.splice(idx,1);else cr.push(days);revState[itemId].completedRevs=cr;renderRev();await sbUpsert('revisoes',{item_id:itemId,done_date:revState[itemId].doneDate,completed_revs:cr});}
-function labelInterval(d){if(d===30)return'+1 mês';if(d===60)return'+2 meses';if(d===90)return'+3 meses';if(d===120)return'+4 meses';return`+${d}d`;}
 function renderRev(){
   const doneItems=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id));
-  let rows=[];for(const item of doneItems)for(const rev of getRevSchedule(item.id))rows.push({item,rev});
-  const over=rows.filter(r=>!r.rev.done&&r.rev.diff<0).length;
-  const todays=rows.filter(r=>!r.rev.done&&r.rev.diff===0).length;
-  const week=rows.filter(r=>!r.rev.done&&r.rev.diff>0&&r.rev.diff<=7).length;
+  const rows=doneItems.map(item=>{
+    const card=fsrsState[item.id];
+    const diff=fsrsDiff(card);
+    return {item,card,diff};
+  });
+  const over=rows.filter(r=>r.diff<0).length;
+  const todays=rows.filter(r=>r.diff===0).length;
+  const week=rows.filter(r=>r.diff>0&&r.diff<=7).length;
   document.getElementById('rv-over').textContent=over;document.getElementById('rv-today').textContent=todays;document.getElementById('rv-week').textContent=week;
-  const todayPendingAll=rows.filter(r=>r.rev.diff<=0);
-  const todayDone=todayPendingAll.filter(r=>r.rev.done).length;
-  const todayTotal=todayPendingAll.length;
-  const revPct=todayTotal>0?Math.round(todayDone/todayTotal*100):0;
-  const rpb=document.getElementById('rev-prog-bar');if(rpb)rpb.style.width=revPct+'%';
-  const rpl=document.getElementById('rev-prog-label');if(rpl)rpl.textContent=todayTotal>0?`${todayDone}/${todayTotal}`:'–';
-  if(revFilter==='pending_today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<=0);
-  else if(revFilter==='overdue')rows=rows.filter(r=>!r.rev.done&&r.rev.diff<0);
-  else if(revFilter==='today')rows=rows.filter(r=>!r.rev.done&&r.rev.diff===0);
-  else if(revFilter==='upcoming')rows=rows.filter(r=>!r.rev.done&&r.rev.diff>=0&&r.rev.diff<=7);
-  rows.sort((a,b)=>a.rev.diff-b.rev.diff);
+  const duePend=rows.filter(r=>r.diff<=0).length;
+  const rpb=document.getElementById('rev-prog-bar');if(rpb)rpb.style.width=(rows.length>0?Math.round((rows.length-duePend)/rows.length*100):0)+'%';
+  const rpl=document.getElementById('rev-prog-label');if(rpl)rpl.textContent=duePend>0?`${duePend} a revisar`:'em dia ✓';
+  let filtered;
+  if(revFilter==='pending_today')filtered=rows.filter(r=>r.diff<=0);
+  else if(revFilter==='overdue')filtered=rows.filter(r=>r.diff<0);
+  else if(revFilter==='today')filtered=rows.filter(r=>r.diff===0);
+  else if(revFilter==='upcoming')filtered=rows.filter(r=>r.diff>=0&&r.diff<=7);
+  else filtered=rows;
+  filtered.sort((a,b)=>a.diff-b.diff);
   const list=document.getElementById('rev-list');
-  if(!rows.length){list.innerHTML=`<div class="rev-empty">${revFilter==='pending_today'?'Nenhuma revisão pendente para hoje. Ótimo!':'Nenhuma revisão nessa categoria.'}</div>`;return;}
+  if(!filtered.length){list.innerHTML=`<div class="rev-empty">${revFilter==='pending_today'?'Nenhuma revisão pendente. Em dia! ✓':'Nenhum item nessa categoria.'}</div>`;return;}
   const buckets={};
-  for(const row of rows){const d=row.rev.diff;let key,label,cls;if(d<0){key='over';label='Atrasadas';cls='overdue';}else if(d===0){key='today';label='Hoje';cls='today';}else if(d<=7){key='week';label='Esta semana';cls='upcoming';}else if(d<=30){key='month';label='Este mês';cls='upcoming';}else{key='f'+Math.floor(d/30);label='Em '+dtStr(row.rev.dt);cls='future';}if(!buckets[key])buckets[key]={label,cls,rows:[]};buckets[key].rows.push(row);}
+  for(const row of filtered){const d=row.diff;let key,label,cls;if(d<0){key='over';label='Atrasadas';cls='overdue';}else if(d===0){key='today';label='Hoje';cls='today';}else if(d<=7){key='week';label='Esta semana';cls='upcoming';}else if(d<=30){key='month';label='Este mês';cls='upcoming';}else{key='f'+Math.floor(d/30);label='Mais adiante';cls='future';}if(!buckets[key])buckets[key]={label,cls,rows:[]};buckets[key].rows.push(row);}
   list.innerHTML=Object.values(buckets).map(bucket=>{
-    const items=bucket.rows.map(({item,rev})=>{const c=CORES[item.disc]||'#888';const diffLbl=rev.diff<0?`${Math.abs(rev.diff)}d atrás`:rev.diff===0?'Hoje':`em ${rev.diff}d`;const bc=rev.diff<0?'c-over':rev.diff===0?'c-today':rev.diff<=7?'c-soon':'c-future';const cadUrl=cadernosState[item.id];
-      const resUrl=resumosState[item.id];
-      return`<div class="rev-item ${rev.done?'rev-done-row':''}">
-        <div class="rev-check ${rev.done?'checked':''}" onclick="toggleRevCheck(${item.id},${rev.days})">${chkIcon()}</div>
-        <div class="rev-info">
-          <span style="display:inline-flex;align-items:center;gap:5px;margin-bottom:3px">
-            <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
-            <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
-          </span>
-          <div class="rev-topico ${rev.done?'done-text':''}">${item.topico}</div>
-          <div style="margin-top:5px">
-            ${renderLinksRow(item.id, item.disc, 'r')}
-          </div>
+    const items=bucket.rows.map(({item,card,diff})=>{
+      const c=CORES[item.disc]||'#888';
+      const isNew=!card||!card.state;
+      const due=diff<=0;
+      const R=Math.round(fsrsCurR(card)*100);
+      const metrics=isNew
+        ? `<span title="Novo card — primeira revisão">🆕 novo</span>`
+        : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span>`;
+      const grades=due?`<div class="fsrs-grades">
+        <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Errei<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
+        <button class="fsrs-btn fsrs-hard" onclick="rateCard(${item.id},2)">Difícil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,2))}</span></button>
+        <button class="fsrs-btn fsrs-good" onclick="rateCard(${item.id},3)">Bom<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,3))}</span></button>
+        <button class="fsrs-btn fsrs-easy" onclick="rateCard(${item.id},4)">Fácil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,4))}</span></button>
+      </div>`:`<div class="rev-date" style="margin-top:5px">Próxima revisão em ${diff}d (${card.due})</div>`;
+      return`<div class="rev-item" style="grid-template-columns:1fr;display:block">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
+          <span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>
+          <span class="fsrs-metrics" style="margin-left:auto">${metrics}</span>
         </div>
-        <div class="rev-meta"><div class="rev-interval ${bc}">${labelInterval(rev.days)}</div>
-          <div class="rev-date">${diffLbl}</div></div>
+        <div class="rev-topico">${item.topico}</div>
+        <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}</div>
+        ${grades}
       </div>`;}).join('');
-    const n=bucket.rows.length;return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}<span style="margin-left:auto;font-weight:400;font-size:11px">${n} revis${n>1?'ões':'ão'}</span></div>${items}</div>`;
+    const n=bucket.rows.length;return`<div class="rev-group"><div class="rev-group-header ${bucket.cls}">${bucket.label}<span style="margin-left:auto;font-weight:400;font-size:11px">${n} ${n>1?'itens':'item'}</span></div>${items}</div>`;
   }).join('');
 }
 
@@ -2776,7 +2889,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();
+render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
