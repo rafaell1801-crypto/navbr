@@ -1158,6 +1158,7 @@ function renderDailyChart(){
 async function loadLinksExtras(){
   const backup=JSON.parse(localStorage.getItem('nav_xlinks')||'{}');
   linksExtras=backup;
+  renderXLinks(); // mostra cache local já, sem esperar Supabase
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__header_links__');
     if(d&&d.length>0&&d[0].topics&&typeof d[0].topics==='object'){
@@ -1843,7 +1844,7 @@ function compactCadernoHTML(itemId) {
   return `<div style="display:flex;flex-direction:column">${pill}${edit}</div>`;
 }
 
-let builtinIcons={}; // {resumo, questoes, drive, play, pausa, concluir, cancelar, refazer} → base64
+let builtinIcons=(()=>{try{return JSON.parse(localStorage.getItem('nav_builtin_icons')||'{}');}catch{return {};}})(); // {resumo, questoes, drive, play, pausa, concluir, cancelar, refazer, editar, atrasados, config} → base64 (cache local aplicado já no boot pra evitar flash)
 const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png',editar:'editar.png',atrasados:'atrasados.png',config:'config.png'};
 function editIconHTML(){
   if(builtinIcons['editar'])return `<img src="${builtinIcons['editar'].replace(/"/g,'&quot;')}" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block">`;
@@ -2956,7 +2957,7 @@ function getEffectiveAgenda() {
 
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
-populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();
+populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
