@@ -869,50 +869,6 @@ async function saveVerse(){
   await sbUpsert('conteudo',{disc:'__verse__',topics:{text:appVerse}});
 }
 
-// Tipos de link personalizados: [{id, emoji, label}]
-let customLinkTypes=[];
-// URLs personalizadas por tópico: { itemId: { typeId: url } }
-let customLinks={};
-async function loadCustomLinkTypes(){
-  try{const s=localStorage.getItem('nav_clink_types');if(s)customLinkTypes=JSON.parse(s);}catch{}
-  try{const s=localStorage.getItem('nav_clinks');if(s)customLinks=JSON.parse(s);}catch{}
-  try{
-    const d=await sbGet('conteudo','select=disc,topics&disc=in.(__clink_types__,__clinks__)');
-    if(d){
-      d.forEach(r=>{
-        if(r.disc==='__clink_types__'&&Array.isArray(r.topics))customLinkTypes=r.topics;
-        if(r.disc==='__clinks__'&&r.topics&&typeof r.topics==='object'&&!Array.isArray(r.topics))customLinks=r.topics;
-      });
-      try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
-      try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
-    }
-  }catch{}
-  render();
-}
-async function saveCustomLinkTypesPersist(){
-  try{localStorage.setItem('nav_clink_types',JSON.stringify(customLinkTypes));}catch{}
-  await sbUpsert('conteudo',{disc:'__clink_types__',topics:customLinkTypes});
-}
-async function saveCustomLinksPersist(){
-  try{localStorage.setItem('nav_clinks',JSON.stringify(customLinks));}catch{}
-  await sbUpsert('conteudo',{disc:'__clinks__',topics:customLinks});
-}
-async function saveCustomLinkURL(itemId,typeId,url){
-  if(!customLinks[itemId])customLinks[itemId]={};
-  if(url)customLinks[itemId][typeId]=url;
-  else{delete customLinks[itemId][typeId];if(Object.keys(customLinks[itemId]).length===0)delete customLinks[itemId];}
-  showSync('saving','↺');
-  await saveCustomLinksPersist();
-  showSync('ok','✓ Link salvo');
-  const li=document.getElementById('li-cl-'+typeId+'-'+itemId);if(li)li.classList.add('hidden');
-  render();
-  if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
-}
-async function saveCustomLinkURLFromInput(itemId,typeId,inputId){
-  const el=document.getElementById(inputId);if(!el)return;
-  await saveCustomLinkURL(itemId,typeId,el.value.trim());
-}
-
 // Questões: { itemId: { a: acertos, t: total } }
 let questoesState={};
 async function loadQuestoes(){
