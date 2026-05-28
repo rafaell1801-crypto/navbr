@@ -429,8 +429,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
   <div class="rev-filter-bar">
     <button class="rev-filter-btn active" onclick="setRevFilter('pending_today',this)">Hoje + Pendentes</button>
     <button class="rev-filter-btn" onclick="setRevFilter('all',this)">Todas</button>
-    <button class="rev-filter-btn" onclick="setRevFilter('overdue',this)">Atrasadas</button>
-    <button class="rev-filter-btn" onclick="setRevFilter('today',this)">Hoje</button>
     <button class="rev-filter-btn" onclick="setRevFilter('upcoming',this)">Esta semana</button>
   </div>
   <div id="rev-list"></div>
@@ -1435,7 +1433,6 @@ function renderBuiltinIconsConfig(){
         <input type="file" accept="image/*" style="display:none" onchange="onBuiltinIconChange('${key}',this)">
       </label>
       <span style="font-size:10px;color:var(--muted)">${label}</span>
-      ${builtinIcons[key]?`<button type="button" onclick="resetBuiltinIcon('${key}')" style="font-size:9px;color:var(--danger);background:none;border:none;cursor:pointer;padding:0">restaurar</button>`:''}
     </div>`;
   }).join('');
 }
@@ -2277,12 +2274,12 @@ function renderRev(){
       const metrics=isNew
         ? `<span title="Novo card — primeira revisão">🆕 novo</span>`
         : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span>`;
-      const grades=due?`<div class="fsrs-grades">
+      const grades=`<div class="fsrs-grades">
         <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Reaprender<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
         <button class="fsrs-btn fsrs-hard" onclick="rateCard(${item.id},2)">Difícil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,2))}</span></button>
         <button class="fsrs-btn fsrs-good" onclick="rateCard(${item.id},3)">Bom<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,3))}</span></button>
         <button class="fsrs-btn fsrs-easy" onclick="rateCard(${item.id},4)">Fácil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,4))}</span></button>
-      </div>`:`<div class="rev-date" style="white-space:nowrap">em ${diff}d</div>`;
+      </div>`;
       return`<div class="rev-item-fsrs">
         <div class="rev-left">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
