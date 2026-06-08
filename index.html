@@ -698,13 +698,17 @@ function lsLinksSave(key, obj) {
   try { localStorage.setItem(key, JSON.stringify(obj)); } catch {}
 }
 
+async function _sbSaveResumos(){return sbUpsert('conteudo',{disc:'__resumos_map__',topics:resumosState});}
+async function _sbSaveCadernos(){return sbUpsert('conteudo',{disc:'__cadernos_map__',topics:cadernosState});}
+
 async function loadCadernos() {
   const backup = lsLinksGet('cadernos_backup');
   cadernosState = {...backup};
   try {
-    const rows = await sbGet('cadernos', 'select=item_id,url');
-    if (rows) {
-      for (const r of rows) cadernosState[r.item_id] = r.url;
+    const rows = await sbGet('conteudo','select=topics&disc=eq.__cadernos_map__');
+    if (rows && rows[0] && rows[0].topics && typeof rows[0].topics==='object') {
+      const remote = rows[0].topics;
+      cadernosState = {...backup, ...remote};
       lsLinksSave('cadernos_backup', cadernosState);
     }
   } catch {}
@@ -715,9 +719,10 @@ async function loadResumos() {
   const backup = lsLinksGet('resumos_backup');
   resumosState = {...backup};
   try {
-    const rows = await sbGet('resumos', 'select=item_id,url');
-    if (rows) {
-      for (const r of rows) resumosState[r.item_id] = r.url;
+    const rows = await sbGet('conteudo','select=topics&disc=eq.__resumos_map__');
+    if (rows && rows[0] && rows[0].topics && typeof rows[0].topics==='object') {
+      const remote = rows[0].topics;
+      resumosState = {...backup, ...remote};
       lsLinksSave('resumos_backup', resumosState);
     }
   } catch {}
@@ -727,8 +732,8 @@ async function loadResumos() {
 async function saveResumo(itemId, url) {
   resumosState[itemId] = url;
   lsLinksSave('resumos_backup', resumosState);
-  const ok = await sbUpsert('resumos', {item_id: itemId, url: url});
-  showSync(ok ? 'ok' : 'error', ok ? '✓ Resumo salvo' : '✗ Salvo local apenas — verifique Supabase');
+  const ok = await _sbSaveResumos();
+  showSync(ok ? 'ok' : 'error', ok ? '✓ Resumo salvo' : '✗ Salvo local apenas');
   render();
 }
 
@@ -745,8 +750,8 @@ function resumoInputHTML(itemId) {
 async function saveCaderno(itemId, url) {
   cadernosState[itemId] = url;
   lsLinksSave('cadernos_backup', cadernosState);
-  const ok = await sbUpsert('cadernos', {item_id: itemId, url: url});
-  showSync(ok ? 'ok' : 'error', ok ? '✓ Link salvo' : '✗ Salvo local apenas — verifique Supabase');
+  const ok = await _sbSaveCadernos();
+  showSync(ok ? 'ok' : 'error', ok ? '✓ Link salvo' : '✗ Salvo local apenas');
   render();
   if (document.getElementById('tab-rev') && !document.getElementById('tab-rev').classList.contains('hidden')) renderRev();
 }
@@ -1607,12 +1612,10 @@ async function forcePushLinksToSupabase(){
   if(total===0){alert('Nenhum link salvo localmente neste dispositivo.');return;}
   if(!confirm(`Vai enviar ${Object.keys(resBkp).length} resumos e ${Object.keys(cadBkp).length} questões locais para o Supabase. Continuar?`))return;
   showSync('saving','⏳ Sincronizando...');
-  const ups=[];
-  for(const[id,url] of Object.entries(resBkp))if(url)ups.push(sbUpsert('resumos',{item_id:+id,url}));
-  for(const[id,url] of Object.entries(cadBkp))if(url)ups.push(sbUpsert('cadernos',{item_id:+id,url}));
-  await Promise.all(ups);
+  Object.assign(resumosState,resBkp);Object.assign(cadernosState,cadBkp);
+  await Promise.all([_sbSaveResumos(),_sbSaveCadernos()]);
   showSync('ok','✓ Sincronizado');
-  alert(`${ups.length} links enviados ao Supabase. Recarregue os outros dispositivos para vê-los.`);
+  alert(`Links enviados ao Supabase. Recarregue os outros dispositivos para vê-los.`);
 }
 
 async function importLinks(event) {
@@ -1624,18 +1627,11 @@ async function importLinks(event) {
     if (!data.resumos && !data.cadernos) { alert('Arquivo inválido.'); return; }
     if (!confirm(`Importar ${Object.keys(data.resumos||{}).length} resumos e ${Object.keys(data.cadernos||{}).length} links de questões? Isso vai sobrescrever os links atuais.`)) return;
     showSync('saving', '⟳ Importando...');
-    const ups = [];
-    for (const [id, url] of Object.entries(data.resumos || {})) {
-      resumosState[id] = url;
-      ups.push(sbUpsert('resumos', {item_id: Number(id), url}));
-    }
-    for (const [id, url] of Object.entries(data.cadernos || {})) {
-      cadernosState[id] = url;
-      ups.push(sbUpsert('cadernos', {item_id: Number(id), url}));
-    }
-    await Promise.all(ups);
+    for (const [id, url] of Object.entries(data.resumos || {})) resumosState[id] = url;
+    for (const [id, url] of Object.entries(data.cadernos || {})) cadernosState[id] = url;
     lsLinksSave('resumos_backup', resumosState);
     lsLinksSave('cadernos_backup', cadernosState);
+    await Promise.all([_sbSaveResumos(), _sbSaveCadernos()]);
     showSync('ok', '✓ Links importados');
     render();
   } catch(e) {
@@ -1991,11 +1987,11 @@ async function saveAllLinksForItem(ctx,itemId,disc){
   const promises=[];
   if(res!==(resumosState[itemId]||'')){
     resumosState[itemId]=res;lsLinksSave('resumos_backup',resumosState);
-    promises.push(sbUpsert('resumos',{item_id:itemId,url:res}));
+    promises.push(_sbSaveResumos());
   }
   if(cad!==(cadernosState[itemId]||'')){
     cadernosState[itemId]=cad;lsLinksSave('cadernos_backup',cadernosState);
-    promises.push(sbUpsert('cadernos',{item_id:itemId,url:cad}));
+    promises.push(_sbSaveCadernos());
   }
   const curQ=questoesState[itemId]||{a:0,t:0};
   if(qa!==(curQ.a||0)||qt!==(curQ.t||0)){
