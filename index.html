@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NAV Brasil | Plano de Estudos</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -432,18 +432,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <span id="rev-prog-label" style="font-size:11px;color:var(--muted);white-space:nowrap">0/0</span>
     </div>
   </div>
-  <div class="timer-bar" id="rev-timer-bar" style="background:var(--surface);border-top:none;border-bottom:1px solid var(--border);padding:8px 16px;gap:8px;margin:0 -20px">
-    <div>
-      <div class="timer-display" id="rev-chrono-display" style="font-size:18px;min-width:60px">00:00</div>
-      <div class="timer-label">Cronômetro · Revisões</div>
-    </div>
-    <select class="timer-disc-select" id="rev-timer-disc">
-      <option value="">— Selecione a disciplina —</option>
-    </select>
-    <button class="timer-icon-btn tibtn-playpause" id="rev-btn-pp" onclick="revTimerPlayPause()" title="Iniciar / Pausar">▶</button>
-    <button class="timer-icon-btn tibtn-save hidden" id="rev-btn-save" onclick="revTimerStop()" title="Salvar">✓</button>
-    <button class="timer-icon-btn tibtn-stop hidden" id="rev-btn-cancel" onclick="revTimerCancel()" title="Cancelar">✕</button>
-  </div>
   <div class="rev-filter-bar">
     <button class="rev-filter-btn active" onclick="setRevFilter('pending_today',this)">Hoje + Pendentes</button>
     <button class="rev-filter-btn" onclick="setRevFilter('all',this)">Todas</button>
@@ -464,7 +452,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <div class="info-item"><span class="info-label">Dias restantes</span><span class="info-val" id="st-rest">–</span></div>
       <div class="info-item"><span class="info-label">Progresso</span><span class="info-val" id="st-pct">–</span></div>
       <div class="info-item"><span class="info-label">Total de horas estudadas</span><span class="info-val" id="st-total-time">0h</span></div>
-      <div class="info-item"><span class="info-label">Horas de revisão</span><span class="info-val" id="st-rev-time">0h</span></div>
     </div>
   </div>
   <div class="stats-card">
@@ -1224,8 +1211,7 @@ function renderXLinks(){
   }).join('');
 }
 let state={},revState={},timerSt={timeByDisc:{},remaining:getBlockSecs(),running:false,interval:null,currentDisc:''};
-let revTimerSt={timeByDisc:{},running:false,interval:null,elapsed:0,startedAt:null,currentDisc:'',discBase:0};
-let syncTimer=null,revSyncTimer=null;
+let syncTimer=null;
 
 function showSync(type,msg){
   const ok=document.getElementById('sync-ok'),spin=document.getElementById('sync-spin');
@@ -1240,19 +1226,17 @@ async function loadAll(){
   try{const s=localStorage.getItem('nav_state_bkp');if(s){const o=JSON.parse(s);state={};for(const k in o)state[+k]=o[k];}}catch{}
   try{const s=localStorage.getItem('nav_rev_bkp');if(s)revState=JSON.parse(s);}catch{}
   try{const s=localStorage.getItem('nav_timer_bkp');if(s)timerSt.timeByDisc=JSON.parse(s);}catch{}
-  try{const s=localStorage.getItem('nav_rev_timer_bkp');if(s)revTimerSt.timeByDisc=JSON.parse(s);}catch{}
   loadTodayByDisc();render();
   showSync('saving','⟳ Carregando...');
   try{
     const[prog,revs,timers]=await Promise.all([sbGet('progresso','select=id,feito'),sbGet('revisoes','select=item_id,done_date,completed_revs'),sbGet('timer_disc','select=disc,segundos')]);
     state={};for(const r of(prog||[]))state[r.id]=r.feito;
     revState={};for(const r of(revs||[]))revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
-    timerSt.timeByDisc={};revTimerSt.timeByDisc={};
-    for(const r of(timers||[])){if(r.disc.startsWith('__rev__'))revTimerSt.timeByDisc[r.disc.slice(7)]=r.segundos;else timerSt.timeByDisc[r.disc]=r.segundos;}
+    timerSt.timeByDisc={};
+    for(const r of(timers||[])){if(!r.disc.startsWith('__rev__'))timerSt.timeByDisc[r.disc]=r.segundos;}
     try{localStorage.setItem('nav_state_bkp',JSON.stringify(state));}catch{}
     try{localStorage.setItem('nav_rev_bkp',JSON.stringify(revState));}catch{}
     try{localStorage.setItem('nav_timer_bkp',JSON.stringify(timerSt.timeByDisc));}catch{}
-    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
     showSync('ok','✓ Sincronizado');
   }catch{showSync('error','✗ Offline');}
   render();
@@ -1730,7 +1714,7 @@ function saveSettings(){
   if(vEl){const newVerse=vEl.value.trim();if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
   Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
   renderXLinks();
-  closeSettings();render();_timerButtonsUpdate();applyLateIcon();
+  closeSettings();render();renderRev();_timerButtonsUpdate();applyLateIcon();
 }
 async function applyTimerEdit(disc){
   const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
@@ -1826,7 +1810,7 @@ function _enableSpinEdit(el,max,onChange){
 function showTab(t){
   ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content'][i]===t));
-  if(t==='rev'){renderRev();populateRevDiscSelect();updateRevTimerUI();_revTimerButtonsUpdate();}if(t==='stats')renderStats();if(t==='content')renderContent();
+  if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();
 }
 let currentSubtab='pending';
 function showSubtab(s){
@@ -2179,9 +2163,6 @@ function renderStats(){
   const totalSecs=Object.values(timerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
   const totalEl=document.getElementById('st-total-time');
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
-  const revTotalSecs=Object.values(revTimerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
-  const revTimeEl=document.getElementById('st-rev-time');
-  if(revTimeEl)revTimeEl.textContent=revTotalSecs>=60?fmtHMS(revTotalSecs):'0h';
   renderDailyChart();
   renderCalEdit();
   renderQuestoesStatsCard();
@@ -3009,72 +2990,6 @@ async function resetEstudos(){
   saveStartDateSetting(iso);saveAppSettings();
   render();showSync('ok','✓ Estudos reiniciados');
 }
-function fmtChronos(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return h>0?h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
-function populateRevDiscSelect(){
-  const sel=document.getElementById('rev-timer-disc');if(!sel)return;
-  const prev=sel.value;
-  sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+getActiveDiscs().map(d=>`<option value="${d}"${d===prev?' selected':''}>${d}</option>`).join('');
-}
-function updateRevTimerUI(){
-  const el=document.getElementById('rev-chrono-display');if(!el)return;
-  const secs=revTimerSt.running&&revTimerSt.startedAt?revTimerSt.discBase+Math.floor((Date.now()-revTimerSt.startedAt)/1000):revTimerSt.elapsed;
-  el.textContent=fmtChronos(secs);
-  el.className='timer-display'+(revTimerSt.running?' running':'');
-}
-function _revTimerButtonsUpdate(){
-  const pp=document.getElementById('rev-btn-pp');
-  const save=document.getElementById('rev-btn-save');
-  const cancel=document.getElementById('rev-btn-cancel');
-  const disc=document.getElementById('rev-timer-disc');
-  if(pp)pp.innerHTML=revTimerSt.running?'⏸':'▶';
-  const started=revTimerSt.running||(revTimerSt.elapsed>0);
-  if(save)save.classList.toggle('hidden',!started);
-  if(cancel)cancel.classList.toggle('hidden',!started);
-  if(disc)disc.disabled=revTimerSt.running;
-}
-function revTimerTick(){
-  if(!revTimerSt.running||!revTimerSt.startedAt)return;
-  const elapsed=Math.floor((Date.now()-revTimerSt.startedAt)/1000);
-  const totalDisc=revTimerSt.discBase+elapsed;
-  revTimerSt.timeByDisc[revTimerSt.currentDisc]=totalDisc;
-  revTimerSt.elapsed=totalDisc;
-  clearTimeout(revSyncTimer);revSyncTimer=setTimeout(()=>{
-    sbUpsert('timer_disc',{disc:'__rev__'+revTimerSt.currentDisc,segundos:totalDisc});
-    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
-  },3000);
-  updateRevTimerUI();
-}
-function revTimerPlayPause(){
-  if(!revTimerSt.running){
-    const sel=document.getElementById('rev-timer-disc');
-    if(sel&&!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
-    revTimerSt.currentDisc=sel?sel.value:'';
-    revTimerSt.discBase=revTimerSt.timeByDisc[revTimerSt.currentDisc]||0;
-    revTimerSt.startedAt=Date.now();revTimerSt.running=true;
-    clearInterval(revTimerSt.interval);revTimerSt.interval=setInterval(revTimerTick,500);
-  }else{
-    revTimerTick();
-    revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
-  }
-  _revTimerButtonsUpdate();updateRevTimerUI();
-}
-async function revTimerStop(){
-  if(revTimerSt.running)revTimerTick();
-  revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
-  const disc=revTimerSt.currentDisc;
-  if(disc&&revTimerSt.timeByDisc[disc]){
-    await sbUpsert('timer_disc',{disc:'__rev__'+disc,segundos:revTimerSt.timeByDisc[disc]});
-    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
-    showSync('ok','✓ Tempo de revisão salvo');
-  }
-  revTimerSt.elapsed=0;revTimerSt.discBase=0;
-  _revTimerButtonsUpdate();updateRevTimerUI();renderStats();
-}
-function revTimerCancel(){
-  revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
-  revTimerSt.elapsed=0;revTimerSt.discBase=0;
-  _revTimerButtonsUpdate();updateRevTimerUI();
-}
 function togglePausePanel(){
   const panel=document.getElementById('pause-panel');if(!panel)return;
   const hidden=panel.classList.toggle('hidden');
@@ -3105,7 +3020,7 @@ function replanLate(){
 
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
-populateDiscSelect();populateRevDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
+populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
