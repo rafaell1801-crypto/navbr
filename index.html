@@ -408,6 +408,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
   </div>
   <div id="pause-bar" style="padding:3px 20px 5px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <button onclick="togglePausePanel()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0">⏸ Pausar estudos</button>
+    <span style="font-size:11px;color:var(--border)">|</span>
+    <button onclick="resetEstudos()" style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 0">↺ Reiniciar estudos</button>
     <div id="pause-panel" class="hidden" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <input id="pause-days" type="number" min="1" max="365" value="7" style="width:48px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface2);color:var(--text)">
       <span style="font-size:11px;color:var(--muted)">dias</span>
@@ -2961,6 +2963,24 @@ function getEffectiveAgenda() {
   return agenda.filter(item => !deletedDiscs.has(item.disc) && !deletedIds.has(item.id));
 }
 
+async function resetEstudos(){
+  if(!confirm('Reiniciar estudos desde o começo?\n\nIsso irá:\n• Desmarcar todos os itens concluídos\n• Zerar todas as revisões espaçadas\n• Redefinir a data de início para hoje\n\nCadernos, resumos e configurações serão mantidos.\n\nEssa ação é irreversível.'))return;
+  showSync('saving','⟳ Reiniciando...');
+  try{
+    const h={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+    await Promise.all([
+      fetch(SB_URL+'/rest/v1/progresso?id=gte.0',{method:'DELETE',headers:h}),
+      fetch(SB_URL+'/rest/v1/revisoes?item_id=gte.0',{method:'DELETE',headers:h}),
+    ]);
+  }catch(e){console.error('Erro ao limpar Supabase:',e);}
+  state={};revState={};
+  try{localStorage.removeItem('nav_state_bkp');}catch{}
+  try{localStorage.removeItem('nav_rev_bkp');}catch{}
+  const n=new Date();
+  const iso=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+  saveStartDateSetting(iso);saveAppSettings();
+  render();showSync('ok','✓ Estudos reiniciados');
+}
 function togglePausePanel(){
   const panel=document.getElementById('pause-panel');if(!panel)return;
   const hidden=panel.classList.toggle('hidden');
