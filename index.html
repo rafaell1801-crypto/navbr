@@ -212,13 +212,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .rev-right{flex:1 1 50%;min-width:0;display:flex;align-items:center}
 .fsrs-metrics{display:flex;gap:8px;font-size:10px;color:var(--muted);align-items:center;margin-left:6px}
 .fsrs-grades{display:flex;gap:6px;width:100%}
-.fsrs-btn{flex:1;min-width:0;padding:9px 4px;border-radius:7px;border:1px solid;background:transparent;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.15}
+.fsrs-btn{flex:1;min-width:0;padding:9px 4px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.15}
 .fsrs-iv{font-size:10px;opacity:.75;font-weight:500}
 @media(max-width:600px){.rev-item-fsrs{flex-direction:column;align-items:stretch;gap:8px}.rev-left,.rev-right{flex:1 1 auto}}
-.fsrs-again{color:#f26b5e;border-color:#f26b5e}.fsrs-again:hover{background:#2a0a0a}
-.fsrs-hard{color:#f5a623;border-color:#f5a623}.fsrs-hard:hover{background:#1a1100}
-.fsrs-good{color:#2dd4a0;border-color:#2dd4a0}.fsrs-good:hover{background:#08160f}
-.fsrs-easy{color:#3eb5c8;border-color:#3eb5c8}.fsrs-easy:hover{background:#071a28}
+.fsrs-again{color:#f26b5e;background:rgba(242,107,94,.13)}.fsrs-again:hover{background:rgba(242,107,94,.24)}
+.fsrs-hard{color:#f5a623;background:rgba(245,166,35,.11)}.fsrs-hard:hover{background:rgba(245,166,35,.22)}
+.fsrs-good{color:#2dd4a0;background:rgba(45,212,160,.10)}.fsrs-good:hover{background:rgba(45,212,160,.21)}
+.fsrs-easy{color:#3eb5c8;background:rgba(62,181,200,.10)}.fsrs-easy:hover{background:rgba(62,181,200,.21)}
 .c-over{color:#f26b5e}.c-today{color:#7dd3e8}.c-soon{color:#2dd4a0}.c-future{color:var(--muted)}
 .rev-empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:13px}
 /* MODAL */
@@ -406,17 +406,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <div class="prog-outer" style="flex:1;height:6px"><div class="prog-inner" id="day-prog-bar" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#2dd4a0)"></div></div>
     </div>
   </div>
-  <div id="pause-bar" style="padding:3px 20px 5px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <button onclick="togglePausePanel()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0">⏸ Pausar estudos</button>
-    <span style="font-size:11px;color:var(--border)">|</span>
-    <button onclick="resetEstudos()" style="font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;padding:2px 0">↺ Reiniciar estudos</button>
-    <div id="pause-panel" class="hidden" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <input id="pause-days" type="number" min="1" max="365" value="7" style="width:48px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface2);color:var(--text)">
-      <span style="font-size:11px;color:var(--muted)">dias</span>
-      <button onclick="applyPause()" style="padding:3px 10px;font-size:11px;font-weight:600;border-radius:5px;border:none;background:var(--accent);color:#fff;cursor:pointer">Aplicar</button>
-      <button onclick="togglePausePanel()" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;border-radius:5px">✕</button>
-    </div>
-  </div>
   <div class="late-section hidden" id="late-section">
     <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
@@ -443,6 +432,18 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <span id="rev-prog-label" style="font-size:11px;color:var(--muted);white-space:nowrap">0/0</span>
     </div>
   </div>
+  <div class="timer-bar" id="rev-timer-bar" style="background:var(--surface);border-top:none;border-bottom:1px solid var(--border);padding:8px 16px;gap:8px;margin:0 -20px">
+    <div>
+      <div class="timer-display" id="rev-chrono-display" style="font-size:18px;min-width:60px">00:00</div>
+      <div class="timer-label">Cronômetro · Revisões</div>
+    </div>
+    <select class="timer-disc-select" id="rev-timer-disc">
+      <option value="">— Selecione a disciplina —</option>
+    </select>
+    <button class="timer-icon-btn tibtn-playpause" id="rev-btn-pp" onclick="revTimerPlayPause()" title="Iniciar / Pausar">▶</button>
+    <button class="timer-icon-btn tibtn-save hidden" id="rev-btn-save" onclick="revTimerStop()" title="Salvar">✓</button>
+    <button class="timer-icon-btn tibtn-stop hidden" id="rev-btn-cancel" onclick="revTimerCancel()" title="Cancelar">✕</button>
+  </div>
   <div class="rev-filter-bar">
     <button class="rev-filter-btn active" onclick="setRevFilter('pending_today',this)">Hoje + Pendentes</button>
     <button class="rev-filter-btn" onclick="setRevFilter('all',this)">Todas</button>
@@ -463,6 +464,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <div class="info-item"><span class="info-label">Dias restantes</span><span class="info-val" id="st-rest">–</span></div>
       <div class="info-item"><span class="info-label">Progresso</span><span class="info-val" id="st-pct">–</span></div>
       <div class="info-item"><span class="info-label">Total de horas estudadas</span><span class="info-val" id="st-total-time">0h</span></div>
+      <div class="info-item"><span class="info-label">Horas de revisão</span><span class="info-val" id="st-rev-time">0h</span></div>
     </div>
   </div>
   <div class="stats-card">
@@ -524,12 +526,27 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
     </details>
 
     <details class="cfg-group">
-      <summary>Data de início</summary>
+      <summary>Ciclo de estudos</summary>
       <div class="cfg-group-body">
         <div class="modal-row" style="flex-wrap:wrap;gap:8px;margin-top:6px">
           <label>Data de início</label>
           <input id="cfg-start-date" type="date" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
           <span id="cfg-subtitle" style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:4px;align-self:center">–</span>
+        </div>
+        <div class="modal-section">
+          <h3>Pausar estudos</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Avança a data de início pelo número de dias informado, empurrando todos os itens pendentes.</p>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <input id="pause-days" type="number" min="1" max="365" value="7" style="width:52px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
+            <span style="font-size:12px;color:var(--muted)">dias</span>
+            <button onclick="applyPause()" style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">Aplicar pausa</button>
+            <button onclick="replanLate()" style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer">↺ Replanejar atrasos</button>
+          </div>
+        </div>
+        <div class="modal-section">
+          <h3>Reiniciar estudos</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Desmarca todos os itens e zera as revisões espaçadas. A data de início é redefinida para hoje. Cadernos, resumos e configurações são preservados.</p>
+          <button onclick="resetEstudos()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #f5a623;background:transparent;color:#f5a623">↺ Reiniciar estudos</button>
         </div>
       </div>
     </details>
@@ -1207,7 +1224,8 @@ function renderXLinks(){
   }).join('');
 }
 let state={},revState={},timerSt={timeByDisc:{},remaining:getBlockSecs(),running:false,interval:null,currentDisc:''};
-let syncTimer=null;
+let revTimerSt={timeByDisc:{},running:false,interval:null,elapsed:0,startedAt:null,currentDisc:'',discBase:0};
+let syncTimer=null,revSyncTimer=null;
 
 function showSync(type,msg){
   const ok=document.getElementById('sync-ok'),spin=document.getElementById('sync-spin');
@@ -1222,16 +1240,19 @@ async function loadAll(){
   try{const s=localStorage.getItem('nav_state_bkp');if(s){const o=JSON.parse(s);state={};for(const k in o)state[+k]=o[k];}}catch{}
   try{const s=localStorage.getItem('nav_rev_bkp');if(s)revState=JSON.parse(s);}catch{}
   try{const s=localStorage.getItem('nav_timer_bkp');if(s)timerSt.timeByDisc=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_rev_timer_bkp');if(s)revTimerSt.timeByDisc=JSON.parse(s);}catch{}
   loadTodayByDisc();render();
   showSync('saving','⟳ Carregando...');
   try{
     const[prog,revs,timers]=await Promise.all([sbGet('progresso','select=id,feito'),sbGet('revisoes','select=item_id,done_date,completed_revs'),sbGet('timer_disc','select=disc,segundos')]);
     state={};for(const r of(prog||[]))state[r.id]=r.feito;
     revState={};for(const r of(revs||[]))revState[r.item_id]={doneDate:r.done_date,completedRevs:r.completed_revs||[]};
-    timerSt.timeByDisc={};for(const r of(timers||[]))timerSt.timeByDisc[r.disc]=r.segundos;
+    timerSt.timeByDisc={};revTimerSt.timeByDisc={};
+    for(const r of(timers||[])){if(r.disc.startsWith('__rev__'))revTimerSt.timeByDisc[r.disc.slice(7)]=r.segundos;else timerSt.timeByDisc[r.disc]=r.segundos;}
     try{localStorage.setItem('nav_state_bkp',JSON.stringify(state));}catch{}
     try{localStorage.setItem('nav_rev_bkp',JSON.stringify(revState));}catch{}
     try{localStorage.setItem('nav_timer_bkp',JSON.stringify(timerSt.timeByDisc));}catch{}
+    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
     showSync('ok','✓ Sincronizado');
   }catch{showSync('error','✗ Offline');}
   render();
@@ -1805,7 +1826,7 @@ function _enableSpinEdit(el,max,onChange){
 function showTab(t){
   ['ciclo','rev','stats','content'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content'][i]===t));
-  if(t==='rev')renderRev();if(t==='stats')renderStats();if(t==='content')renderContent();
+  if(t==='rev'){renderRev();populateRevDiscSelect();updateRevTimerUI();_revTimerButtonsUpdate();}if(t==='stats')renderStats();if(t==='content')renderContent();
 }
 let currentSubtab='pending';
 function showSubtab(s){
@@ -2158,6 +2179,9 @@ function renderStats(){
   const totalSecs=Object.values(timerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
   const totalEl=document.getElementById('st-total-time');
   if(totalEl)totalEl.textContent=totalSecs>=60?fmtHMS(totalSecs):'0h';
+  const revTotalSecs=Object.values(revTimerSt.timeByDisc).reduce((a,b)=>a+(b||0),0);
+  const revTimeEl=document.getElementById('st-rev-time');
+  if(revTimeEl)revTimeEl.textContent=revTotalSecs>=60?fmtHMS(revTotalSecs):'0h';
   renderDailyChart();
   renderCalEdit();
   renderQuestoesStatsCard();
@@ -2952,15 +2976,19 @@ function getDynamicAgenda() {
 function getEffectiveAgenda() {
   const agenda = getAgendaWithDate();
   if (!customTopics) return agenda;
-  // Disciplinas excluídas inteiras (null em customTopics)
   const deletedDiscs = new Set(Object.keys(customTopics).filter(d => customTopics[d] === null));
-  // Tópicos marcados como deleted
   const deletedIds = new Set();
+  const nameMap = new Map();
   for (const disc in customTopics) {
     if (!Array.isArray(customTopics[disc])) continue;
-    customTopics[disc].forEach(t => { if (t.deleted) deletedIds.add(t.id); });
+    customTopics[disc].forEach(t => {
+      if (t.deleted) deletedIds.add(t.id);
+      else nameMap.set(t.id, t.topico);
+    });
   }
-  return agenda.filter(item => !deletedDiscs.has(item.disc) && !deletedIds.has(item.id));
+  return agenda
+    .filter(item => !deletedDiscs.has(item.disc) && !deletedIds.has(item.id))
+    .map(item => nameMap.has(item.id) ? {...item, topico: nameMap.get(item.id)} : item);
 }
 
 async function resetEstudos(){
@@ -2980,6 +3008,72 @@ async function resetEstudos(){
   const iso=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
   saveStartDateSetting(iso);saveAppSettings();
   render();showSync('ok','✓ Estudos reiniciados');
+}
+function fmtChronos(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return h>0?h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'):String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');}
+function populateRevDiscSelect(){
+  const sel=document.getElementById('rev-timer-disc');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+getActiveDiscs().map(d=>`<option value="${d}"${d===prev?' selected':''}>${d}</option>`).join('');
+}
+function updateRevTimerUI(){
+  const el=document.getElementById('rev-chrono-display');if(!el)return;
+  const secs=revTimerSt.running&&revTimerSt.startedAt?revTimerSt.discBase+Math.floor((Date.now()-revTimerSt.startedAt)/1000):revTimerSt.elapsed;
+  el.textContent=fmtChronos(secs);
+  el.className='timer-display'+(revTimerSt.running?' running':'');
+}
+function _revTimerButtonsUpdate(){
+  const pp=document.getElementById('rev-btn-pp');
+  const save=document.getElementById('rev-btn-save');
+  const cancel=document.getElementById('rev-btn-cancel');
+  const disc=document.getElementById('rev-timer-disc');
+  if(pp)pp.innerHTML=revTimerSt.running?'⏸':'▶';
+  const started=revTimerSt.running||(revTimerSt.elapsed>0);
+  if(save)save.classList.toggle('hidden',!started);
+  if(cancel)cancel.classList.toggle('hidden',!started);
+  if(disc)disc.disabled=revTimerSt.running;
+}
+function revTimerTick(){
+  if(!revTimerSt.running||!revTimerSt.startedAt)return;
+  const elapsed=Math.floor((Date.now()-revTimerSt.startedAt)/1000);
+  const totalDisc=revTimerSt.discBase+elapsed;
+  revTimerSt.timeByDisc[revTimerSt.currentDisc]=totalDisc;
+  revTimerSt.elapsed=totalDisc;
+  clearTimeout(revSyncTimer);revSyncTimer=setTimeout(()=>{
+    sbUpsert('timer_disc',{disc:'__rev__'+revTimerSt.currentDisc,segundos:totalDisc});
+    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
+  },3000);
+  updateRevTimerUI();
+}
+function revTimerPlayPause(){
+  if(!revTimerSt.running){
+    const sel=document.getElementById('rev-timer-disc');
+    if(sel&&!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
+    revTimerSt.currentDisc=sel?sel.value:'';
+    revTimerSt.discBase=revTimerSt.timeByDisc[revTimerSt.currentDisc]||0;
+    revTimerSt.startedAt=Date.now();revTimerSt.running=true;
+    clearInterval(revTimerSt.interval);revTimerSt.interval=setInterval(revTimerTick,500);
+  }else{
+    revTimerTick();
+    revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
+  }
+  _revTimerButtonsUpdate();updateRevTimerUI();
+}
+async function revTimerStop(){
+  if(revTimerSt.running)revTimerTick();
+  revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
+  const disc=revTimerSt.currentDisc;
+  if(disc&&revTimerSt.timeByDisc[disc]){
+    await sbUpsert('timer_disc',{disc:'__rev__'+disc,segundos:revTimerSt.timeByDisc[disc]});
+    try{localStorage.setItem('nav_rev_timer_bkp',JSON.stringify(revTimerSt.timeByDisc));}catch{}
+    showSync('ok','✓ Tempo de revisão salvo');
+  }
+  revTimerSt.elapsed=0;revTimerSt.discBase=0;
+  _revTimerButtonsUpdate();updateRevTimerUI();renderStats();
+}
+function revTimerCancel(){
+  revTimerSt.running=false;clearInterval(revTimerSt.interval);revTimerSt.startedAt=null;
+  revTimerSt.elapsed=0;revTimerSt.discBase=0;
+  _revTimerButtonsUpdate();updateRevTimerUI();
 }
 function togglePausePanel(){
   const panel=document.getElementById('pause-panel');if(!panel)return;
@@ -3011,7 +3105,7 @@ function replanLate(){
 
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
-populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
+populateDiscSelect();populateRevDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
