@@ -406,8 +406,17 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
       <div class="prog-outer" style="flex:1;height:6px"><div class="prog-inner" id="day-prog-bar" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#2dd4a0)"></div></div>
     </div>
   </div>
+  <div id="pause-bar" style="padding:3px 20px 5px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <button onclick="togglePausePanel()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0">⏸ Pausar estudos</button>
+    <div id="pause-panel" class="hidden" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <input id="pause-days" type="number" min="1" max="365" value="7" style="width:48px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:var(--surface2);color:var(--text)">
+      <span style="font-size:11px;color:var(--muted)">dias</span>
+      <button onclick="applyPause()" style="padding:3px 10px;font-size:11px;font-weight:600;border-radius:5px;border:none;background:var(--accent);color:#fff;cursor:pointer">Aplicar</button>
+      <button onclick="togglePausePanel()" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;border-radius:5px">✕</button>
+    </div>
+  </div>
   <div class="late-section hidden" id="late-section">
-    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<span class="late-count" id="late-count">0</span></div>
+    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
   <div class="subtabs">
@@ -2950,6 +2959,34 @@ function getEffectiveAgenda() {
     customTopics[disc].forEach(t => { if (t.deleted) deletedIds.add(t.id); });
   }
   return agenda.filter(item => !deletedDiscs.has(item.disc) && !deletedIds.has(item.id));
+}
+
+function togglePausePanel(){
+  const panel=document.getElementById('pause-panel');if(!panel)return;
+  const hidden=panel.classList.toggle('hidden');
+  if(!hidden){const inp=document.getElementById('pause-days');if(inp){inp.focus();inp.select();}}
+}
+function applyPause(){
+  const days=parseInt(document.getElementById('pause-days')?.value)||0;
+  if(days<=0)return;
+  const start=getStartDate();start.setDate(start.getDate()+days);
+  const iso=start.getFullYear()+'-'+String(start.getMonth()+1).padStart(2,'0')+'-'+String(start.getDate()).padStart(2,'0');
+  const fmt=iso.split('-').reverse().join('/');
+  if(!confirm('Adicionar '+days+' dia(s) de pausa?\n\nTodos os itens pendentes serão adiados em '+days+' dias.\nNova data de início: '+fmt+'.\n\nContinuar?'))return;
+  saveStartDateSetting(iso);saveAppSettings();
+  togglePausePanel();render();
+  showSync('ok','✓ Pausa de '+days+' dia(s) aplicada');
+}
+function replanLate(){
+  const pending=getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id));
+  if(!pending.length)return;
+  const minIdx=Math.min(...pending.map(i=>i.dia_idx));
+  const newStart=new Date(TODAY_D);newStart.setDate(newStart.getDate()-minIdx);
+  const iso=newStart.getFullYear()+'-'+String(newStart.getMonth()+1).padStart(2,'0')+'-'+String(newStart.getDate()).padStart(2,'0');
+  const fmt=iso.split('-').reverse().join('/');
+  if(!confirm('Replanejar ciclo?\n\nO primeiro item pendente será movido para hoje.\nNova data de início: '+fmt+'.\n\nContinuar?'))return;
+  saveStartDateSetting(iso);saveAppSettings();
+  render();showSync('ok','✓ Ciclo replanejado');
 }
 
 // Limpa localStorage antigo se a versão do ciclo mudou
