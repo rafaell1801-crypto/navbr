@@ -700,35 +700,35 @@ function lsLinksSave(key, obj) {
 
 async function loadCadernos() {
   const backup = lsLinksGet('cadernos_backup');
+  cadernosState = {...backup};
   try {
     const rows = await sbGet('cadernos', 'select=item_id,url');
-    cadernosState = {...backup};
-    for (const r of rows) cadernosState[r.item_id] = r.url;
-    lsLinksSave('cadernos_backup', cadernosState);
-  } catch {
-    cadernosState = backup;
-  }
+    if (rows) {
+      for (const r of rows) cadernosState[r.item_id] = r.url;
+      lsLinksSave('cadernos_backup', cadernosState);
+    }
+  } catch {}
   render();
 }
 
 async function loadResumos() {
   const backup = lsLinksGet('resumos_backup');
+  resumosState = {...backup};
   try {
     const rows = await sbGet('resumos', 'select=item_id,url');
-    resumosState = {...backup};
-    for (const r of rows) resumosState[r.item_id] = r.url;
-    lsLinksSave('resumos_backup', resumosState);
-  } catch {
-    resumosState = backup;
-  }
+    if (rows) {
+      for (const r of rows) resumosState[r.item_id] = r.url;
+      lsLinksSave('resumos_backup', resumosState);
+    }
+  } catch {}
   render();
 }
 
 async function saveResumo(itemId, url) {
   resumosState[itemId] = url;
   lsLinksSave('resumos_backup', resumosState);
-  await sbUpsert('resumos', {item_id: itemId, url: url});
-  showSync('ok', '✓ Resumo salvo');
+  const ok = await sbUpsert('resumos', {item_id: itemId, url: url});
+  showSync(ok ? 'ok' : 'error', ok ? '✓ Resumo salvo' : '✗ Salvo local apenas — verifique Supabase');
   render();
 }
 
@@ -745,8 +745,8 @@ function resumoInputHTML(itemId) {
 async function saveCaderno(itemId, url) {
   cadernosState[itemId] = url;
   lsLinksSave('cadernos_backup', cadernosState);
-  await sbUpsert('cadernos', {item_id: itemId, url: url});
-  showSync('ok', '✓ Link salvo');
+  const ok = await sbUpsert('cadernos', {item_id: itemId, url: url});
+  showSync(ok ? 'ok' : 'error', ok ? '✓ Link salvo' : '✗ Salvo local apenas — verifique Supabase');
   render();
   if (document.getElementById('tab-rev') && !document.getElementById('tab-rev').classList.contains('hidden')) renderRev();
 }
@@ -896,7 +896,7 @@ function fmtIvShort(d){
 
 const sbH={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'};
 async function sbGet(t,q=''){try{const r=await fetch(`${SB_URL}/rest/v1/${t}?${q}`,{headers:sbH});return r.ok?r.json():null;}catch{return null;}}
-async function sbUpsert(t,b){try{await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});}catch{}}
+async function sbUpsert(t,b){try{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(b)});if(!r.ok){console.warn('sbUpsert falhou:',t,r.status,await r.text().catch(()=>''));return false;}return true;}catch(e){console.warn('sbUpsert erro:',t,e);return false;}}
 
 let linksExtras={};
 let driveLinks={};
