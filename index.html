@@ -3291,7 +3291,7 @@ function _horToggleEditModeActs(){
   const btn=document.getElementById('hor-editmode-btn');
   if(btn)btn.style.color=_horEditModeActs?'#f87171':'var(--muted)';
   const grid=document.getElementById('hor-acts-grid');
-  if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}}
+  if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}
 }
 function _horSetColor(hex){
   _horCustColorSel=hex;
