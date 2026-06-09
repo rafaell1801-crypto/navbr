@@ -3132,6 +3132,7 @@ function _horGetActs(){
   const base=HOR_ATIVAS_DEFAULT.filter(a=>!hidden.includes(a.label));
   return [...base,...(horariosConfig.customActs||[])];
 }
+function _horSpinPick(el,max){openSpinPicker(el,max,function(v){el.textContent=String(v).padStart(2,'0');});}
 function _horHexToRgba(hex,alpha){
   const n=hex.replace('#','');
   const r=parseInt(n.slice(0,2),16),g=parseInt(n.slice(2,4),16),b=parseInt(n.slice(4,6),16);
@@ -3339,9 +3340,9 @@ function _horAddExcEntry(prefillM){
     const tSel=document.getElementById('exc-time-sel');if(tSel)selM=parseInt(tSel.value)||selM;
     const emoji=(document.getElementById('exc-cust-emoji')?.value.trim())||'📌';
     const label=(document.getElementById('exc-cust-label')?.value.trim())||'Atividade';
-    const durH2=parseInt(document.getElementById('exc-dur-h')?.textContent||'1')||0;
-    const durM2=parseInt(document.getElementById('exc-dur-m')?.textContent||'0')||0;
-    const duration=durH2+(durM2/60);
+    const durVal=(document.getElementById('exc-dur-input')?.value||'01:00').trim();
+    const durPts=durVal.split(':');
+    const duration=(parseInt(durPts[0])||0)+((parseInt(durPts[1])||0)/60);
     horariosExceptions.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration});
     window._horCloseExcModal();_horSave();_horBuildExceptions();_horBuildDaySummary();
   };
@@ -3466,9 +3467,16 @@ function _horSetDurSlots(n){
   });
 }
 function _horGetDurSlots(){
-  var h=parseInt((document.getElementById('hor-dur-h')?.textContent||'1'))||0;
-  var m=parseInt((document.getElementById('hor-dur-m')?.textContent||'0'))||0;
-  var totalMin=h*60+m;
+  // suporta tanto spin-val (hor-dur-h/m) quanto texto hh:mm (hor-dur-input)
+  var eh=document.getElementById('hor-dur-h');
+  var em=document.getElementById('hor-dur-m');
+  var totalMin=0;
+  if(eh&&em){
+    totalMin=(parseInt(eh.textContent)||0)*60+(parseInt(em.textContent)||0);
+  } else {
+    var val=(document.getElementById('hor-dur-input')?.value||'01:00').trim();
+    var pts=val.split(':');totalMin=(parseInt(pts[0])||0)*60+(parseInt(pts[1])||0);
+  }
   if(totalMin<=0)totalMin=horariosConfig.slot;
   return Math.max(1,Math.ceil(totalMin/horariosConfig.slot));
 }
@@ -3553,7 +3561,7 @@ function _horEditCell(d,m,el){
     '<div class="hor-picker-title">'+hh+':'+mm+' — Rotina</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:700">Duração</span>'+
-      '<div class="spin-wrap" style="gap:2px"><span class="spin-val" id="hor-dur-h" style="width:32px;font-size:12px;padding:4px 5px" onclick="openSpinPicker(this,24,function(v){this.textContent=String(v).padStart(2,'0')}.bind(this))">01</span><span class="spin-sep" style="font-size:12px">:</span><span class="spin-val" id="hor-dur-m" style="width:32px;font-size:12px;padding:4px 5px" onclick="openSpinPicker(this,60,function(v){this.textContent=String(v).padStart(2,'0')}.bind(this))">00</span></div>'+
+      '<div class="spin-wrap" style="gap:2px"><span class="spin-val" id="hor-dur-h" style="width:32px;font-size:12px;padding:4px 5px" onclick="_horSpinPick(this,24)">01</span><span class="spin-sep" style="font-size:12px">:</span><span class="spin-val" id="hor-dur-m" style="width:32px;font-size:12px;padding:4px 5px" onclick="_horSpinPick(this,60)">00</span></div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
