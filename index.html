@@ -3205,8 +3205,8 @@ function _horBuildGrid(){
       const key=di+'_'+slotsArr[ri].m;
       const fc=(compMap[key]||[])[0];
       const act=horariosGrid[key];
-      row.push(fc?{emoji:fc.emoji,label:fc.label,bg:_horHexToRgba(fc.color||'#fbbf24',.35),color:fc.color||'#fbbf24',isComp:true}
-               :act?{emoji:act.emoji,label:act.label,bg:act.bg,color:act.color,isComp:false}:null);
+      row.push(fc?{emoji:fc.emoji,label:fc.label,bg:_horHexToRgba(fc.color||'#fbbf24',.28),color:fc.color||'#fbbf24',isComp:true}
+               :act?{emoji:act.emoji,label:act.label,bg:_horHexToRgba(act.color||'#93c5fd',.28),color:act.color,isComp:false}:null);
     }
     cells.push(row);
   }
@@ -3259,7 +3259,15 @@ function _horBuildGrid(){
         html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:transparent" onclick="_horEditCell('+di+','+m+',this)"></div></td>';
       } else {
         const leftBorder=cell.isComp?';border-left:3px solid '+cell.color:'';
-        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+leftBorder+'" onclick="_horEditCell('+di+','+m+',this)"><div class="hor-cell-inner"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:'+cell.color+'">'+cell.label+'</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
+        // time label at top of block
+        const startHH=String(Math.floor(m/60)).padStart(2,'0');
+        const startMM=String(m%60).padStart(2,'0');
+        const timeLabel='<span style="font-size:8px;color:rgba(255,255,255,.5);font-variant-numeric:tabular-nums;line-height:1;flex-shrink:0;font-family:Nunito,sans-serif">'+startHH+':'+startMM+'</span>';
+        const inner='<div class="hor-cell-inner" style="flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:3px 5px;gap:2px;width:100%">'+
+          timeLabel+
+          '<div style="display:flex;align-items:center;gap:3px;overflow:hidden;width:100%"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:rgba(255,255,255,.92);font-weight:500">'+cell.label+'</span></div>'+
+        '</div>';
+        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+leftBorder+';flex-direction:column;align-items:flex-start;justify-content:flex-start" onclick="_horEditCell('+di+','+m+',this)">'+inner+'<button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
       }
     }
     html+='</tr>';
@@ -3273,6 +3281,7 @@ const HOR_COLORS=['#5eead4','#93c5fd','#c4b5fd','#f9a8d4','#fb923c','#fbbf24','#
 let _horCustColorSel=HOR_COLORS[0];
 let _horEditModeActs=false;
 let _horEditingCompId=null;
+let _horPickerSlots=1;
 function _horToggleDay(i){
   if(_horSelDays.has(i)){if(_horSelDays.size>1)_horSelDays.delete(i);}else _horSelDays.add(i);
   for(let d=0;d<7;d++){const b=document.getElementById('hor-d-'+d);if(!b)continue;const sel=_horSelDays.has(d);b.style.background=sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)';b.style.color=sel?'var(--accent)':'var(--muted)';b.style.fontWeight=sel?'700':'400';}
@@ -3282,13 +3291,35 @@ function _horToggleEditModeActs(){
   const btn=document.getElementById('hor-editmode-btn');
   if(btn)btn.style.color=_horEditModeActs?'#f87171':'var(--muted)';
   const grid=document.getElementById('hor-acts-grid');
-  if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}
+  if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}}
 }
 function _horSetColor(hex){
   _horCustColorSel=hex;
   document.querySelectorAll('.hor-color-swatch').forEach(function(el){
     el.style.outline=el.dataset.color===hex?'2px solid rgba(255,255,255,.85)':'none';
     el.style.outlineOffset='2px';
+  });
+}
+function _horDurLabel(slots, slot){
+  var min=slots*slot;
+  if(min<60)return min+'min';
+  if(min%60===0)return (min/60)+'h';
+  return Math.floor(min/60)+'h'+String(min%60).padStart(2,'0');
+}
+function _horDurOpts(slot){
+  var opts=slot<=15?[1,2,4,8,12]:slot<=30?[1,2,4,6]:([1,2,4,8]);
+  return opts.map(function(n){
+    var sel=n===_horPickerSlots;
+    return '<button onclick="_horSetDurSlots('+n+')" id="hor-ds-'+n+'" style="padding:3px 8px;border:none;border-radius:6px;background:'+(sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)')+';color:'+(sel?'var(--accent)':'var(--muted)')+';font-size:10px;font-family:Nunito,sans-serif;cursor:pointer;transition:all .1s">'+_horDurLabel(n,slot)+'</button>';
+  }).join('');
+}
+function _horSetDurSlots(n){
+  _horPickerSlots=n;
+  document.querySelectorAll('[id^="hor-ds-"]').forEach(function(btn){
+    var bn=parseInt(btn.id.replace('hor-ds-',''));
+    var sel=bn===n;
+    btn.style.background=sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)';
+    btn.style.color=sel?'var(--accent)':'var(--muted)';
   });
 }
 function _horRemoveAct(label){
@@ -3326,6 +3357,7 @@ function _horActPillHTML(a,i,existing){
 function _horEditCell(d,m,el){
   _horClosePicker();
   _horEditModeActs=false;
+  _horPickerSlots=1;
   _horPickerDM={d,m};_horSelDays=new Set([d]);
   const rect=el.getBoundingClientRect();
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -3333,13 +3365,14 @@ function _horEditCell(d,m,el){
   const mm=String(m%60).padStart(2,'0');
   const existing=horariosGrid[d+'_'+m];
   const acts=_horGetActs();
+  const slot=horariosConfig.slot;
   const backdrop=document.createElement('div');
   backdrop.style.cssText='position:fixed;inset:0;z-index:9998';
   backdrop.onclick=_horClosePicker;
   const picker=document.createElement('div');
   picker.className='hor-picker';
   let top=rect.bottom+6,left=rect.left;
-  if(top+480>window.innerHeight)top=Math.max(8,rect.top-480);
+  if(top+520>window.innerHeight)top=Math.max(8,rect.top-520);
   if(left+268>window.innerWidth)left=Math.max(8,window.innerWidth-272);
   picker.style.cssText="position:fixed;top:"+top+"px;left:"+left+"px;max-height:"+(window.innerHeight-20)+"px;overflow-y:auto;font-family:'Nunito','Segoe UI',sans-serif";
   if(existing&&!acts.some(a=>a.label===existing.label)){_horCustColorSel=HOR_COLORS.includes(existing.color)?existing.color:HOR_COLORS[0];}else{_horCustColorSel=HOR_COLORS[0];}
@@ -3347,6 +3380,7 @@ function _horEditCell(d,m,el){
     var sel=c===_horCustColorSel;
     return '<button class="hor-color-swatch" data-color="'+c+'" onclick="_horSetColor(\''+c+'\')" style="width:20px;height:20px;border-radius:50%;background:'+c+';border:none;cursor:pointer;flex-shrink:0;outline:'+(sel?'2px solid rgba(255,255,255,.85)':'none')+';outline-offset:2px"></button>';
   }).join('');
+  const EDIT_ICON="<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z'/></svg>";
   picker.innerHTML=
     '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
     '<div class="hor-picker-title">'+DAYS[d]+' '+hh+':'+mm+'</div>'+
@@ -3355,8 +3389,12 @@ function _horEditCell(d,m,el){
       DAYS.map(function(day,i){var sel=i===d;return '<button id="hor-d-'+i+'" onclick="_horToggleDay('+i+')" style="padding:4px 9px;border:none;border-radius:99px;background:'+(sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)')+';color:'+(sel?'var(--accent)':'var(--muted)')+';font-weight:'+(sel?'700':'400')+';cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;transition:all .15s">'+day+'</button>';}).join('')+
     '</div>'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+      '<span style="font-size:10px;color:var(--muted);font-weight:700">Duração</span>'+
+      '<div style="display:flex;gap:3px">'+_horDurOpts(slot)+'</div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
-      '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="font-size:10px;border:none;background:none;cursor:pointer;color:var(--muted);font-family:Nunito,sans-serif;padding:2px 6px;border-radius:4px">✏ Editar</button>'+
+      '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" title="Editar lista" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     '<div id="hor-acts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">'+
       acts.map(function(a,i){return _horActPillHTML(a,i,existing);}).join('')+
@@ -3371,7 +3409,7 @@ function _horEditCell(d,m,el){
       '<button onclick="_horPickCustom()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Aplicar</button>'+
       '<button onclick="_horAddToPreset()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif">+ Salvar lista</button>'+
     '</div>'+
-    (existing?'<button onclick="_horClearCell()" style="width:100%;padding:6px;background:rgba(239,68,68,.1);border:none;border-radius:7px;color:#f87171;font-size:12px;cursor:pointer;font-family:Nunito,sans-serif">✕ Limpar célula</button>':'');
+    (existing?'<button onclick="_horClearCell()" style="width:100%;padding:6px;background:rgba(239,68,68,.1);border:none;border-radius:7px;color:#f87171;font-size:12px;cursor:pointer;font-family:Nunito,sans-serif">✕ Limpar bloco</button>':'');
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
   if(existing&&!acts.some(function(a){return a.label===existing.label&&a.emoji===existing.emoji;})){
@@ -3387,17 +3425,38 @@ function _horApplyToSelDays(m,actData){
 }
 function _horPickAct(idx){
   var acts=_horGetActs();var a=acts[idx];
-  _horApplyToSelDays(_horPickerDM.m,{emoji:a.emoji,label:a.label,bg:a.bg,color:a.color});
+  var slots=_horPickerSlots||1;var slot=horariosConfig.slot;
+  _horSelDays.forEach(function(di){
+    for(var s=0;s<slots;s++){
+      horariosGrid[di+'_'+(_horPickerDM.m+s*slot)]={emoji:a.emoji,label:a.label,bg:a.bg,color:a.color};
+    }
+  });
   _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 function _horPickCustom(){
   var emoji=(document.getElementById('hor-cust-emoji')&&document.getElementById('hor-cust-emoji').value.trim())||'📌';
   var label=(document.getElementById('hor-cust-label')&&document.getElementById('hor-cust-label').value.trim())||'Atividade';
-  _horApplyToSelDays(_horPickerDM.m,{emoji:emoji,label:label,bg:_horHexToRgba(_horCustColorSel,.2),color:_horCustColorSel});
+  var slots=_horPickerSlots||1;var slot=horariosConfig.slot;
+  var actData={emoji:emoji,label:label,bg:_horHexToRgba(_horCustColorSel,.2),color:_horCustColorSel};
+  _horSelDays.forEach(function(di){
+    for(var s=0;s<slots;s++){
+      horariosGrid[di+'_'+(_horPickerDM.m+s*slot)]=actData;
+    }
+  });
   _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 function _horClearCell(){
-  var d=_horPickerDM.d,m=_horPickerDM.m;delete horariosGrid[d+'_'+m];
+  var d=_horPickerDM.d,m=_horPickerDM.m;
+  var target=horariosGrid[d+'_'+m];
+  if(target){
+    var lbl=target.label;
+    Object.keys(horariosGrid).forEach(function(k){
+      var p=k.split('_');
+      if(parseInt(p[0])===d&&horariosGrid[k].label===lbl)delete horariosGrid[k];
+    });
+  } else {
+    delete horariosGrid[d+'_'+m];
+  }
   _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 
