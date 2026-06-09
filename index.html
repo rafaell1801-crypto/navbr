@@ -392,8 +392,8 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 <div class="tabs">
   <button class="tab active" onclick="showTab('ciclo')">Ciclo</button>
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
-  <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('horarios')">Horários</button>
+  <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
   <button class="tab" onclick="showTab('content')">Conteúdo</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
@@ -447,10 +447,12 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
     <div class="late-body hidden" id="late-body"></div>
   </div>
   <div class="subtabs">
-    <button class="subtab active" id="st-pending" onclick="showSubtab('pending')">A fazer <span class="subtab-count" id="sc-pending">–</span></button>
+    <button class="subtab active" id="st-today" onclick="showSubtab('today')">Hoje <span class="subtab-count" id="sc-today">–</span></button>
+    <button class="subtab" id="st-pending" onclick="showSubtab('pending')">A fazer <span class="subtab-count" id="sc-pending">–</span></button>
     <button class="subtab" id="st-done" onclick="showSubtab('done')">Concluídos <span class="subtab-count done" id="sc-done">–</span></button>
   </div>
-  <div class="days-list" id="days-pending"></div>
+  <div class="days-list" id="days-today"></div>
+  <div class="days-list hidden" id="days-pending"></div>
   <div class="days-list hidden" id="days-done"></div>
 </div>
 
@@ -1854,18 +1856,18 @@ function _enableSpinEdit(el,max,onChange){
 
 function showTab(t){
   ['ciclo','rev','stats','content','simulados','horarios'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','horarios','simulados','content'][i]===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content'][i]===t));
   const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo'&&t!=='rev');
   if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
   if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();
 }
-let currentSubtab='pending';
+let currentSubtab='today';
 function showSubtab(s){
   currentSubtab=s;
-  document.getElementById('days-pending').classList.toggle('hidden',s!=='pending');
-  document.getElementById('days-done').classList.toggle('hidden',s!=='done');
-  document.getElementById('st-pending').classList.toggle('active',s==='pending');
-  document.getElementById('st-done').classList.toggle('active',s==='done');
+  ['today','pending','done'].forEach(id=>{
+    const list=document.getElementById('days-'+id);if(list)list.classList.toggle('hidden',id!==s);
+    const btn=document.getElementById('st-'+id);if(btn)btn.classList.toggle('active',id===s);
+  });
 }
 function toggleLate(){document.getElementById('late-body').classList.toggle('hidden');}
 
@@ -2156,17 +2158,13 @@ function render(){
   const doneCount=mainItems.filter(i=>isDone(i.id)).length;
   const lateItems=getLateItems();
   const pct=Math.round(doneCount/TOTAL_MAIN*100);
-  document.getElementById('s-total').textContent=TOTAL_MAIN;
-  document.getElementById('s-done').textContent=doneCount;
-  document.getElementById('s-pend').textContent=TOTAL_MAIN-doneCount;
-  document.getElementById('s-late').textContent=lateItems.length;
   // Stats da semana
-  (()=>{
+  try{(()=>{
     const now=new Date();now.setHours(0,0,0,0);
     const dow=now.getDay();
     const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-    function inWeek(ds){const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);return dt>=mon&&dt<=sun;}
+    function inWeek(ds){if(!ds)return false;const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);return dt>=mon&&dt<=sun;}
     const weekItems=getEffectiveAgenda().filter(i=>!i.port&&inWeek(i.data));
     const weekDone=weekItems.filter(i=>isDone(i.id)).length;
     const weekPend=weekItems.length-weekDone;
@@ -2179,7 +2177,7 @@ function render(){
     if(el('s-week-pend'))el('s-week-pend').textContent=weekPend;
     if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct+'%':'–';
     const ac=el('s-week-acertos');if(ac)ac.style.color=wPct===null?'':wPct>=70?'var(--success)':wPct>=50?'var(--warn)':'var(--danger)';
-  })();
+  })()}catch(e){console.warn('week stats:',e);}
   document.getElementById('prog-bar').style.width=pct+'%';
   document.getElementById('prog-label').textContent=pct+'% concluído';
   const todayItems=getEffectiveAgenda().filter(i=>i.data===TODAY);
@@ -2204,8 +2202,18 @@ function render(){
   const dateKeys=Object.keys(days);
   const pendingDays=dateKeys.filter(d=>!days[d].every(i=>isDone(i.id)));
   const doneDays=dateKeys.filter(d=>days[d].every(i=>isDone(i.id)));
+  // Hoje: pendentes do dia atual + atrasados não concluídos
+  const todayPendingItems=getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id)&&(i.data===TODAY||isPast(i.data)));
+  const todayByDay={};
+  todayPendingItems.forEach(i=>{if(!todayByDay[i.data])todayByDay[i.data]=[];todayByDay[i.data].push(i);});
+  const todayDayKeys=Object.keys(todayByDay).sort();
+  const scToday=document.getElementById('sc-today');if(scToday)scToday.textContent=todayPendingItems.length;
   document.getElementById('sc-pending').textContent=pendingDays.length;
   document.getElementById('sc-done').textContent=doneDays.length;
+  const todayEl=document.getElementById('days-today');
+  if(todayEl)todayEl.innerHTML=todayDayKeys.length
+    ?todayDayKeys.map(d=>buildDayHTML(d,todayByDay)).join('')
+    :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">🎉 Nada pendente para hoje!</div>';
   document.getElementById('days-pending').innerHTML=pendingDays.map(d=>buildDayHTML(d,days)).join('');
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
@@ -3076,7 +3084,28 @@ let horariosComps=[];
 let _horPickerActive=null;
 let _horScope=1; // 1=só aqui, 5=seg-sex, 7=semana toda
 let _horNowTimer=null;
-(function(){try{const s=localStorage.getItem('nav_horarios');if(s){const p=JSON.parse(s);horariosConfig={...horariosConfig,...p.config};horariosGrid=p.grid||{};horariosComps=p.comps||[];}}catch{}})();
+(function(){
+  try{
+    const s=localStorage.getItem('nav_horarios');
+    if(s){
+      const p=JSON.parse(s);
+      horariosConfig={...horariosConfig,...(p.config||{})};
+      horariosGrid=p.grid||{};
+      // migrar formato antigo {dia} → {date}: mapear para semana atual
+      const comps=(p.comps||[]).map(c=>{
+        if(c.date)return c; // já no novo formato
+        // formato antigo: dia=0..6 (Seg..Dom) → calcular data desta semana
+        try{
+          const now=new Date();const dow=now.getDay();
+          const mon=new Date(now);mon.setHours(0,0,0,0);mon.setDate(now.getDate()-(dow===0?6:dow-1));
+          const d=new Date(mon);d.setDate(mon.getDate()+c.dia);
+          return {...c,date:d.toISOString().slice(0,10)};
+        }catch{return null;}
+      }).filter(Boolean);
+      horariosComps=comps;
+    }
+  }catch{}
+})();
 (async function(){
   try{
     const r=await sbGet('conteudo','select=topics&disc=eq.__horarios__');
@@ -3084,7 +3113,12 @@ let _horNowTimer=null;
       const p=r[0].topics;
       if(p.config)horariosConfig={...horariosConfig,...p.config};
       if(p.grid)horariosGrid=p.grid;
-      if(p.comps)horariosComps=p.comps;
+      if(p.comps){
+        horariosComps=p.comps.map(c=>{
+          if(c.date)return c;
+          try{const now=new Date();const dow=now.getDay();const mon=new Date(now);mon.setHours(0,0,0,0);mon.setDate(now.getDate()-(dow===0?6:dow-1));const d=new Date(mon);d.setDate(mon.getDate()+c.dia);return {...c,date:d.toISOString().slice(0,10)};}catch{return null;}
+        }).filter(Boolean);
+      }
       try{localStorage.setItem('nav_horarios',JSON.stringify({config:horariosConfig,grid:horariosGrid,comps:horariosComps}));}catch{}
       const tab=document.getElementById('tab-horarios');
       if(tab&&!tab.classList.contains('hidden'))renderHorarios();
@@ -3111,7 +3145,7 @@ function _horSaveConfig(){
   const e=parseInt(document.getElementById('hor-end')?.value)||23;
   const sl=parseInt(document.getElementById('hor-slot')?.value)||60;
   horariosConfig={...horariosConfig,start:Math.max(0,Math.min(s,22)),end:Math.min(24,Math.max(e,s+1)),slot:sl};
-  _horSave();_horBuildGrid();_horUpdateNow();
+  _horSave();_horBuildGrid();_horRenderComps();_horUpdateNow();
 }
 function _horUpdateNow(){
   const el=document.getElementById('hor-now');if(!el)return;
