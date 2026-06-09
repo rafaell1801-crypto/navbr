@@ -3058,7 +3058,7 @@ async function resetEstudos(){
   render();showSync('ok','✓ Estudos reiniciados');
 }
 // ── HORÁRIOS ──────────────────────────────────────────────
-const HOR_ATIVAS=[
+const HOR_ATIVAS_DEFAULT=[
   {emoji:'😴',label:'Dormir',   bg:'rgba(14,30,60,.92)', color:'#93c5fd'},
   {emoji:'☕',label:'Café',     bg:'rgba(66,32,6,.92)',  color:'#fbbf24'},
   {emoji:'📚',label:'Estudar',  bg:'rgba(14,32,90,.92)', color:'#93c5fd'},
@@ -3070,17 +3070,19 @@ const HOR_ATIVAS=[
   {emoji:'🙏',label:'Devocional',bg:'rgba(50,6,80,.92)', color:'#c4b5fd'},
   {emoji:'🎮',label:'Lazer',    bg:'rgba(60,4,64,.92)',  color:'#f0abfc'},
 ];
-let horariosConfig={start:6,end:23,slot:60};
+let horariosConfig={start:6,end:23,slot:60,hiddenActs:[],customActs:[]};
 let horariosGrid={};
 let horariosComps=[];
 let _horPickerActive=null;
-(function(){try{const s=localStorage.getItem('nav_horarios');if(s){const p=JSON.parse(s);horariosConfig=p.config||horariosConfig;horariosGrid=p.grid||{};horariosComps=p.comps||[];}}catch{}})();
+let _horScope=1; // 1=só aqui, 5=seg-sex, 7=semana toda
+let _horNowTimer=null;
+(function(){try{const s=localStorage.getItem('nav_horarios');if(s){const p=JSON.parse(s);horariosConfig={...horariosConfig,...p.config};horariosGrid=p.grid||{};horariosComps=p.comps||[];}}catch{}})();
 (async function(){
   try{
     const r=await sbGet('conteudo','select=topics&disc=eq.__horarios__');
     if(r&&r[0]&&r[0].topics){
       const p=r[0].topics;
-      if(p.config)horariosConfig=p.config;
+      if(p.config)horariosConfig={...horariosConfig,...p.config};
       if(p.grid)horariosGrid=p.grid;
       if(p.comps)horariosComps=p.comps;
       try{localStorage.setItem('nav_horarios',JSON.stringify({config:horariosConfig,grid:horariosGrid,comps:horariosComps}));}catch{}
@@ -3089,6 +3091,16 @@ let _horPickerActive=null;
     }
   }catch{}
 })();
+function _horGetActs(){
+  const hidden=horariosConfig.hiddenActs||[];
+  const base=HOR_ATIVAS_DEFAULT.filter(a=>!hidden.includes(a.label));
+  return [...base,...(horariosConfig.customActs||[])];
+}
+function _horHexToRgba(hex,alpha){
+  const n=hex.replace('#','');
+  const r=parseInt(n.slice(0,2),16),g=parseInt(n.slice(2,4),16),b=parseInt(n.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 function _horSave(){
   const payload={config:horariosConfig,grid:horariosGrid,comps:horariosComps};
   try{localStorage.setItem('nav_horarios',JSON.stringify(payload));}catch{}
@@ -3098,22 +3110,58 @@ function _horSaveConfig(){
   const s=parseInt(document.getElementById('hor-start')?.value)||0;
   const e=parseInt(document.getElementById('hor-end')?.value)||23;
   const sl=parseInt(document.getElementById('hor-slot')?.value)||60;
-  horariosConfig={start:Math.max(0,Math.min(s,22)),end:Math.min(24,Math.max(e,s+1)),slot:sl};
-  _horSave();_horBuildGrid();
+  horariosConfig={...horariosConfig,start:Math.max(0,Math.min(s,22)),end:Math.min(24,Math.max(e,s+1)),slot:sl};
+  _horSave();_horBuildGrid();_horUpdateNow();
+}
+function _horUpdateNow(){
+  const el=document.getElementById('hor-now');if(!el)return;
+  const now=new Date();
+  const dow=now.getDay();
+  const dayIdx=dow===0?6:dow-1;
+  const slot=horariosConfig.slot;
+  const totalMin=now.getHours()*60+now.getMinutes();
+  const slotMin=Math.floor(totalMin/slot)*slot;
+  const act=horariosGrid[`${dayIdx}_${slotMin}`];
+  if(act)el.innerHTML=`Agora: <span style="color:${act.color};font-weight:700">${act.emoji} ${act.label}</span>`;
+  else el.textContent='';
 }
 function renderHorarios(){
   const si=document.getElementById('hor-start');if(si)si.value=horariosConfig.start;
   const ei=document.getElementById('hor-end');if(ei)ei.value=horariosConfig.end;
   const sl=document.getElementById('hor-slot');if(sl)sl.value=horariosConfig.slot;
-  _horBuildGrid();_horRenderComps();
+  _horBuildGrid();_horRenderComps();_horUpdateNow();
+  if(_horNowTimer)clearInterval(_horNowTimer);
+  _horNowTimer=setInterval(_horUpdateNow,60000);
+}
+function _horWeekDates(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const dow=now.getDay();
+  const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
+  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d.toISOString().slice(0,10);});
 }
 function _horBuildGrid(){
   const wrap=document.getElementById('hor-grid-wrap');if(!wrap)return;
   const {start,end,slot}=horariosConfig;
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const cellH=slot>=60?44:slot>=30?30:22;
+  const weekDates=_horWeekDates();
+  // map compromisso date+hora → {dayIdx, slotMin}
+  const compMap={};
+  horariosComps.forEach(c=>{
+    const dayIdx=weekDates.indexOf(c.date);
+    if(dayIdx<0)return;
+    const[hh,mm]=c.hora.split(':').map(Number);
+    const compMin=hh*60+mm;
+    const slotMin=Math.floor(compMin/slot)*slot;
+    const key=`${dayIdx}_${slotMin}`;
+    if(!compMap[key])compMap[key]=[];
+    compMap[key].push(c);
+  });
   let html='<table class="hor-table"><thead><tr><th class="hor-time-col" style="background:var(--surface2)"></th>';
-  DAYS.forEach(d=>html+=`<th>${d}</th>`);
+  DAYS.forEach((d,i)=>{
+    const isToday=weekDates[i]===new Date().toISOString().slice(0,10);
+    html+=`<th style="${isToday?'color:var(--accent);border-bottom:2px solid var(--accent)':''}">${d}</th>`;
+  });
   html+='</tr></thead><tbody>';
   for(let h=start;h<end;h++){
     const sph=Math.round(60/slot);
@@ -3126,13 +3174,53 @@ function _horBuildGrid(){
       for(let d=0;d<7;d++){
         const key=`${d}_${m}`;
         const act=horariosGrid[key];
-        html+=`<td style="padding:0"><div class="hor-cell" style="min-height:${cellH}px;background:${act?act.bg:'transparent'};color:${act?act.color:'var(--muted)'}" onclick="_horEditCell(${d},${m},this)">${act?`<div class="hor-cell-inner"><span class="hor-emoji">${act.emoji}</span><span class="hor-label" style="color:${act.color}">${act.label}</span></div>`:''}<button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(${d},${m},this.parentElement)">✎</button></div></td>`;
+        const comps=compMap[key]||[];
+        const firstComp=comps[0];
+        if(firstComp){
+          // compromisso sobrepõe o slot nesta semana
+          html+=`<td style="padding:0"><div class="hor-cell" style="min-height:${cellH}px;background:${firstComp.bg||'rgba(245,158,11,.2)'};color:${firstComp.color||'#fbbf24'};outline:2px solid ${firstComp.color||'#fbbf24'};outline-offset:-2px;border-radius:0" onclick="_horEditCell(${d},${m},this)"><div class="hor-cell-inner"><span class="hor-emoji">${firstComp.emoji}</span><span class="hor-label" style="color:${firstComp.color||'#fbbf24'}">${firstComp.label}</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(${d},${m},this.parentElement)">✎</button></div></td>`;
+        } else {
+          html+=`<td style="padding:0"><div class="hor-cell" style="min-height:${cellH}px;background:${act?act.bg:'transparent'};color:${act?act.color:'var(--muted)'}" onclick="_horEditCell(${d},${m},this)">${act?`<div class="hor-cell-inner"><span class="hor-emoji">${act.emoji}</span><span class="hor-label" style="color:${act.color}">${act.label}</span></div>`:''}<button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(${d},${m},this.parentElement)">✎</button></div></td>`;
+        }
       }
       html+='</tr>';
     }
   }
   html+='</tbody></table>';
   wrap.innerHTML=html;
+}
+function _horSetScope(s){
+  _horScope=s;
+  [1,5,7].forEach(v=>{const b=document.getElementById(`hor-sc-${v}`);if(b){b.style.borderColor=v===s?'var(--accent)':'var(--border)';b.style.background=v===s?'rgba(62,181,200,.15)':'var(--surface)';}});
+}
+function _horToggleHide(label){
+  const hidden=horariosConfig.hiddenActs||[];
+  const idx=hidden.indexOf(label);
+  if(idx>=0)hidden.splice(idx,1);else hidden.push(label);
+  horariosConfig={...horariosConfig,hiddenActs:hidden};
+  _horSave();
+  // rebuild picker in place
+  const pickerEl=_horPickerActive?.picker;
+  if(pickerEl){
+    const d=parseInt(pickerEl.dataset.d),m=parseInt(pickerEl.dataset.m);
+    if(!isNaN(d)&&!isNaN(m))_horRebuildPickerActs(d,m);
+  }
+}
+function _horRebuildPickerActs(d,m){
+  const pickerEl=_horPickerActive?.picker;if(!pickerEl)return;
+  const acts=_horGetActs();
+  const existing=horariosGrid[`${d}_${m}`];
+  const hidden=horariosConfig.hiddenActs||[];
+  const container=pickerEl.querySelector('#hor-acts-grid');
+  if(!container)return;
+  container.innerHTML=acts.map((a,i)=>`
+    <div style="position:relative;display:flex">
+      <button class="hor-act-btn" onclick="_horPickAct(${d},${m},${i})" style="flex:1;${existing&&existing.label===a.label?'border-color:var(--accent);background:rgba(62,181,200,.1)':''}">${a.emoji} ${a.label}</button>
+      ${HOR_ATIVAS_DEFAULT.some(x=>x.label===a.label)?`<button onclick="event.stopPropagation();_horToggleHide('${a.label}')" title="Ocultar" style="position:absolute;top:-4px;right:-4px;background:rgba(30,30,46,.9);border:1px solid var(--border);border-radius:50%;width:14px;height:14px;font-size:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;padding:0">×</button>`:''}
+    </div>`).join('');
+  const hasHidden=hidden.length>0;
+  const restoreBtn=pickerEl.querySelector('#hor-restore-btn');
+  if(restoreBtn)restoreBtn.style.display=hasHidden?'block':'none';
 }
 function _horEditCell(d,m,el){
   _horClosePicker();
@@ -3141,31 +3229,48 @@ function _horEditCell(d,m,el){
   const hh=String(Math.floor(m/60)).padStart(2,'0');
   const mm=String(m%60).padStart(2,'0');
   const existing=horariosGrid[`${d}_${m}`];
+  const hidden=horariosConfig.hiddenActs||[];
+  const acts=_horGetActs();
   const backdrop=document.createElement('div');
   backdrop.style.cssText='position:fixed;inset:0;z-index:9998';
   backdrop.onclick=_horClosePicker;
   const picker=document.createElement('div');
   picker.className='hor-picker';
+  picker.dataset.d=d;picker.dataset.m=m;
   let top=rect.bottom+6,left=rect.left;
-  if(top+300>window.innerHeight)top=Math.max(8,rect.top-300);
+  if(top+380>window.innerHeight)top=Math.max(8,rect.top-380);
   if(left+260>window.innerWidth)left=Math.max(8,window.innerWidth-264);
-  picker.style.cssText=`top:${top}px;left:${left}px`;
+  picker.style.cssText=`top:${top}px;left:${left}px;max-height:${window.innerHeight-20}px;overflow-y:auto`;
+  const scopeBtn=(v,label)=>`<button id="hor-sc-${v}" onclick="_horSetScope(${v})" style="flex:1;padding:4px 6px;border:1px solid ${_horScope===v?'var(--accent)':'var(--border)'};border-radius:6px;background:${_horScope===v?'rgba(62,181,200,.15)':'var(--surface)'};color:var(--text);font-size:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">${label}</button>`;
+  const custColor=existing&&!acts.some(a=>a.label===existing.label)?existing.color||'#5eead4':'#5eead4';
   picker.innerHTML=`
     <button class="hor-picker-close" onclick="_horClosePicker()">×</button>
     <div class="hor-picker-title">${DAYS[d]} ${hh}:${mm}</div>
-    <div class="hor-acts">
-      ${HOR_ATIVAS.map((a,i)=>`<button class="hor-act-btn" onclick="_horPickAct(${d},${m},${i})" style="${existing&&existing.label===a.label?'border-color:var(--accent);background:rgba(62,181,200,.1)':''}">${a.emoji} ${a.label}</button>`).join('')}
+    <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">Repetir em:</div>
+    <div style="display:flex;gap:5px;margin-bottom:9px">${scopeBtn(1,'Só aqui')}${scopeBtn(5,'Seg–Sex')}${scopeBtn(7,'Semana toda')}</div>
+    <div id="hor-acts-grid" class="hor-acts">
+      ${acts.map((a,i)=>`
+        <div style="position:relative;display:flex">
+          <button class="hor-act-btn" onclick="_horPickAct(${d},${m},${i})" style="flex:1;${existing&&existing.label===a.label?'border-color:var(--accent);background:rgba(62,181,200,.1)':''}">${a.emoji} ${a.label}</button>
+          ${HOR_ATIVAS_DEFAULT.some(x=>x.label===a.label)?`<button onclick="event.stopPropagation();_horToggleHide('${a.label}')" title="Ocultar" style="position:absolute;top:-4px;right:-4px;background:rgba(30,30,46,.9);border:1px solid var(--border);border-radius:50%;width:14px;height:14px;font-size:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;padding:0">×</button>`:''}
+        </div>`).join('')}
     </div>
+    <button id="hor-restore-btn" onclick="horariosConfig.hiddenActs=[];_horSave();_horRebuildPickerActs(${d},${m})" style="display:${hidden.length?'block':'none'};width:100%;padding:4px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:10px;cursor:pointer;margin-bottom:8px;font-family:'Nunito',sans-serif">↩ Mostrar todas as atividades</button>
     <div style="font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:700">Personalizado</div>
-    <div style="display:flex;gap:5px;margin-bottom:7px">
+    <div style="display:flex;gap:5px;margin-bottom:5px">
       <input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center">
       <input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1">
       <button class="hor-act-btn" style="flex:none;padding:4px 8px" onclick="_horPickCustom(${d},${m})">✓</button>
     </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <span style="font-size:10px;color:var(--muted)">Cor:</span>
+      <input type="color" id="hor-cust-color" value="${custColor.startsWith('#')?custColor:'#5eead4'}" style="width:28px;height:22px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer;padding:1px">
+      <span style="font-size:9px;color:var(--muted)">texto e fundo</span>
+    </div>
     ${existing?`<button onclick="_horClearCell(${d},${m})" style="width:100%;padding:5px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:6px;color:#ef4444;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif">✕ Limpar</button>`:''}`;
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
-  if(existing&&!HOR_ATIVAS.some(a=>a.label===existing.label&&a.emoji===existing.emoji)){
+  if(existing&&!acts.some(a=>a.label===existing.label&&a.emoji===existing.emoji)){
     const em=document.getElementById('hor-cust-emoji');const lb=document.getElementById('hor-cust-label');
     if(em)em.value=existing.emoji||'';if(lb)lb.value=existing.label||'';
   }
@@ -3173,15 +3278,22 @@ function _horEditCell(d,m,el){
 function _horClosePicker(){
   if(_horPickerActive){_horPickerActive.picker?.remove();_horPickerActive.backdrop?.remove();_horPickerActive=null;}
 }
+function _horApplyToScope(d,m,actData){
+  const days=_horScope===7?[0,1,2,3,4,5,6]:_horScope===5?[0,1,2,3,4]:[d];
+  days.forEach(di=>horariosGrid[`${di}_${m}`]={...actData});
+}
 function _horPickAct(d,m,idx){
-  const a=HOR_ATIVAS[idx];
-  horariosGrid[`${d}_${m}`]={emoji:a.emoji,label:a.label,bg:a.bg,color:a.color};
+  const acts=_horGetActs();
+  const a=acts[idx];
+  _horApplyToScope(d,m,{emoji:a.emoji,label:a.label,bg:a.bg,color:a.color});
   _horClosePicker();_horSave();_horBuildGrid();
 }
 function _horPickCustom(d,m){
   const emoji=(document.getElementById('hor-cust-emoji')?.value.trim()||'📌');
   const label=(document.getElementById('hor-cust-label')?.value.trim()||'Atividade');
-  horariosGrid[`${d}_${m}`]={emoji,label,bg:'rgba(62,181,200,.2)',color:'#5eead4'};
+  const hex=document.getElementById('hor-cust-color')?.value||'#5eead4';
+  const bg=_horHexToRgba(hex,.2);
+  _horApplyToScope(d,m,{emoji,label,bg,color:hex});
   _horClosePicker();_horSave();_horBuildGrid();
 }
 function _horClearCell(d,m){
@@ -3190,9 +3302,9 @@ function _horClearCell(d,m){
 }
 function addCompromisso(){
   _horClosePicker();
-  const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-  const dOpts=DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
-  const aOpts='<option value="-1">-- Personalizado --</option>'+HOR_ATIVAS.map((a,i)=>`<option value="${i}">${a.emoji} ${a.label}</option>`).join('');
+  const acts=_horGetActs();
+  const todayISO=new Date().toISOString().slice(0,10);
+  const aOpts='<option value="-1">-- Personalizado --</option>'+acts.map((a,i)=>`<option value="${i}">${a.emoji} ${a.label}</option>`).join('');
   const backdrop=document.createElement('div');
   backdrop.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.45)';
   const picker=document.createElement('div');
@@ -3201,10 +3313,10 @@ function addCompromisso(){
   backdrop.onclick=()=>{picker.remove();backdrop.remove();_horPickerActive=null;};
   picker.innerHTML=`
     <button class="hor-picker-close" onclick="_horClosePicker()">×</button>
-    <div class="hor-picker-title" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Novo compromisso</div>
+    <div class="hor-picker-title" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">📅 Novo compromisso</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Dia</div>
-        <select id="hc-dia" class="sim-spin" style="width:100%;box-sizing:border-box">${dOpts}</select></div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">📅 Data</div>
+        <input type="date" id="hc-date" class="sim-spin" style="width:100%;box-sizing:border-box" value="${todayISO}"></div>
       <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Hora</div>
         <input type="time" id="hc-hora" class="sim-spin" style="width:100%;box-sizing:border-box" value="08:00"></div>
     </div>
@@ -3221,31 +3333,53 @@ function addCompromisso(){
   _horPickerActive={picker,backdrop};
 }
 function _horSaveComp(){
-  const dia=parseInt(document.getElementById('hc-dia')?.value)||0;
+  const date=document.getElementById('hc-date')?.value||new Date().toISOString().slice(0,10);
   const hora=document.getElementById('hc-hora')?.value||'08:00';
   const label=document.getElementById('hc-label')?.value.trim()||'Compromisso';
   const ti=parseInt(document.getElementById('hc-type')?.value);
-  const act=ti>=0?HOR_ATIVAS[ti]:null;
-  horariosComps.push({id:Date.now(),dia,hora,label,emoji:act?act.emoji:'📌',bg:act?act.bg:'rgba(62,181,200,.2)',color:act?act.color:'#5eead4'});
-  _horClosePicker();_horSave();_horRenderComps();
+  const acts=_horGetActs();
+  const act=ti>=0?acts[ti]:null;
+  horariosComps.push({id:Date.now(),date,hora,label,emoji:act?act.emoji:'📅',bg:act?act.bg:'rgba(245,158,11,.22)',color:act?act.color:'#fbbf24'});
+  _horClosePicker();_horSave();_horBuildGrid();_horRenderComps();
 }
 function _horDeleteComp(id){
   horariosComps=horariosComps.filter(c=>c.id!==id);
-  _horSave();_horRenderComps();
+  _horSave();_horBuildGrid();_horRenderComps();
 }
 function _horRenderComps(){
   const wrap=document.getElementById('hor-comp-list');if(!wrap)return;
+  const weekDates=_horWeekDates();
+  const weekSet=new Set(weekDates);
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-  if(!horariosComps.length){wrap.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0">Nenhum compromisso esta semana</div>';return;}
-  wrap.innerHTML=horariosComps.slice().sort((a,b)=>a.dia-b.dia||a.hora.localeCompare(b.hora)).map(c=>`
-    <div class="hor-comp-card" style="border-left:3px solid ${c.color||'var(--accent)'}">
+  const thisWeek=horariosComps.filter(c=>weekSet.has(c.date));
+  const future=horariosComps.filter(c=>!weekSet.has(c.date)&&c.date>new Date().toISOString().slice(0,10));
+  const _card=(c,label)=>{
+    const dayIdx=weekDates.indexOf(c.date);
+    const dayName=dayIdx>=0?DAYS[dayIdx]:c.date.split('-').reverse().slice(0,2).join('/');
+    return `<div class="hor-comp-card" style="border-left:3px solid ${c.color||'var(--accent)'}">
       <span class="hor-comp-emoji">${c.emoji}</span>
       <div class="hor-comp-info">
         <div class="hor-comp-label">${c.label}</div>
-        <div class="hor-comp-sub">${DAYS[c.dia]} · ${c.hora}</div>
+        <div class="hor-comp-sub">${label||dayName} · ${c.hora}</div>
       </div>
       <button onclick="_horDeleteComp(${c.id})" style="background:rgba(239,68,68,.12);border:none;border-radius:6px;color:#ef4444;padding:4px 9px;cursor:pointer;font-size:12px">✕</button>
-    </div>`).join('');
+    </div>`;
+  };
+  let html='';
+  if(thisWeek.length){
+    html+='<div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Esta semana</div>';
+    html+=thisWeek.sort((a,b)=>a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora)).map(c=>_card(c)).join('');
+  }
+  if(future.length){
+    html+=`<div style="font-size:10px;color:var(--muted);font-weight:700;margin:${thisWeek.length?'10px':'0'} 0 6px;text-transform:uppercase;letter-spacing:.5px">Próximos</div>`;
+    html+=future.sort((a,b)=>a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora)).map(c=>{
+      const d=new Date(c.date+'T00:00:00');
+      const fmt=d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+      return _card(c,fmt);
+    }).join('');
+  }
+  if(!thisWeek.length&&!future.length)html='<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0">Nenhum compromisso cadastrado</div>';
+  wrap.innerHTML=html;
 }
 // ── SIMULADOS ──────────────────────────────────────────────
 let simulados=[];
@@ -3534,6 +3668,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
         <option value="60" selected>60 min</option>
       </select>
     </div>
+    <span id="hor-now" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
   </div>
   <!-- Grade semanal -->
   <div class="hor-wrap" id="hor-grid-wrap"></div>
