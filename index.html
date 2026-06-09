@@ -287,6 +287,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .edit-time-card-bottom .edit-time-btn:hover{background:var(--accent);color:#fff}
 .edit-time-card-bottom .edit-time-btn.saved{border-color:#2dd4a0;color:#2dd4a0;animation:btn-check-pulse .5s ease}
 @keyframes btn-check-pulse{0%{transform:scale(1)}40%{transform:scale(1.15)}70%{transform:scale(.96)}100%{transform:scale(1)}}
+.sim-spin{font-size:13px;color:var(--text);font-variant-numeric:tabular-nums;width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 6px;text-align:center;transition:border-color .15s;outline:none;font-family:'Nunito','Segoe UI',sans-serif;-moz-appearance:textfield;box-sizing:border-box}
+.sim-spin:hover{border-color:var(--accent)}.sim-spin:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(62,181,200,.15)}
+.sim-spin::-webkit-outer-spin-button,.sim-spin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
 .disc-badge-link{text-decoration:none;cursor:pointer;transition:opacity .15s}
 .disc-badge-link:hover{opacity:.75;text-decoration:underline}
@@ -3024,8 +3027,8 @@ function updateSimTotal(){
   let tQ=0,tA=0;
   rows.forEach(row=>{
     const spans=row.querySelectorAll('.sim-q-val');
-    const q=parseInt(spans[0]?.textContent)||0;
-    const a=Math.min(parseInt(spans[1]?.textContent)||0,q);
+    const q=parseInt(spans[0]?.value)||0;
+    const a=Math.min(parseInt(spans[1]?.value)||0,q);
     tQ+=q;tA+=a;
   });
   const qEl=document.getElementById('sim-total-q');
@@ -3047,8 +3050,8 @@ function _populateSimDiscRows(saved={}){
     const safeDisc=disc.replace(/"/g,'&quot;');
     return `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:6px;align-items:center" data-disc="${safeDisc}">
       <span style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
-      <div class="spin-wrap" style="justify-content:center"><span class="spin-val sim-q-val" contenteditable="true" inputmode="numeric" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">${prev.total}</span></div>
-      <div class="spin-wrap" style="justify-content:center"><span class="spin-val sim-q-val" contenteditable="true" inputmode="numeric" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">${prev.acertos}</span></div>
+      <input type="text" inputmode="numeric" maxlength="4" value="${prev.total}" class="lea-q sim-q-val" onfocus="this.select()" style="display:block;margin:0 auto">
+      <input type="text" inputmode="numeric" maxlength="4" value="${prev.acertos}" class="lea-q sim-q-val" onfocus="this.select()" style="display:block;margin:0 auto">
     </div>`;
   }).join('');
 }
@@ -3056,7 +3059,7 @@ function _populateSimDiscRows(saved={}){
 function saveSimulado(){
   const date=document.getElementById('sim-date')?.value;
   const durEl=document.getElementById('sim-dur');
-  const dur=parseFloat((durEl?.textContent||durEl?.value||'0').replace(',','.'))||0;
+  const dur=parseFloat(durEl?.value||'0')||0;
   const name=document.getElementById('sim-name')?.value.trim();
   const link=document.getElementById('sim-link')?.value.trim();
   if(!date){alert('Informe a data do simulado.');return;}
@@ -3064,15 +3067,15 @@ function saveSimulado(){
   const disciplinas=rows.map(row=>{
     const disc=row.dataset.disc;
     const spans=row.querySelectorAll('.sim-q-val');
-    const total=parseInt(spans[0]?.textContent)||0;
-    const acertos=Math.min(parseInt(spans[1]?.textContent)||0,total);
+    const total=parseInt(spans[0]?.value)||0;
+    const acertos=Math.min(parseInt(spans[1]?.value)||0,total);
     return{disc,total,acertos,erros:total-acertos};
   }).filter(d=>d.total>0);
   if(!disciplinas.length){alert('Preencha ao menos uma disciplina com questões.');return;}
   simulados.unshift({id:Date.now(),date,name,link,dur,disciplinas});
   _simSave();
   document.getElementById('sim-date').value='';
-  if(durEl)durEl.textContent='0';
+  if(durEl)durEl.value='0';durEl?.select&&durEl.blur();
   document.getElementById('sim-name').value='';
   document.getElementById('sim-link').value='';
   _populateSimDiscRows();
@@ -3244,7 +3247,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Duração (h)</label>
-          <div class="spin-wrap"><span class="spin-val" id="sim-dur" contenteditable="true" inputmode="decimal" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">0</span></div>
+          <input id="sim-dur" type="text" inputmode="decimal" maxlength="4" value="0" class="lea-q" onfocus="this.select()">
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Nome</label>
