@@ -296,15 +296,15 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 .hor-table{border-collapse:collapse;width:100%;min-width:520px;table-layout:fixed}
 .hor-table th{font-size:11px;font-weight:700;color:var(--muted);padding:5px 2px;text-align:center;background:var(--surface2);border:1px solid var(--border);position:sticky;top:0;z-index:1}
 .hor-table th.hor-time-col{width:44px}
-.hor-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+.hor-table td{border:1px solid rgba(255,255,255,.07);padding:0;vertical-align:top}
 .hor-time-cell{font-size:10px;color:var(--muted);padding:3px 5px;text-align:right;white-space:nowrap;background:var(--surface2);vertical-align:middle;font-variant-numeric:tabular-nums}
 .hor-cell{position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .1s}
 .hor-cell:hover{filter:brightness(1.12)}
-.hor-cell-inner{display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px}
+.hor-cell-inner{display:flex;flex-direction:row;align-items:center;gap:4px;padding:2px 5px;overflow:hidden}
 .hor-cell .hor-edit-btn{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1.3}
 .hor-cell:hover .hor-edit-btn{opacity:1}
 .hor-emoji{font-size:13px;line-height:1}
-.hor-label{font-size:9px;font-weight:700;text-align:center;line-height:1.1;max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hor-label{font-size:9px;font-weight:400;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.55);min-width:210px;max-width:252px}
 .hor-picker-title{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;padding-right:18px}
 .hor-acts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px}
@@ -3144,7 +3144,7 @@ function _horSaveConfig(){
   const e=parseInt(document.getElementById('hor-end')?.value)||23;
   const sl=parseInt(document.getElementById('hor-slot')?.value)||60;
   horariosConfig={...horariosConfig,start:Math.max(0,Math.min(s,22)),end:Math.min(24,Math.max(e,s+1)),slot:sl};
-  _horSave();_horBuildGrid();_horRenderComps();_horUpdateNow();
+  _horSave();_horBuildDaySummary();_horBuildGrid();_horRenderComps();_horUpdateNow();
 }
 function _horUpdateNow(){
   const el=document.getElementById('hor-now');if(!el)return;
@@ -3162,9 +3162,9 @@ function renderHorarios(){
   const si=document.getElementById('hor-start');if(si)si.value=horariosConfig.start;
   const ei=document.getElementById('hor-end');if(ei)ei.value=horariosConfig.end;
   const sl=document.getElementById('hor-slot');if(sl)sl.value=horariosConfig.slot;
-  _horBuildGrid();_horRenderComps();_horUpdateNow();
+  _horBuildDaySummary();_horBuildGrid();_horRenderComps();_horUpdateNow();
   if(_horNowTimer)clearInterval(_horNowTimer);
-  _horNowTimer=setInterval(_horUpdateNow,60000);
+  _horNowTimer=setInterval(function(){_horUpdateNow();_horBuildDaySummary();},60000);
 }
 function _horWeekDates(){
   const now=new Date();now.setHours(0,0,0,0);
@@ -3178,55 +3178,118 @@ function _horBuildGrid(){
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const cellH=slot>=60?44:slot>=30?30:22;
   const weekDates=_horWeekDates();
-  // map compromisso date+hora → {dayIdx, slotMin}
+  const todayISO=new Date().toISOString().slice(0,10);
   const compMap={};
-  horariosComps.forEach(c=>{
-    const dayIdx=weekDates.indexOf(c.date);
-    if(dayIdx<0)return;
-    const[hh,mm]=c.hora.split(':').map(Number);
-    const compMin=hh*60+mm;
-    const slotMin=Math.floor(compMin/slot)*slot;
-    const key=`${dayIdx}_${slotMin}`;
-    if(!compMap[key])compMap[key]=[];
-    compMap[key].push(c);
+  horariosComps.forEach(function(c){
+    const di=weekDates.indexOf(c.date);if(di<0)return;
+    const parts=c.hora.split(':');
+    const totalMin=parseInt(parts[0])*60+(parseInt(parts[1])||0);
+    const slotMin=Math.floor(totalMin/slot)*slot;
+    const durSlots=Math.max(1,Math.ceil((c.duration||1)*60/slot));
+    for(let s=0;s<durSlots;s++){
+      const key=di+'_'+(slotMin+s*slot);
+      if(!compMap[key])compMap[key]=[];
+      compMap[key].push(c);
+    }
   });
-  let html='<table class="hor-table"><thead><tr><th class="hor-time-col" style="background:var(--surface2)"></th>';
-  DAYS.forEach((d,i)=>{
-    const isToday=weekDates[i]===new Date().toISOString().slice(0,10);
-    html+=`<th style="${isToday?'color:var(--accent);border-bottom:2px solid var(--accent)':''}">${d}</th>`;
-  });
-  html+='</tr></thead><tbody>';
+  const slotsArr=[];
   for(let h=start;h<end;h++){
     const sph=Math.round(60/slot);
-    for(let si=0;si<sph;si++){
-      const m=h*60+si*slot;
-      const hh=String(h).padStart(2,'0');
-      const mm=String(si*slot).padStart(2,'0');
-      html+='<tr>';
-      if(si===0)html+=`<td class="hor-time-cell" rowspan="${sph}">${hh}:${mm}</td>`;
-      for(let d=0;d<7;d++){
-        const key=`${d}_${m}`;
-        const act=horariosGrid[key];
-        const comps=compMap[key]||[];
-        const firstComp=comps[0];
-        if(firstComp){
-          // compromisso sobrepõe o slot nesta semana
-          html+=`<td style="padding:0"><div class="hor-cell" style="min-height:${cellH}px;background:${firstComp.bg||'rgba(245,158,11,.2)'};color:${firstComp.color||'#fbbf24'};outline:2px solid ${firstComp.color||'#fbbf24'};outline-offset:-2px;border-radius:0" onclick="_horEditCell(${d},${m},this)"><div class="hor-cell-inner"><span class="hor-emoji">${firstComp.emoji}</span><span class="hor-label" style="color:${firstComp.color||'#fbbf24'}">${firstComp.label}</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(${d},${m},this.parentElement)">✎</button></div></td>`;
-        } else {
-          html+=`<td style="padding:0"><div class="hor-cell" style="min-height:${cellH}px;background:${act?act.bg:'transparent'};color:${act?act.color:'var(--muted)'}" onclick="_horEditCell(${d},${m},this)">${act?`<div class="hor-cell-inner"><span class="hor-emoji">${act.emoji}</span><span class="hor-label" style="color:${act.color}">${act.label}</span></div>`:''}<button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(${d},${m},this.parentElement)">✎</button></div></td>`;
-        }
-      }
-      html+='</tr>';
+    for(let si=0;si<sph;si++)slotsArr.push({m:h*60+si*slot,h,si,sph});
+  }
+  const nRows=slotsArr.length;
+  const cells=[];
+  for(let ri=0;ri<nRows;ri++){
+    const row=[];
+    for(let di=0;di<7;di++){
+      const key=di+'_'+slotsArr[ri].m;
+      const fc=(compMap[key]||[])[0];
+      const act=horariosGrid[key];
+      row.push(fc?{emoji:fc.emoji,label:fc.label,bg:fc.bg||'rgba(245,158,11,.2)',color:fc.color||'#fbbf24',isComp:true}
+               :act?{emoji:act.emoji,label:act.label,bg:act.bg,color:act.color,isComp:false}:null);
     }
+    cells.push(row);
+  }
+  const visited=Array.from({length:nRows},()=>new Array(7).fill(false));
+  const merges={};
+  for(let ri=0;ri<nRows;ri++){
+    for(let di=0;di<7;di++){
+      if(visited[ri][di])continue;
+      visited[ri][di]=true;
+      const cell=cells[ri][di];
+      if(!cell){merges[ri+'_'+di]={rs:1,cs:1};continue;}
+      let cs=1;
+      while(di+cs<7&&!visited[ri][di+cs]&&cells[ri][di+cs]&&cells[ri][di+cs].label===cell.label&&cells[ri][di+cs].isComp===cell.isComp)cs++;
+      let rs=1;
+      while(ri+rs<nRows){
+        let ok=true;
+        for(let dc=0;dc<cs;dc++){
+          const nc=cells[ri+rs][di+dc];
+          if(visited[ri+rs][di+dc]||!nc||nc.label!==cell.label||nc.isComp!==cell.isComp){ok=false;break;}
+        }
+        if(!ok)break;
+        rs++;
+      }
+      for(let r=0;r<rs;r++)for(let c=0;c<cs;c++)visited[ri+r][di+c]=true;
+      merges[ri+'_'+di]={rs,cs};
+    }
+  }
+  let html='<table class="hor-table"><thead><tr><th class="hor-time-col" style="background:var(--surface2)"></th>';
+  DAYS.forEach(function(d,i){
+    const isToday=weekDates[i]===todayISO;
+    html+='<th style="'+(isToday?'color:var(--accent);border-bottom:2px solid var(--accent)':'')+'">' +d+'</th>';
+  });
+  html+='</tr></thead><tbody>';
+  for(let ri=0;ri<nRows;ri++){
+    const {m,h,si,sph}=slotsArr[ri];
+    const hh2=String(h).padStart(2,'0');
+    const mm2=String(si*slot).padStart(2,'0');
+    const isHourStart=si===0;
+    html+='<tr>';
+    if(si===0)html+='<td class="hor-time-cell" rowspan="'+sph+'" style="border-top:1px solid rgba(255,255,255,.18)">'+hh2+':'+mm2+'</td>';
+    for(let di=0;di<7;di++){
+      const mg=merges[ri+'_'+di];
+      if(!mg)continue;
+      const {rs,cs}=mg;
+      const cell=cells[ri][di];
+      const rsA=rs>1?' rowspan="'+rs+'"':'';
+      const csA=cs>1?' colspan="'+cs+'"':'';
+      const topB=isHourStart?';border-top:1px solid rgba(255,255,255,.18)':'';
+      if(!cell){
+        html+='<td'+rsA+csA+' style="padding:0'+topB+'"></td>';
+      } else {
+        const outline=cell.isComp?';outline:2px solid '+cell.color+';outline-offset:-2px':'';
+        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+';color:'+cell.color+outline+';border-radius:0" onclick="_horEditCell('+di+','+m+',this)"><div class="hor-cell-inner"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:'+cell.color+'">'+cell.label+'</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
+      }
+    }
+    html+='</tr>';
   }
   html+='</tbody></table>';
   wrap.innerHTML=html;
 }
 let _horSelDays=new Set([0]);
 let _horPickerDM={d:0,m:0};
+const HOR_COLORS=['#5eead4','#93c5fd','#c4b5fd','#f9a8d4','#fb923c','#fbbf24','#6ee7b7','#f87171','#7dd3fc','#a5b4fc'];
+let _horCustColorSel=HOR_COLORS[0];
+let _horEditModeActs=false;
+let _horEditingCompId=null;
 function _horToggleDay(i){
   if(_horSelDays.has(i)){if(_horSelDays.size>1)_horSelDays.delete(i);}else _horSelDays.add(i);
   for(let d=0;d<7;d++){const b=document.getElementById('hor-d-'+d);if(!b)continue;const sel=_horSelDays.has(d);b.style.background=sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)';b.style.color=sel?'var(--accent)':'var(--muted)';b.style.fontWeight=sel?'700':'400';}
+}
+function _horToggleEditModeActs(){
+  _horEditModeActs=!_horEditModeActs;
+  const btn=document.getElementById('hor-editmode-btn');
+  if(btn){btn.style.color=_horEditModeActs?'#f87171':'var(--muted)';btn.textContent=_horEditModeActs?'✓ Editar':'✏ Editar';}
+  const grid=document.getElementById('hor-acts-grid');
+  if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}
+}
+function _horSetColor(hex){
+  _horCustColorSel=hex;
+  document.querySelectorAll('.hor-color-swatch').forEach(function(el){
+    el.style.outline=el.dataset.color===hex?'2px solid rgba(255,255,255,.85)':'none';
+    el.style.outlineOffset='2px';
+  });
 }
 function _horRemoveAct(label){
   const customActs=[...(horariosConfig.customActs||[])];
@@ -3243,7 +3306,7 @@ function _horAddToPreset(){
   const emoji=(document.getElementById('hor-cust-emoji')?.value.trim()||'📌');
   const label=(document.getElementById('hor-cust-label')?.value.trim());
   if(!label)return;
-  const hex=document.getElementById('hor-cust-color')?.value||'#5eead4';
+  const hex=_horCustColorSel;
   const customActs=[...(horariosConfig.customActs||[])];
   if(!customActs.some(a=>a.label===label)){
     customActs.push({emoji,label,bg:_horHexToRgba(hex,.2),color:hex});
@@ -3255,10 +3318,14 @@ function _horAddToPreset(){
 function _horActPillHTML(a,i,existing){
   const sel=existing&&existing.label===a.label;
   const bg=sel?'rgba(62,181,200,.22)':'rgba(255,255,255,.06)';
-  return '<div style="position:relative"><button onclick="_horPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:6px;padding:6px 8px;border:none;border-radius:8px;background:'+bg+';color:var(--text);cursor:pointer;font-size:12px;font-family:\'Nunito\',sans-serif;text-align:left" onmouseover="this.style.background=\'rgba(62,181,200,.14)\'" onmouseout="this.style.background=\''+bg+'\'"><span style="font-size:15px">'+a.emoji+'</span> <span style="'+(sel?'color:var(--accent);font-weight:700':'')+'">'+a.label+'</span></button><button onclick="event.stopPropagation();_horRemoveAct(\''+a.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="position:absolute;top:4px;right:4px;width:16px;height:16px;border:none;border-radius:50%;background:rgba(239,68,68,.18);color:#f87171;cursor:pointer;font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;opacity:.7" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.7\'">×</button></div>';
+  const safeLabel=a.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  let s='<div style="position:relative"><button onclick="_horPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:6px;padding:6px 8px;border:none;border-radius:8px;background:'+bg+';color:var(--text);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;text-align:left"><span style="font-size:15px;flex-shrink:0">'+a.emoji+'</span><span style="'+(sel?'color:var(--accent)':'')+'">'+a.label+'</span></button>';
+  if(_horEditModeActs)s+='<button onclick="event.stopPropagation();_horRemoveAct(\''+safeLabel+'\')" style="position:absolute;top:3px;right:3px;width:15px;height:15px;border:none;border-radius:50%;background:rgba(239,68,68,.25);color:#f87171;cursor:pointer;font-size:10px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center">×</button>';
+  return s+'</div>';
 }
 function _horEditCell(d,m,el){
   _horClosePicker();
+  _horEditModeActs=false;
   _horPickerDM={d,m};_horSelDays=new Set([d]);
   const rect=el.getBoundingClientRect();
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -3271,12 +3338,15 @@ function _horEditCell(d,m,el){
   backdrop.onclick=_horClosePicker;
   const picker=document.createElement('div');
   picker.className='hor-picker';
-  picker.style.fontFamily="'Nunito','Segoe UI',sans-serif";
   let top=rect.bottom+6,left=rect.left;
-  if(top+420>window.innerHeight)top=Math.max(8,rect.top-420);
+  if(top+480>window.innerHeight)top=Math.max(8,rect.top-480);
   if(left+268>window.innerWidth)left=Math.max(8,window.innerWidth-272);
-  picker.style.cssText="top:"+top+"px;left:"+left+"px;max-height:"+(window.innerHeight-20)+"px;overflow-y:auto;font-family:'Nunito','Segoe UI',sans-serif";
-  const custColor=existing&&!acts.some(a=>a.label===existing.label)?existing.color||'#5eead4':'#5eead4';
+  picker.style.cssText="position:fixed;top:"+top+"px;left:"+left+"px;max-height:"+(window.innerHeight-20)+"px;overflow-y:auto;font-family:'Nunito','Segoe UI',sans-serif";
+  if(existing&&!acts.some(a=>a.label===existing.label)){_horCustColorSel=HOR_COLORS.includes(existing.color)?existing.color:HOR_COLORS[0];}else{_horCustColorSel=HOR_COLORS[0];}
+  const swatchesHTML=HOR_COLORS.map(function(c){
+    var sel=c===_horCustColorSel;
+    return '<button class="hor-color-swatch" data-color="'+c+'" onclick="_horSetColor(\''+c+'\')" style="width:20px;height:20px;border-radius:50%;background:'+c+';border:none;cursor:pointer;flex-shrink:0;outline:'+(sel?'2px solid rgba(255,255,255,.85)':'none')+';outline-offset:2px"></button>';
+  }).join('');
   picker.innerHTML=
     '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
     '<div class="hor-picker-title">'+DAYS[d]+' '+hh+':'+mm+'</div>'+
@@ -3284,16 +3354,20 @@ function _horEditCell(d,m,el){
     '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">'+
       DAYS.map(function(day,i){var sel=i===d;return '<button id="hor-d-'+i+'" onclick="_horToggleDay('+i+')" style="padding:4px 9px;border:none;border-radius:99px;background:'+(sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)')+';color:'+(sel?'var(--accent)':'var(--muted)')+';font-weight:'+(sel?'700':'400')+';cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;transition:all .15s">'+day+'</button>';}).join('')+
     '</div>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+      '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
+      '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="font-size:10px;border:none;background:none;cursor:pointer;color:var(--muted);font-family:Nunito,sans-serif;padding:2px 6px;border-radius:4px">✏ Editar</button>'+
+    '</div>'+
     '<div id="hor-acts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">'+
       acts.map(function(a,i){return _horActPillHTML(a,i,existing);}).join('')+
     '</div>'+
     '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">Personalizado</div>'+
-    '<div style="display:flex;gap:5px;margin-bottom:5px">'+
+    '<div style="display:flex;gap:5px;margin-bottom:6px">'+
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
-      '<input type="color" id="hor-cust-color" value="'+(custColor.startsWith('#')?custColor:'#5eead4')+'" style="width:28px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none">'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'+swatchesHTML+'</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:8px">'+
       '<button onclick="_horPickCustom()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Aplicar</button>'+
       '<button onclick="_horAddToPreset()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif">+ Salvar lista</button>'+
     '</div>'+
@@ -3314,49 +3388,48 @@ function _horApplyToSelDays(m,actData){
 function _horPickAct(idx){
   var acts=_horGetActs();var a=acts[idx];
   _horApplyToSelDays(_horPickerDM.m,{emoji:a.emoji,label:a.label,bg:a.bg,color:a.color});
-  _horClosePicker();_horSave();_horBuildGrid();
+  _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 function _horPickCustom(){
   var emoji=(document.getElementById('hor-cust-emoji')&&document.getElementById('hor-cust-emoji').value.trim())||'📌';
   var label=(document.getElementById('hor-cust-label')&&document.getElementById('hor-cust-label').value.trim())||'Atividade';
-  var hex=(document.getElementById('hor-cust-color')&&document.getElementById('hor-cust-color').value)||'#5eead4';
-  _horApplyToSelDays(_horPickerDM.m,{emoji:emoji,label:label,bg:_horHexToRgba(hex,.2),color:hex});
-  _horClosePicker();_horSave();_horBuildGrid();
+  _horApplyToSelDays(_horPickerDM.m,{emoji:emoji,label:label,bg:_horHexToRgba(_horCustColorSel,.2),color:_horCustColorSel});
+  _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 function _horClearCell(){
   var d=_horPickerDM.d,m=_horPickerDM.m;delete horariosGrid[d+'_'+m];
-  _horClosePicker();_horSave();_horBuildGrid();
+  _horClosePicker();_horSave();_horBuildGrid();_horBuildDaySummary();
 }
 
 function addCompromisso(){
   _horClosePicker();
+  _horEditingCompId=null;
   const acts=_horGetActs();
   const todayISO=new Date().toISOString().slice(0,10);
-  const aOpts='<option value="-1">-- Personalizado --</option>'+acts.map((a,i)=>`<option value="${i}">${a.emoji} ${a.label}</option>`).join('');
+  const aOpts='<option value="-1">-- Personalizado --</option>'+acts.map(function(a,i){return '<option value="'+i+'">'+a.emoji+' '+a.label+'</option>';}).join('');
+  const durOpts='<option value="0.5">30 min</option><option value="1" selected>1h</option><option value="1.5">1h30</option><option value="2">2h</option><option value="3">3h</option><option value="4">4h</option>';
   const backdrop=document.createElement('div');
   backdrop.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.45)';
   const picker=document.createElement('div');
   picker.className='hor-picker';
   picker.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;min-width:240px;max-width:280px';
-  backdrop.onclick=()=>{picker.remove();backdrop.remove();_horPickerActive=null;};
-  picker.innerHTML=`
-    <button class="hor-picker-close" onclick="_horClosePicker()">×</button>
-    <div class="hor-picker-title" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">📅 Novo compromisso</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">📅 Data</div>
-        <input type="date" id="hc-date" class="sim-spin" style="width:100%;box-sizing:border-box" value="${todayISO}"></div>
-      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Hora</div>
-        <input type="time" id="hc-hora" class="sim-spin" style="width:100%;box-sizing:border-box" value="08:00"></div>
-    </div>
-    <div style="margin-bottom:8px">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Descrição</div>
-      <input class="hor-custom-input" id="hc-label" placeholder="Ex: Reunião de estudos" style="width:100%;box-sizing:border-box">
-    </div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Tipo</div>
-      <select id="hc-type" class="sim-spin" style="width:100%;box-sizing:border-box">${aOpts}</select>
-    </div>
-    <button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar compromisso</button>`;
+  backdrop.onclick=function(){picker.remove();backdrop.remove();_horPickerActive=null;};
+  picker.innerHTML=
+    '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
+    '<div class="hor-picker-title" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">📅 Novo compromisso</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Data</div>'+
+        '<input type="date" id="hc-date" class="sim-spin" style="width:100%;box-sizing:border-box" value="'+todayISO+'"></div>'+
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Hora</div>'+
+        '<input type="time" id="hc-hora" class="sim-spin" style="width:100%;box-sizing:border-box" value="08:00"></div>'+
+    '</div>'+
+    '<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Duração</div>'+
+      '<select id="hc-dur" class="sim-spin" style="width:100%;box-sizing:border-box">'+durOpts+'</select></div>'+
+    '<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Descrição</div>'+
+      '<input class="hor-custom-input" id="hc-label" placeholder="Ex: Reunião de estudos" style="width:100%;box-sizing:border-box"></div>'+
+    '<div style="margin-bottom:12px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Tipo</div>'+
+      '<select id="hc-type" class="sim-spin" style="width:100%;box-sizing:border-box">'+aOpts+'</select></div>'+
+    '<button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar compromisso</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
 }
@@ -3364,15 +3437,109 @@ function _horSaveComp(){
   const date=document.getElementById('hc-date')?.value||new Date().toISOString().slice(0,10);
   const hora=document.getElementById('hc-hora')?.value||'08:00';
   const label=document.getElementById('hc-label')?.value.trim()||'Compromisso';
+  const dur=parseFloat(document.getElementById('hc-dur')?.value)||1;
   const ti=parseInt(document.getElementById('hc-type')?.value);
   const acts=_horGetActs();
   const act=ti>=0?acts[ti]:null;
-  horariosComps.push({id:Date.now(),date,hora,label,emoji:act?act.emoji:'📅',bg:act?act.bg:'rgba(245,158,11,.22)',color:act?act.color:'#fbbf24'});
-  _horClosePicker();_horSave();_horBuildGrid();_horRenderComps();
+  if(_horEditingCompId!==null){
+    const idx=horariosComps.findIndex(x=>x.id===_horEditingCompId);
+    if(idx>=0){
+      const orig=horariosComps[idx];
+      horariosComps[idx]={...orig,date,hora,label,duration:dur,
+        emoji:act?act.emoji:orig.emoji,bg:act?act.bg:orig.bg,color:act?act.color:orig.color};
+    }
+    _horEditingCompId=null;
+  } else {
+    horariosComps.push({id:Date.now(),date,hora,label,duration:dur,
+      emoji:act?act.emoji:'📅',bg:act?act.bg:'rgba(245,158,11,.22)',color:act?act.color:'#fbbf24'});
+  }
+  _horClosePicker();_horSave();_horBuildGrid();_horRenderComps();_horBuildDaySummary();
+}
+function _horBuildDaySummary(){
+  const el=document.getElementById('hor-day-summary');if(!el)return;
+  const slot=horariosConfig.slot;
+  const dow=new Date().getDay();
+  const todayDi=dow===0?6:dow-1;
+  const weekDates=_horWeekDates();
+  const todayISO=weekDates[todayDi];
+  const todayComps=horariosComps.filter(c=>c.date===todayISO);
+  const periods=[
+    {label:'Manhã',icon:'☀️',start:6,end:12},
+    {label:'Tarde',icon:'🌤',start:12,end:18},
+    {label:'Noite',icon:'🌙',start:18,end:24}
+  ];
+  el.innerHTML=periods.map(function(p){
+    const acts=[];
+    const seen=new Set();
+    for(let h=p.start;h<p.end;h++){
+      const sph=Math.round(60/slot);
+      for(let si=0;si<sph;si++){
+        const m=h*60+si*slot;
+        const tc=todayComps.find(function(x){
+          const parts=x.hora.split(':');
+          const sm=Math.floor((parseInt(parts[0])*60+(parseInt(parts[1])||0))/slot)*slot;
+          return m>=sm&&m<sm+Math.max(1,Math.ceil((x.duration||1)*60/slot))*slot;
+        });
+        if(tc){
+          if(!seen.has(tc.label)){seen.add(tc.label);acts.push({emoji:tc.emoji,label:tc.label,color:tc.color||'#fbbf24'});}
+        } else {
+          const act=horariosGrid[todayDi+'_'+m];
+          if(act&&!seen.has(act.label)){seen.add(act.label);acts.push({emoji:act.emoji,label:act.label,color:act.color});}
+        }
+      }
+    }
+    let inner='';
+    if(acts.length){
+      inner='<div style="display:flex;flex-direction:column;gap:2px;margin-top:5px">';
+      acts.slice(0,4).forEach(function(a){inner+='<span style="font-size:10px;color:'+a.color+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+a.emoji+' '+a.label+'</span>';});
+      inner+='</div>';
+    } else {
+      inner='<div style="color:var(--muted);font-size:10px;margin-top:5px;font-style:italic">livre</div>';
+    }
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-height:64px;overflow:hidden">'+
+      '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">'+p.icon+' '+p.label+'</div>'+
+      inner+'</div>';
+  }).join('');
 }
 function _horDeleteComp(id){
   horariosComps=horariosComps.filter(c=>c.id!==id);
-  _horSave();_horBuildGrid();_horRenderComps();
+  _horSave();_horBuildGrid();_horRenderComps();_horBuildDaySummary();
+}
+function editCompromisso(id){
+  const comp=horariosComps.find(x=>x.id===id);if(!comp)return;
+  _horClosePicker();
+  _horEditingCompId=id;
+  const acts=_horGetActs();
+  const durVal=comp.duration||1;
+  const durOpts=[0.5,1,1.5,2,3,4].map(function(v){
+    var lab=v<1?Math.round(v*60)+'min':(v%1?Math.floor(v)+'h30':v+'h');
+    return '<option value="'+v+'"'+(v===durVal?' selected':'')+'>'+lab+'</option>';
+  }).join('');
+  const aOpts='<option value="-1">-- Manter tipo --</option>'+acts.map(function(a,i){return '<option value="'+i+'">'+a.emoji+' '+a.label+'</option>';}).join('');
+  const backdrop=document.createElement('div');
+  backdrop.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.45)';
+  const picker=document.createElement('div');
+  picker.className='hor-picker';
+  picker.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;min-width:240px;max-width:280px';
+  backdrop.onclick=function(){picker.remove();backdrop.remove();_horPickerActive=null;_horEditingCompId=null;};
+  picker.innerHTML=
+    '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
+    '<div class="hor-picker-title" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">✏ Editar compromisso</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Data</div>'+
+        '<input type="date" id="hc-date" class="sim-spin" style="width:100%;box-sizing:border-box" value="'+comp.date+'"></div>'+
+      '<div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Hora</div>'+
+        '<input type="time" id="hc-hora" class="sim-spin" style="width:100%;box-sizing:border-box" value="'+comp.hora+'"></div>'+
+    '</div>'+
+    '<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Duração</div>'+
+      '<select id="hc-dur" class="sim-spin" style="width:100%;box-sizing:border-box">'+durOpts+'</select></div>'+
+    '<div style="margin-bottom:8px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Descrição</div>'+
+      '<input class="hor-custom-input" id="hc-label" style="width:100%;box-sizing:border-box" value="'+comp.label.replace(/"/g,'&quot;')+'"></div>'+
+    '<div style="margin-bottom:12px"><div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Tipo</div>'+
+      '<select id="hc-type" class="sim-spin" style="width:100%;box-sizing:border-box">'+aOpts+'</select></div>'+
+    '<button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar</button>';
+  document.body.appendChild(backdrop);document.body.appendChild(picker);
+  _horPickerActive={picker,backdrop};
 }
 function _horRenderComps(){
   const wrap=document.getElementById('hor-comp-list');if(!wrap)return;
@@ -3381,26 +3548,29 @@ function _horRenderComps(){
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const thisWeek=horariosComps.filter(c=>weekSet.has(c.date));
   const future=horariosComps.filter(c=>!weekSet.has(c.date)&&c.date>new Date().toISOString().slice(0,10));
-  const _card=(c,label)=>{
+  function durStr(h){if(!h||h===1)return '1h';if(h<1)return Math.round(h*60)+'min';return h%1?Math.floor(h)+'h'+Math.round((h%1)*60):''+h+'h';}
+  function _card(c,label){
     const dayIdx=weekDates.indexOf(c.date);
     const dayName=dayIdx>=0?DAYS[dayIdx]:c.date.split('-').reverse().slice(0,2).join('/');
-    return `<div class="hor-comp-card" style="border-left:3px solid ${c.color||'var(--accent)'}">
-      <span class="hor-comp-emoji">${c.emoji}</span>
-      <div class="hor-comp-info">
-        <div class="hor-comp-label">${c.label}</div>
-        <div class="hor-comp-sub">${label||dayName} · ${c.hora}</div>
-      </div>
-      <button onclick="_horDeleteComp(${c.id})" style="background:rgba(239,68,68,.12);border:none;border-radius:6px;color:#ef4444;padding:4px 9px;cursor:pointer;font-size:12px">✕</button>
-    </div>`;
-  };
+    const lbl=label||dayName;
+    return '<div class="hor-comp-card" style="border-left:3px solid '+(c.color||'var(--accent)')+'">'+
+      '<span class="hor-comp-emoji">'+c.emoji+'</span>'+
+      '<div class="hor-comp-info">'+
+        '<div class="hor-comp-label">'+c.label+'</div>'+
+        '<div class="hor-comp-sub">'+lbl+' · '+c.hora+' · '+durStr(c.duration||1)+'</div>'+
+      '</div>'+
+      '<button onclick="editCompromisso('+c.id+')" style="background:rgba(62,181,200,.12);border:none;border-radius:6px;color:var(--accent);padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px">✎</button>'+
+      '<button onclick="_horDeleteComp('+c.id+')" style="background:rgba(239,68,68,.12);border:none;border-radius:6px;color:#ef4444;padding:4px 8px;cursor:pointer;font-size:12px">✕</button>'+
+    '</div>';
+  }
   let html='';
   if(thisWeek.length){
     html+='<div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Esta semana</div>';
-    html+=thisWeek.sort((a,b)=>a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora)).map(c=>_card(c)).join('');
+    html+=thisWeek.sort(function(a,b){return a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora);}).map(function(c){return _card(c);}).join('');
   }
   if(future.length){
-    html+=`<div style="font-size:10px;color:var(--muted);font-weight:700;margin:${thisWeek.length?'10px':'0'} 0 6px;text-transform:uppercase;letter-spacing:.5px">Próximos</div>`;
-    html+=future.sort((a,b)=>a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora)).map(c=>{
+    html+='<div style="font-size:10px;color:var(--muted);font-weight:700;margin:'+(thisWeek.length?'10px':'0')+' 0 6px;text-transform:uppercase;letter-spacing:.5px">Próximos</div>';
+    html+=future.sort(function(a,b){return a.date.localeCompare(b.date)||a.hora.localeCompare(b.hora);}).map(function(c){
       const d=new Date(c.date+'T00:00:00');
       const fmt=d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
       return _card(c,fmt);
@@ -3698,6 +3868,8 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
     </div>
     <span id="hor-now" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
   </div>
+  <!-- Resumo do dia -->
+  <div id="hor-day-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px"></div>
   <!-- Grade semanal -->
   <div class="hor-wrap" id="hor-grid-wrap"></div>
   <!-- Compromissos -->
