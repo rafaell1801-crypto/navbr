@@ -3175,6 +3175,72 @@ function _horWeekDates(){
   return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d.toISOString().slice(0,10);});
 }
 
+
+function _horAddInPeriod(fromM,toM,btnEl){
+  _horClosePicker();
+  _horEditModeActs=false;
+  const {slot}=horariosConfig;
+  // find first empty slot in period
+  let defaultM=fromM;
+  for(let m=fromM;m<toM;m+=slot){if(!horariosGrid['0_'+m]){defaultM=m;break;}}
+  _horPickerDM={d:0,m:defaultM};
+  const rect=btnEl.getBoundingClientRect();
+  const acts=_horGetActs();
+  _horCustColorSel=HOR_COLORS[0];
+  const backdrop=document.createElement('div');
+  backdrop.style.cssText='position:fixed;inset:0;z-index:9998';
+  backdrop.onclick=_horClosePicker;
+  const picker=document.createElement('div');
+  picker.className='hor-picker';
+  let top=rect.bottom+6,left=rect.left-120;
+  if(top+480>window.innerHeight)top=Math.max(8,rect.top-480);
+  if(left+268>window.innerWidth)left=Math.max(8,window.innerWidth-272);
+  if(left<8)left=8;
+  picker.style.cssText='position:fixed;top:'+top+'px;left:'+left+'px;max-height:'+(window.innerHeight-20)+'px;overflow-y:auto;font-family:\'Nunito\',\'Segoe UI\',sans-serif';
+  // build time options
+  let timeOpts='';
+  for(let m=fromM;m<toM;m+=slot){
+    if(!horariosGrid['0_'+m]){
+      const hh=String(Math.floor(m/60)).padStart(2,'0');
+      const mm2=String(m%60).padStart(2,'0');
+      timeOpts+='<option value="'+m+'"'+(m===defaultM?' selected':'')+'>'+hh+':'+mm2+'</option>';
+    }
+  }
+  const swatchesHTML=HOR_COLORS.map(function(c){
+    return '<button class="hor-color-swatch" data-color="'+c+'" onclick="_horSetColor(\''+c+'\')" style="width:20px;height:20px;border-radius:50%;background:'+c+';border:none;cursor:pointer;flex-shrink:0;outline:'+(c===_horCustColorSel?'2px solid rgba(255,255,255,.85)':'none')+';outline-offset:2px"></button>';
+  }).join('');
+  const EDIT_ICON="<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z'/></svg>";
+  picker.innerHTML=
+    '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
+    '<div class="hor-picker-title">Adicionar na rotina</div>'+
+    (timeOpts?
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">'+
+        '<div style="flex:1"><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">Horário</div>'+
+          '<select id="hor-addperiod-time" onchange="_horPickerDM.m=parseInt(this.value)" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:Nunito,sans-serif;font-size:12px;padding:4px 8px">'+timeOpts+'</select></div>'+
+        '<div><div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">Duração</div>'+
+          '<input type="text" id="hor-dur-input" value="01:00" placeholder="hh:mm" style="width:58px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:Nunito,sans-serif;font-size:12px;padding:4px 7px;text-align:center"></div>'+
+      '</div>'
+      :'<div style="color:var(--muted);font-size:11px;margin-bottom:10px;font-style:italic">Período totalmente preenchido. Clique em uma atividade para editar.</div>')+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
+      '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
+      '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" title="Editar lista" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
+    '</div>'+
+    '<div id="hor-acts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">'+
+      acts.map(function(a,i){return _horActPillHTML(a,i,null);}).join('')+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">Personalizado</div>'+
+    '<div style="display:flex;gap:5px;margin-bottom:6px">'+
+      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
+      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
+    '</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'+swatchesHTML+'</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button onclick="_horPickCustom()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Aplicar</button>'+
+      '<button onclick="_horAddToPreset()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif">+ Salvar lista</button>'+
+    '</div>';
+  document.body.appendChild(backdrop);document.body.appendChild(picker);
+  _horPickerActive={picker,backdrop};
+}
 function _horBuildExceptions(){
   const wrap=document.getElementById('hor-exceptions-wrap');if(!wrap)return;
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -3285,55 +3351,63 @@ function _horAddExcEntry(prefillM){
 function _horBuildGrid(){
   const wrap=document.getElementById('hor-grid-wrap');if(!wrap)return;
   const {start,end,slot}=horariosConfig;
-  const cellH=slot>=60?44:slot>=30?30:22;
-  const slotsArr=[];
-  for(let h=start;h<end;h++){
-    const sph=Math.round(60/slot);
-    for(let si=0;si<sph;si++)slotsArr.push({m:h*60+si*slot,h,si,sph});
-  }
-  const nRows=slotsArr.length;
-  // build cell list (template = day 0)
-  const cellList=slotsArr.map(function({m}){return horariosGrid['0_'+m]||null;});
-  // vertical merge only
-  const spans=new Array(nRows).fill(0);
-  for(let ri=0;ri<nRows;ri++){
-    if(spans[ri]<0)continue;
-    const cell=cellList[ri];
-    if(!cell){spans[ri]=0;continue;}
-    let rs=1;
-    while(ri+rs<nRows&&cellList[ri+rs]&&cellList[ri+rs].label===cell.label){rs++;spans[ri+rs-1]=-1;}
-    spans[ri]=rs;
-  }
-  let h2='<table class="hor-table" style="width:100%;table-layout:fixed"><thead><tr>'+
-    '<th class="hor-time-col" style="background:var(--surface2);width:48px"></th>'+
-    '<th style="text-align:left;padding-left:10px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.4px">Rotina</th>'+
-    '</tr></thead><tbody>';
-  for(let ri=0;ri<nRows;ri++){
-    if(spans[ri]<0)continue;
-    const {m,h,si,sph}=slotsArr[ri];
-    const rs=spans[ri]===0?1:spans[ri];
-    const hh2=String(h).padStart(2,'0');
-    const mm2=String(si*slot).padStart(2,'0');
-    const rsA=rs>1?' rowspan="'+rs+'"':'';
-    const topB=si===0?';border-top:1px solid rgba(255,255,255,.18)':'';
-    h2+='<tr>';
-    if(si===0)h2+='<td class="hor-time-cell" rowspan="'+sph+'" style="border-top:1px solid rgba(255,255,255,.18)">'+hh2+':'+mm2+'</td>';
-    const cell=cellList[ri];
-    if(!cell){
-      h2+='<td'+rsA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:transparent" onclick="_horEditCell(0,'+m+',this)"></div></td>';
-    } else {
-      const leftBorder=';border-left:3px solid '+cell.color;
-      const showTime=si!==0;
-      const startHH=String(Math.floor(m/60)).padStart(2,'0');
-      const startMM=String(m%60).padStart(2,'0');
-      const timeHTML=showTime?'<span style="font-size:8px;color:rgba(255,255,255,.45);padding-left:4px;display:block;line-height:1.3;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif">'+startHH+':'+startMM+'</span>':'';
-      const inner='<div style="display:flex;flex-direction:column;width:100%;height:100%;min-height:'+cellH+'px">'+timeHTML+'<div style="display:flex;align-items:center;justify-content:flex-start;gap:4px;flex:1;padding:2px 6px;overflow:hidden"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:rgba(255,255,255,.92)">'+cell.label+'</span></div></div>';
-      h2+='<td'+rsA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+leftBorder+';flex-direction:column;align-items:stretch;justify-content:flex-start" onclick="_horEditCell(0,'+m+',this)">'+inner+'<button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell(0,'+m+',this.parentElement)">✎</button></div></td>';
+  const periods=[
+    {icon:'☀️',label:'Manhã',from:start,to:12},
+    {icon:'🌤',label:'Tarde',from:12,to:18},
+    {icon:'🌙',label:'Noite',from:18,to:end}
+  ];
+  let out='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">';
+  periods.forEach(function(p,pi){
+    const fromM=p.from*60,toM=Math.min(p.to*60,end*60);
+    if(fromM>=toM){
+      out+='<div></div>';return;
     }
-    h2+='</tr>';
-  }
-  h2+='</tbody></table>';
-  wrap.innerHTML=h2;
+    // collect merged activity blocks for this period
+    const blocks=[];
+    let m=fromM;
+    while(m<toM){
+      const cell=horariosGrid['0_'+m];
+      if(cell){
+        let endM=m;
+        while(endM+slot<toM){
+          const nxt=horariosGrid['0_'+(endM+slot)];
+          if(nxt&&nxt.label===cell.label)endM+=slot;
+          else break;
+        }
+        blocks.push({m,endM,cell});
+        m=endM+slot;
+      } else {m+=slot;}
+    }
+    let rows='';
+    blocks.forEach(function(b){
+      const hh=String(Math.floor(b.m/60)).padStart(2,'0');
+      const mm=String(b.m%60).padStart(2,'0');
+      const durMin=(b.endM-b.m)+slot;
+      const durStr=durMin>=60?(Math.floor(durMin/60)+'h'+(durMin%60?String(durMin%60)+'min':'')):(durMin+'min');
+      rows+='<div onclick="_horEditCell(0,'+b.m+',this)" '+
+        'style="display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:9px;cursor:pointer;'+
+        'background:'+b.cell.bg+';border-left:3px solid '+b.cell.color+';margin-bottom:5px;transition:filter .12s" '+
+        'onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'\'">'+
+        '<span style="font-size:9px;color:rgba(255,255,255,.45);min-width:32px;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif;flex-shrink:0">'+hh+':'+mm+'</span>'+
+        '<span style="font-size:14px;flex-shrink:0">'+b.cell.emoji+'</span>'+
+        '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.25px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+b.cell.label+'</span>'+
+        '<span style="font-size:9px;color:rgba(255,255,255,.28);white-space:nowrap;flex-shrink:0">'+durStr+'</span>'+
+      '</div>';
+    });
+    out+=
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--text)">'+p.icon+' '+p.label+'</span>'+
+        '<button onclick="_horAddInPeriod('+fromM+','+toM+',this)" '+
+          'style="background:rgba(255,255,255,.06);border:none;border-radius:99px;color:var(--muted);'+
+          'font-family:Nunito,sans-serif;font-size:13px;font-weight:700;width:22px;height:22px;'+
+          'display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0">+</button>'+
+      '</div>'+
+      (rows||'<div style="color:var(--muted);font-size:10px;font-style:italic;padding:4px 0 8px">livre</div>')+
+    '</div>';
+  });
+  out+='</div>';
+  wrap.innerHTML=out;
 }
 let _horSelDays=new Set([0]);
 let _horPickerDM={d:0,m:0};
