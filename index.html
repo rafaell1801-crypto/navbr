@@ -3240,6 +3240,7 @@ function _horAddInPeriod(fromM,toM,btnEl){
     '</div>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
+  (function(){var eh=document.getElementById('hor-dur-h');var em=document.getElementById('hor-dur-m');if(eh)_enableSpinEdit(eh,24,null);if(em)_enableSpinEdit(em,60,null);})();
 }
 function _horBuildExceptions(){
   const wrap=document.getElementById('hor-exceptions-wrap');if(!wrap)return;
@@ -3338,9 +3339,9 @@ function _horAddExcEntry(prefillM){
     const tSel=document.getElementById('exc-time-sel');if(tSel)selM=parseInt(tSel.value)||selM;
     const emoji=(document.getElementById('exc-cust-emoji')?.value.trim())||'📌';
     const label=(document.getElementById('exc-cust-label')?.value.trim())||'Atividade';
-    const durVal=(document.getElementById('exc-dur-input')?.value||'01:00').trim();
-    const durParts=durVal.split(':');const durH=parseInt(durParts[0])||0;const durM2=parseInt(durParts[1])||0;
-    const duration=durH+(durM2/60);
+    const durH2=parseInt(document.getElementById('exc-dur-h')?.textContent||'1')||0;
+    const durM2=parseInt(document.getElementById('exc-dur-m')?.textContent||'0')||0;
+    const duration=durH2+(durM2/60);
     horariosExceptions.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration});
     window._horCloseExcModal();_horSave();_horBuildExceptions();_horBuildDaySummary();
   };
@@ -3351,47 +3352,54 @@ function _horAddExcEntry(prefillM){
 function _horBuildGrid(){
   const wrap=document.getElementById('hor-grid-wrap');if(!wrap)return;
   const {start,end,slot}=horariosConfig;
+  const todayISO=new Date().toISOString().slice(0,10);
+  const todayComps=horariosComps.filter(function(c){return c.date===todayISO;});
   const periods=[
     {icon:'☀️',label:'Manhã',from:start,to:12},
     {icon:'🌤',label:'Tarde',from:12,to:18},
     {icon:'🌙',label:'Noite',from:18,to:end}
   ];
   let out='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">';
-  periods.forEach(function(p,pi){
+  periods.forEach(function(p){
     const fromM=p.from*60,toM=Math.min(p.to*60,end*60);
-    if(fromM>=toM){
-      out+='<div></div>';return;
-    }
-    // collect merged activity blocks for this period
+    if(fromM>=toM){out+='<div></div>';return;}
+    // collect template blocks
     const blocks=[];
     let m=fromM;
     while(m<toM){
       const cell=horariosGrid['0_'+m];
       if(cell){
         let endM=m;
-        while(endM+slot<toM){
-          const nxt=horariosGrid['0_'+(endM+slot)];
-          if(nxt&&nxt.label===cell.label)endM+=slot;
-          else break;
-        }
-        blocks.push({m,endM,cell});
-        m=endM+slot;
+        while(endM+slot<toM){const nxt=horariosGrid['0_'+(endM+slot)];if(nxt&&nxt.label===cell.label)endM+=slot;else break;}
+        blocks.push({m,endM,cell,isComp:false});m=endM+slot;
       } else {m+=slot;}
     }
+    // add today's compromissos that fall in this period
+    todayComps.forEach(function(c){
+      const parts=c.hora.split(':');
+      const cMin=parseInt(parts[0])*60+(parseInt(parts[1])||0);
+      if(cMin>=fromM&&cMin<toM){
+        const cCell={emoji:c.emoji||'📅',label:c.label||'Compromisso',bg:_horHexToRgba(c.color||'#fbbf24',.28),color:c.color||'#fbbf24'};
+        const durSlots=Math.max(1,Math.ceil((c.duration||1)*60/slot));
+        const endM=cMin+(durSlots-1)*slot;
+        blocks.push({m:cMin,endM,cell:cCell,isComp:true,compId:c.id});
+      }
+    });
+    // sort by start time
+    blocks.sort(function(a,b){return a.m-b.m;});
     let rows='';
     blocks.forEach(function(b){
       const hh=String(Math.floor(b.m/60)).padStart(2,'0');
       const mm=String(b.m%60).padStart(2,'0');
-      const durMin=(b.endM-b.m)+slot;
-      const durStr=durMin>=60?(Math.floor(durMin/60)+'h'+(durMin%60?String(durMin%60)+'min':'')):(durMin+'min');
+      const lb=b.isComp?'border-left:3px solid '+b.cell.color+';':'border-left:3px solid '+b.cell.color+';';
       rows+='<div onclick="_horEditCell(0,'+b.m+',this)" '+
         'style="display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:9px;cursor:pointer;'+
-        'background:'+b.cell.bg+';border-left:3px solid '+b.cell.color+';margin-bottom:5px;transition:filter .12s" '+
+        'background:'+b.cell.bg+';'+lb+'margin-bottom:5px;transition:filter .12s" '+
         'onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'\'">'+
         '<span style="font-size:9px;color:rgba(255,255,255,.45);min-width:32px;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif;flex-shrink:0">'+hh+':'+mm+'</span>'+
         '<span style="font-size:14px;flex-shrink:0">'+b.cell.emoji+'</span>'+
         '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.25px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+b.cell.label+'</span>'+
-        '<span style="font-size:9px;color:rgba(255,255,255,.28);white-space:nowrap;flex-shrink:0">'+durStr+'</span>'+
+        (b.isComp?'<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border-radius:99px;padding:1px 5px;font-weight:600;white-space:nowrap">hoje</span>':'')+
       '</div>';
     });
     out+=
@@ -3458,13 +3466,11 @@ function _horSetDurSlots(n){
   });
 }
 function _horGetDurSlots(){
-  var val=(document.getElementById('hor-dur-input')?.value||'01:00').trim();
-  var parts=val.split(':');
-  var h=parseInt(parts[0])||0;
-  var m=parseInt(parts[1])||0;
+  var h=parseInt((document.getElementById('hor-dur-h')?.textContent||'1'))||0;
+  var m=parseInt((document.getElementById('hor-dur-m')?.textContent||'0'))||0;
   var totalMin=h*60+m;
-  var slot=horariosConfig.slot;
-  return Math.max(1,Math.round(totalMin/slot));
+  if(totalMin<=0)totalMin=horariosConfig.slot;
+  return Math.max(1,Math.ceil(totalMin/horariosConfig.slot));
 }
 function _horSetApplyMode(mode){
   _horApplyMode=mode;
@@ -3547,7 +3553,7 @@ function _horEditCell(d,m,el){
     '<div class="hor-picker-title">'+hh+':'+mm+' — Rotina</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:700">Duração</span>'+
-      '<input type="text" id="hor-dur-input" value="01:00" placeholder="hh:mm" style="width:58px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:Nunito,sans-serif;font-size:12px;padding:3px 7px;text-align:center">'+
+      '<div class="spin-wrap" style="gap:2px"><span class="spin-val" id="hor-dur-h" style="width:32px;font-size:12px;padding:4px 5px" onclick="openSpinPicker(this,24,function(v){this.textContent=String(v).padStart(2,'0')}.bind(this))">01</span><span class="spin-sep" style="font-size:12px">:</span><span class="spin-val" id="hor-dur-m" style="width:32px;font-size:12px;padding:4px 5px" onclick="openSpinPicker(this,60,function(v){this.textContent=String(v).padStart(2,'0')}.bind(this))">00</span></div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
       '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
@@ -3569,6 +3575,7 @@ function _horEditCell(d,m,el){
     (existing?'<button onclick="_horClearCell()" style="width:100%;padding:6px;background:rgba(239,68,68,.1);border:none;border-radius:7px;color:#f87171;font-size:12px;cursor:pointer;font-family:Nunito,sans-serif">✕ Limpar bloco</button>':'');
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
+  (function(){var eh=document.getElementById('hor-dur-h');var em=document.getElementById('hor-dur-m');if(eh)_enableSpinEdit(eh,24,null);if(em)_enableSpinEdit(em,60,null);})();
   if(existing&&!acts.some(function(a){return a.label===existing.label&&a.emoji===existing.emoji;})){
     var em=document.getElementById('hor-cust-emoji');var lb=document.getElementById('hor-cust-label');
     if(em)em.value=existing.emoji||'';if(lb)lb.value=existing.label||'';
@@ -3640,6 +3647,7 @@ function addCompromisso(){
     '<button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar compromisso</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
+  (function(){var eh=document.getElementById('hor-dur-h');var em=document.getElementById('hor-dur-m');if(eh)_enableSpinEdit(eh,24,null);if(em)_enableSpinEdit(em,60,null);})();
 }
 function _horSaveComp(){
   const date=document.getElementById('hc-date')?.value||new Date().toISOString().slice(0,10);
@@ -3664,6 +3672,7 @@ function _horSaveComp(){
   _horClosePicker();_horSave();_horBuildGrid();_horRenderComps();_horBuildDaySummary();
 }
 function _horBuildDaySummary(){
+  return; // resumo removido — o grid de 3 colunas já mostra manhã/tarde/noite
   const wrap=document.getElementById('hor-day-summary');if(!wrap)return;
   const {start,end,slot}=horariosConfig;
   const todayISO=new Date().toISOString().slice(0,10);
@@ -3746,6 +3755,7 @@ function editCompromisso(id){
     '<button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
+  (function(){var eh=document.getElementById('hor-dur-h');var em=document.getElementById('hor-dur-m');if(eh)_enableSpinEdit(eh,24,null);if(em)_enableSpinEdit(em,60,null);})();
 }
 function _horRenderComps(){
   const wrap=document.getElementById('hor-comp-list');if(!wrap)return;
@@ -4075,7 +4085,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
     <span id="hor-now" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
   </div>
   <!-- Resumo do dia -->
-  <div id="hor-day-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px"></div>
+  <div id="hor-day-summary" style="display:none"></div>
   <!-- Grade semanal -->
   <div class="hor-wrap" id="hor-grid-wrap" style="margin-bottom:24px"></div>
 <div id="hor-exceptions-wrap" style="margin-bottom:24px"></div>
