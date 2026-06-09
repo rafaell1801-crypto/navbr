@@ -3421,7 +3421,6 @@ let _horEditingCompId=null;
 let _horPickerSlots=1;
 let _horApplyMode='week';
 let _horOriginalM=0;
-let _horOriginalM=0;
 function _horToggleDay(i){
   if(_horSelDays.has(i)){if(_horSelDays.size>1)_horSelDays.delete(i);}else _horSelDays.add(i);
   for(let d=0;d<7;d++){const b=document.getElementById('hor-d-'+d);if(!b)continue;const sel=_horSelDays.has(d);b.style.background=sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)';b.style.color=sel?'var(--accent)':'var(--muted)';b.style.fontWeight=sel?'700':'400';}
