@@ -296,9 +296,9 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 .hor-table{border-collapse:collapse;width:100%;min-width:520px;table-layout:fixed}
 .hor-table th{font-size:11px;font-weight:700;color:var(--muted);padding:5px 2px;text-align:center;background:var(--surface2);border:1px solid var(--border);position:sticky;top:0;z-index:1}
 .hor-table th.hor-time-col{width:44px}
-.hor-table td{border:1px solid rgba(255,255,255,.07);padding:0;vertical-align:top}
+.hor-table td{border:1px solid rgba(255,255,255,.07);padding:0;vertical-align:top;height:1px}
 .hor-time-cell{font-size:10px;color:var(--muted);padding:3px 5px;text-align:right;white-space:nowrap;background:var(--surface2);vertical-align:middle;font-variant-numeric:tabular-nums}
-.hor-cell{position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .1s}
+.hor-cell{position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .1s;height:100%;box-sizing:border-box}
 .hor-cell:hover{filter:brightness(1.12)}
 .hor-cell-inner{display:flex;flex-direction:row;align-items:center;gap:4px;padding:2px 5px;overflow:hidden}
 .hor-cell .hor-edit-btn{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1.3}
@@ -3205,7 +3205,7 @@ function _horBuildGrid(){
       const key=di+'_'+slotsArr[ri].m;
       const fc=(compMap[key]||[])[0];
       const act=horariosGrid[key];
-      row.push(fc?{emoji:fc.emoji,label:fc.label,bg:fc.bg||'rgba(245,158,11,.2)',color:fc.color||'#fbbf24',isComp:true}
+      row.push(fc?{emoji:fc.emoji,label:fc.label,bg:_horHexToRgba(fc.color||'#fbbf24',.35),color:fc.color||'#fbbf24',isComp:true}
                :act?{emoji:act.emoji,label:act.label,bg:act.bg,color:act.color,isComp:false}:null);
     }
     cells.push(row);
@@ -3258,8 +3258,8 @@ function _horBuildGrid(){
       if(!cell){
         html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:transparent" onclick="_horEditCell('+di+','+m+',this)"></div></td>';
       } else {
-        const outline=cell.isComp?';outline:2px solid '+cell.color+';outline-offset:-2px':'';
-        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+';color:'+cell.color+outline+';border-radius:0" onclick="_horEditCell('+di+','+m+',this)"><div class="hor-cell-inner"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:'+cell.color+'">'+cell.label+'</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
+        const leftBorder=cell.isComp?';border-left:3px solid '+cell.color:'';
+        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+leftBorder+'" onclick="_horEditCell('+di+','+m+',this)"><div class="hor-cell-inner"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:'+cell.color+'">'+cell.label+'</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
       }
     }
     html+='</tr>';
@@ -3280,7 +3280,7 @@ function _horToggleDay(i){
 function _horToggleEditModeActs(){
   _horEditModeActs=!_horEditModeActs;
   const btn=document.getElementById('hor-editmode-btn');
-  if(btn){btn.style.color=_horEditModeActs?'#f87171':'var(--muted)';btn.textContent=_horEditModeActs?'✓ Editar':'✏ Editar';}
+  if(btn)btn.style.color=_horEditModeActs?'#f87171':'var(--muted)';
   const grid=document.getElementById('hor-acts-grid');
   if(grid){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}
 }
