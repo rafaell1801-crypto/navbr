@@ -402,6 +402,12 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
     <div class="stat"><div class="stat-val" style="color:var(--danger)" id="s-late">–</div><div class="stat-lbl">Atrasados</div></div>
     <div class="stat" onclick="showTab('stats')" style="cursor:pointer" title="Aproveitamento — clique para ver detalhes em Estatísticas"><div class="stat-val" id="s-acertos">–</div><div class="stat-lbl">Acertos</div></div>
   </div>
+  <div class="stats-bar" style="grid-template-columns:repeat(4,1fr);border-top:none;padding-top:0">
+    <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-week-done">–</div><div class="stat-lbl">Vistos</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--muted)" id="s-week-pend">–</div><div class="stat-lbl">Restam</div></div>
+    <div class="stat" onclick="showTab('stats')" style="cursor:pointer"><div class="stat-val" id="s-week-acertos">–</div><div class="stat-lbl">% Acertos</div></div>
+  </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
     <div class="prog-label" id="prog-label">0% concluído</div>
@@ -1825,7 +1831,9 @@ function _enableSpinEdit(el,max,onChange){
 function showTab(t){
   ['ciclo','rev','stats','content','simulados'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','simulados','content'][i]===t));
+  const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo'&&t!=='rev');
   if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
+  if(t==='content')renderContentStats();
 }
 let currentSubtab='pending';
 function showSubtab(s){
@@ -2128,6 +2136,26 @@ function render(){
   document.getElementById('s-done').textContent=doneCount;
   document.getElementById('s-pend').textContent=TOTAL_MAIN-doneCount;
   document.getElementById('s-late').textContent=lateItems.length;
+  // Stats da semana
+  (()=>{
+    const now=new Date();now.setHours(0,0,0,0);
+    const dow=now.getDay();
+    const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    function inWeek(ds){const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);return dt>=mon&&dt<=sun;}
+    const weekItems=getEffectiveAgenda().filter(i=>!i.port&&inWeek(i.data));
+    const weekDone=weekItems.filter(i=>isDone(i.id)).length;
+    const weekPend=weekItems.length-weekDone;
+    const weekIds=new Set(weekItems.map(i=>i.id));
+    const {a,t}=getQuestoesTotals(id=>weekIds.has(id));
+    const wPct=t>0?Math.round(a/t*100):null;
+    const el=n=>document.getElementById(n);
+    if(el('s-week-total'))el('s-week-total').textContent=weekItems.length;
+    if(el('s-week-done')){el('s-week-done').textContent=weekDone;}
+    if(el('s-week-pend'))el('s-week-pend').textContent=weekPend;
+    if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct+'%':'–';
+    const ac=el('s-week-acertos');if(ac)ac.style.color=wPct===null?'':wPct>=70?'var(--success)':wPct>=50?'var(--warn)':'var(--danger)';
+  })();
   document.getElementById('prog-bar').style.width=pct+'%';
   document.getElementById('prog-label').textContent=pct+'% concluído';
   const todayItems=getEffectiveAgenda().filter(i=>i.data===TODAY);
@@ -3089,11 +3117,43 @@ function deleteSimulado(id){
   _simSave();renderSimulados();
 }
 
+let simMeta=parseInt(localStorage.getItem('nav_sim_meta')||'0')||0;
+function editSimMeta(){
+  const v=prompt('Quantos simulados você pretende fazer?',simMeta||'');
+  if(v===null)return;
+  simMeta=parseInt(v)||0;
+  localStorage.setItem('nav_sim_meta',simMeta);
+  _renderSimSummary();
+}
+function _renderSimSummary(){
+  const feitos=simulados.length;
+  const rest=Math.max(0,simMeta-feitos);
+  const totalQ=simulados.reduce((a,s)=>a+s.disciplinas.reduce((b,d)=>b+d.total,0),0);
+  const totalAc=simulados.reduce((a,s)=>a+s.disciplinas.reduce((b,d)=>b+d.acertos,0),0);
+  const pct=totalQ>0?Math.round(totalAc/totalQ*100):null;
+  const el=n=>document.getElementById(n);
+  if(el('sim-meta-val'))el('sim-meta-val').textContent=simMeta||'–';
+  if(el('sim-feitos-val'))el('sim-feitos-val').textContent=feitos;
+  if(el('sim-rest-val'))el('sim-rest-val').textContent=simMeta?rest:'–';
+  const pEl=el('sim-pct-geral');
+  if(pEl){pEl.textContent=pct!==null?pct+'%':'–';pEl.style.color=pct===null?'':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';}
+}
 function renderSimulados(){
+  _renderSimSummary();
   _populateSimDiscRows();
   const dateEl=document.getElementById('sim-date');if(dateEl&&!dateEl.value)dateEl.value=TODAY;
   _renderSimChart();
   _renderSimList();
+}
+function renderContentStats(){
+  const agenda=getEffectiveAgenda().filter(i=>!i.port);
+  const done=agenda.filter(i=>isDone(i.id)).length;
+  const late=agenda.filter(i=>isPast(i.data)&&!isDone(i.id)).length;
+  const pending=agenda.length-done-late;
+  const el=n=>document.getElementById(n);
+  if(el('ct-done'))el('ct-done').textContent=done;
+  if(el('ct-pend'))el('ct-pend').textContent=pending;
+  if(el('ct-late'))el('ct-late').textContent=late;
 }
 
 function _pct(ac,tot){return tot>0?Math.round(ac/tot*100):null;}
@@ -3222,6 +3282,12 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
 
+  <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);border-radius:12px;border:1px solid var(--border);margin-bottom:4px">
+    <div class="stat"><div class="stat-val" style="color:var(--success)" id="ct-done">–</div><div class="stat-lbl">Concluídos</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--muted)" id="ct-pend">–</div><div class="stat-lbl">A fazer</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--danger)" id="ct-late">–</div><div class="stat-lbl">Atrasados</div></div>
+  </div>
+
   <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
   <div id="content-disc-list"></div>
   <div class="content-save-bar">
@@ -3232,6 +3298,20 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 </div>
 
 <div id="tab-simulados" class="hidden" style="padding:16px 20px;max-width:700px;margin:0 auto;font-family:'Nunito','Segoe UI',sans-serif">
+
+  <!-- Barra de progresso de simulados -->
+  <div class="stats-bar" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;border-radius:12px;border:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div class="stat" style="border-radius:0">
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <span class="stat-val" id="sim-meta-val">–</span>
+        <button onclick="editSimMeta()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1" title="Editar meta">✎</button>
+      </div>
+      <div class="stat-lbl">Meta</div>
+    </div>
+    <div class="stat"><div class="stat-val" style="color:var(--success)" id="sim-feitos-val">–</div><div class="stat-lbl">Feitos</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--muted)" id="sim-rest-val">–</div><div class="stat-lbl">Restam</div></div>
+    <div class="stat"><div class="stat-val" id="sim-pct-geral">–</div><div class="stat-lbl">% Acertos</div></div>
+  </div>
 
   <!-- Formulário novo simulado -->
   <div id="sim-form-wrap" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px">
