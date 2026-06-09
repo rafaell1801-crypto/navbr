@@ -360,8 +360,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
   <button class="tab active" onclick="showTab('ciclo')">Ciclo</button>
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
-  <button class="tab" onclick="showTab('content')">Conteúdo</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
+  <button class="tab" onclick="showTab('content')">Conteúdo</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
 
@@ -1821,7 +1821,7 @@ function _enableSpinEdit(el,max,onChange){
 
 function showTab(t){
   ['ciclo','rev','stats','content','simulados'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','content','simulados'][i]===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','simulados','content'][i]===t));
   if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
 }
 let currentSubtab='pending';
@@ -3019,42 +3019,64 @@ function toggleSimForm(){
   btn.textContent=hidden?'+ Novo':'− Fechar';
 }
 
+function updateSimTotal(){
+  const rows=[...document.getElementById('sim-disc-rows')?.children||[]];
+  let tQ=0,tA=0;
+  rows.forEach(row=>{
+    const spans=row.querySelectorAll('.sim-q-val');
+    const q=parseInt(spans[0]?.textContent)||0;
+    const a=Math.min(parseInt(spans[1]?.textContent)||0,q);
+    tQ+=q;tA+=a;
+  });
+  const qEl=document.getElementById('sim-total-q');
+  const aEl=document.getElementById('sim-total-ac');
+  const pEl=document.getElementById('sim-total-pct');
+  if(qEl)qEl.textContent=tQ;
+  if(aEl)aEl.textContent=tA;
+  if(pEl){
+    if(tQ>0){const p=Math.round(tA/tQ*100);const c=p>=70?'#2dd4a0':p>=50?'#f5a623':'#ef4444';pEl.textContent='('+p+'%)';pEl.style.color=c;}
+    else{pEl.textContent='';}
+  }
+}
+
 function _populateSimDiscRows(saved={}){
   const wrap=document.getElementById('sim-disc-rows');if(!wrap)return;
   const discs=getActiveDiscs();
   wrap.innerHTML=discs.map(disc=>{
     const prev=saved[disc]||{total:0,acertos:0};
-    const safeDisc=disc.replace(/'/g,"\\'");
+    const safeDisc=disc.replace(/"/g,'&quot;');
     return `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:6px;align-items:center" data-disc="${safeDisc}">
       <span style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
-      <input type="number" min="0" value="${prev.total}" style="padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit;text-align:center;width:100%;box-sizing:border-box">
-      <input type="number" min="0" value="${prev.acertos}" style="padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit;text-align:center;width:100%;box-sizing:border-box">
+      <div class="spin-wrap" style="justify-content:center"><span class="spin-val sim-q-val" contenteditable="true" inputmode="numeric" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">${prev.total}</span></div>
+      <div class="spin-wrap" style="justify-content:center"><span class="spin-val sim-q-val" contenteditable="true" inputmode="numeric" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">${prev.acertos}</span></div>
     </div>`;
   }).join('');
 }
 
 function saveSimulado(){
   const date=document.getElementById('sim-date')?.value;
-  const dur=parseFloat(document.getElementById('sim-dur')?.value)||0;
+  const durEl=document.getElementById('sim-dur');
+  const dur=parseFloat((durEl?.textContent||durEl?.value||'0').replace(',','.'))||0;
   const name=document.getElementById('sim-name')?.value.trim();
   const link=document.getElementById('sim-link')?.value.trim();
   if(!date){alert('Informe a data do simulado.');return;}
   const rows=[...document.getElementById('sim-disc-rows').children];
   const disciplinas=rows.map(row=>{
     const disc=row.dataset.disc;
-    const [tot,ac]=row.querySelectorAll('input');
-    const total=parseInt(tot.value)||0;
-    const acertos=Math.min(parseInt(ac.value)||0,total);
+    const spans=row.querySelectorAll('.sim-q-val');
+    const total=parseInt(spans[0]?.textContent)||0;
+    const acertos=Math.min(parseInt(spans[1]?.textContent)||0,total);
     return{disc,total,acertos,erros:total-acertos};
   }).filter(d=>d.total>0);
   if(!disciplinas.length){alert('Preencha ao menos uma disciplina com questões.');return;}
   simulados.unshift({id:Date.now(),date,name,link,dur,disciplinas});
   _simSave();
   document.getElementById('sim-date').value='';
-  document.getElementById('sim-dur').value='0';
+  if(durEl)durEl.textContent='0';
   document.getElementById('sim-name').value='';
   document.getElementById('sim-link').value='';
   _populateSimDiscRows();
+  updateSimTotal();
   renderSimulados();
 }
 
@@ -3222,7 +3244,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Duração (h)</label>
-          <input id="sim-dur" type="number" min="0" step="0.5" value="0" style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text);font-family:inherit">
+          <div class="spin-wrap"><span class="spin-val" id="sim-dur" contenteditable="true" inputmode="decimal" onfocus="document.execCommand('selectAll',false,null)" style="width:44px">0</span></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Nome</label>
@@ -3238,7 +3260,15 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
         <span style="font-size:11px;color:var(--muted);font-weight:700;text-align:center">Total Q</span>
         <span style="font-size:11px;color:var(--muted);font-weight:700;text-align:center">Acertos</span>
       </div>
-      <div id="sim-disc-rows" style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px"></div>
+      <div id="sim-disc-rows" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px" oninput="updateSimTotal()"></div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:14px;padding:0 2px">
+        <span style="font-size:11px;color:var(--muted)">Total de questões:</span>
+        <span id="sim-total-q" style="font-size:13px;font-weight:700;color:var(--accent);min-width:28px;text-align:right">0</span>
+        <span style="font-size:11px;color:var(--muted)">·</span>
+        <span id="sim-total-ac" style="font-size:13px;font-weight:700;color:#2dd4a0;min-width:28px;text-align:right">0</span>
+        <span style="font-size:11px;color:var(--muted)">acertos</span>
+        <span id="sim-total-pct" style="font-size:11px;font-weight:700;color:var(--muted);min-width:36px;text-align:right"></span>
+      </div>
       <button onclick="saveSimulado()" style="width:100%;padding:9px;font-size:13px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit;transition:background .15s" onmouseover="this.style.background='rgba(62,181,200,.22)'" onmouseout="this.style.background='rgba(62,181,200,.12)'">Salvar simulado</button>
     </div>
   </div>
