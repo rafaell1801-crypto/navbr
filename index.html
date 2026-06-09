@@ -3256,7 +3256,7 @@ function _horBuildGrid(){
       const csA=cs>1?' colspan="'+cs+'"':'';
       const topB=isHourStart?';border-top:1px solid rgba(255,255,255,.18)':'';
       if(!cell){
-        html+='<td'+rsA+csA+' style="padding:0'+topB+'"></td>';
+        html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:transparent" onclick="_horEditCell('+di+','+m+',this)"></div></td>';
       } else {
         const outline=cell.isComp?';outline:2px solid '+cell.color+';outline-offset:-2px':'';
         html+='<td'+rsA+csA+' style="padding:0'+topB+'"><div class="hor-cell" style="min-height:'+cellH+'px;background:'+cell.bg+';color:'+cell.color+outline+';border-radius:0" onclick="_horEditCell('+di+','+m+',this)"><div class="hor-cell-inner"><span class="hor-emoji">'+cell.emoji+'</span><span class="hor-label" style="color:'+cell.color+'">'+cell.label+'</span></div><button class="hor-edit-btn" onclick="event.stopPropagation();_horEditCell('+di+','+m+',this.parentElement)">✎</button></div></td>';
