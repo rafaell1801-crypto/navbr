@@ -88,12 +88,12 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .late-body{padding:0 12px 8px;background:#1a1400}
 .late-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid #f59e0b}
 .late-item:last-child{border-bottom:none}
-.days-list{padding:12px 20px;display:flex;flex-direction:column;gap:10px}
-.day-group{border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+.days-list{padding:12px 20px;display:flex;flex-direction:column;gap:14px}
+.day-group{border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;background:var(--surface)}
 .day-group.all-done{border-color:#86efac;background:#000}
 .day-group.is-today{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,95,168,.1)}
 .day-group.has-late{border-color:#f59e0b}
-.day-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.day-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .day-group.all-done .day-header{background:#000}
 .day-date{font-weight:700;font-size:13px}
 .day-tag{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:600}
@@ -101,7 +101,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .day-meta{font-size:11px;color:var(--muted);margin-left:auto}
 .day-check-all{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;filter:invert(1)}
 .blocos-list{display:flex;flex-direction:column}
-.bloco-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:.5px solid var(--border);transition:background .12s;flex-wrap:nowrap;min-width:0}
+.bloco-row{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:.5px solid var(--border);transition:background .12s;flex-wrap:nowrap;min-width:0}
 .bloco-row:last-child{border-bottom:none}
 .bloco-row.done{background:#040c07}.bloco-row.done .topico-name{text-decoration:line-through;color:var(--muted)}
 .bloco-row.late-row{background:#2a1800}.bloco-row.port-row{background:#0f1a2e}
@@ -3048,10 +3048,10 @@ function _populateSimDiscRows(saved={}){
   wrap.innerHTML=discs.map(disc=>{
     const prev=saved[disc]||{total:0,acertos:0};
     const safeDisc=disc.replace(/"/g,'&quot;');
-    return `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:6px;align-items:center" data-disc="${safeDisc}">
+    return `<div style="display:grid;grid-template-columns:1fr 60px 60px;gap:6px;align-items:center" data-disc="${safeDisc}">
       <span style="font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
-      <input type="text" inputmode="numeric" maxlength="4" value="${prev.total}" class="lea-q sim-q-val" onfocus="this.select()" style="display:block;margin:0 auto">
-      <input type="text" inputmode="numeric" maxlength="4" value="${prev.acertos}" class="lea-q sim-q-val" onfocus="this.select()" style="display:block;margin:0 auto">
+      <input type="text" inputmode="numeric" maxlength="4" value="${prev.total}" class="sim-spin sim-q-val" onfocus="this.select()" style="width:100%;box-sizing:border-box">
+      <input type="text" inputmode="numeric" maxlength="4" value="${prev.acertos}" class="sim-spin sim-q-val" onfocus="this.select()" style="width:100%;box-sizing:border-box">
     </div>`;
   }).join('');
 }
@@ -3247,7 +3247,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Duração (h)</label>
-          <input id="sim-dur" type="text" inputmode="decimal" maxlength="4" value="0" class="lea-q" onfocus="this.select()">
+          <input id="sim-dur" type="text" inputmode="decimal" maxlength="4" value="0" class="sim-spin" onfocus="this.select()">
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
           <label style="font-size:11px;color:var(--muted);font-weight:600">Nome</label>
@@ -3258,7 +3258,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
           <input id="sim-link" type="url" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:6px;align-items:center;margin-bottom:6px;padding:0 2px">
+      <div style="display:grid;grid-template-columns:1fr 60px 60px;gap:6px;align-items:center;margin-bottom:6px;padding:0 2px">
         <span style="font-size:11px;color:var(--muted);font-weight:700">Disciplina</span>
         <span style="font-size:11px;color:var(--muted);font-weight:700;text-align:center">Total Q</span>
         <span style="font-size:11px;color:var(--muted);font-weight:700;text-align:center">Acertos</span>
