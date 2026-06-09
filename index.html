@@ -3082,7 +3082,6 @@ let horariosConfig={start:6,end:23,slot:60,hiddenActs:[],customActs:[]};
 let horariosGrid={};
 let horariosComps=[];
 let _horPickerActive=null;
-let _horScope=1; // 1=só aqui, 5=seg-sex, 7=semana toda
 let _horNowTimer=null;
 (function(){
   try{
@@ -3223,117 +3222,112 @@ function _horBuildGrid(){
   html+='</tbody></table>';
   wrap.innerHTML=html;
 }
-function _horSetScope(s){
-  _horScope=s;
-  [1,5,7].forEach(v=>{const b=document.getElementById(`hor-sc-${v}`);if(b){b.style.borderColor=v===s?'var(--accent)':'var(--border)';b.style.background=v===s?'rgba(62,181,200,.15)':'var(--surface)';}});
+let _horSelDays=new Set([0]);
+let _horPickerDM={d:0,m:0};
+function _horToggleDay(i){
+  if(_horSelDays.has(i)){if(_horSelDays.size>1)_horSelDays.delete(i);}else _horSelDays.add(i);
+  for(let d=0;d<7;d++){const b=document.getElementById('hor-d-'+d);if(!b)continue;const sel=_horSelDays.has(d);b.style.background=sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)';b.style.color=sel?'var(--accent)':'var(--muted)';b.style.fontWeight=sel?'700':'400';}
 }
-function _horToggleHide(label){
-  const hidden=horariosConfig.hiddenActs||[];
-  const idx=hidden.indexOf(label);
-  if(idx>=0)hidden.splice(idx,1);else hidden.push(label);
-  horariosConfig={...horariosConfig,hiddenActs:hidden};
+function _horRemoveAct(label){
+  const customActs=[...(horariosConfig.customActs||[])];
+  const ci=customActs.findIndex(a=>a.label===label);
+  if(ci>=0){customActs.splice(ci,1);horariosConfig={...horariosConfig,customActs};}
+  else{const h=[...(horariosConfig.hiddenActs||[])];if(!h.includes(label))h.push(label);horariosConfig={...horariosConfig,hiddenActs:h};}
   _horSave();
-  // rebuild picker in place
-  const pickerEl=_horPickerActive?.picker;
-  if(pickerEl){
-    const d=parseInt(pickerEl.dataset.d),m=parseInt(pickerEl.dataset.m);
-    if(!isNaN(d)&&!isNaN(m))_horRebuildPickerActs(d,m);
+  const picker=_horPickerActive?.picker;if(!picker)return;
+  const grid=picker.querySelector('#hor-acts-grid');if(!grid)return;
+  const existing=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];
+  grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,existing)).join('');
+}
+function _horAddToPreset(){
+  const emoji=(document.getElementById('hor-cust-emoji')?.value.trim()||'📌');
+  const label=(document.getElementById('hor-cust-label')?.value.trim());
+  if(!label)return;
+  const hex=document.getElementById('hor-cust-color')?.value||'#5eead4';
+  const customActs=[...(horariosConfig.customActs||[])];
+  if(!customActs.some(a=>a.label===label)){
+    customActs.push({emoji,label,bg:_horHexToRgba(hex,.2),color:hex});
+    horariosConfig={...horariosConfig,customActs};_horSave();
+    const picker=_horPickerActive?.picker;
+    if(picker){const g=picker.querySelector('#hor-acts-grid');if(g){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];g.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}}
   }
 }
-function _horRebuildPickerActs(d,m){
-  const pickerEl=_horPickerActive?.picker;if(!pickerEl)return;
-  const acts=_horGetActs();
-  const existing=horariosGrid[`${d}_${m}`];
-  const hidden=horariosConfig.hiddenActs||[];
-  const container=pickerEl.querySelector('#hor-acts-grid');
-  if(!container)return;
-  container.innerHTML=acts.map((a,i)=>`
-    <div style="position:relative;display:flex">
-      <button class="hor-act-btn" onclick="_horPickAct(${d},${m},${i})" style="flex:1;${existing&&existing.label===a.label?'border-color:var(--accent);background:rgba(62,181,200,.1)':''}">${a.emoji} ${a.label}</button>
-      ${HOR_ATIVAS_DEFAULT.some(x=>x.label===a.label)?`<button onclick="event.stopPropagation();_horToggleHide('${a.label}')" title="Ocultar" style="position:absolute;top:-4px;right:-4px;background:rgba(30,30,46,.9);border:1px solid var(--border);border-radius:50%;width:14px;height:14px;font-size:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;padding:0">×</button>`:''}
-    </div>`).join('');
-  const hasHidden=hidden.length>0;
-  const restoreBtn=pickerEl.querySelector('#hor-restore-btn');
-  if(restoreBtn)restoreBtn.style.display=hasHidden?'block':'none';
+function _horActPillHTML(a,i,existing){
+  const sel=existing&&existing.label===a.label;
+  const bg=sel?'rgba(62,181,200,.22)':'rgba(255,255,255,.06)';
+  return '<div style="position:relative"><button onclick="_horPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:6px;padding:6px 8px;border:none;border-radius:8px;background:'+bg+';color:var(--text);cursor:pointer;font-size:12px;font-family:\'Nunito\',sans-serif;text-align:left" onmouseover="this.style.background=\'rgba(62,181,200,.14)\'" onmouseout="this.style.background=\''+bg+'\'"><span style="font-size:15px">'+a.emoji+'</span> <span style="'+(sel?'color:var(--accent);font-weight:700':'')+'">'+a.label+'</span></button><button onclick="event.stopPropagation();_horRemoveAct(\''+a.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="position:absolute;top:4px;right:4px;width:16px;height:16px;border:none;border-radius:50%;background:rgba(239,68,68,.18);color:#f87171;cursor:pointer;font-size:11px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;opacity:.7" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.7\'">×</button></div>';
 }
 function _horEditCell(d,m,el){
   _horClosePicker();
+  _horPickerDM={d,m};_horSelDays=new Set([d]);
   const rect=el.getBoundingClientRect();
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const hh=String(Math.floor(m/60)).padStart(2,'0');
   const mm=String(m%60).padStart(2,'0');
-  const existing=horariosGrid[`${d}_${m}`];
-  const hidden=horariosConfig.hiddenActs||[];
+  const existing=horariosGrid[d+'_'+m];
   const acts=_horGetActs();
   const backdrop=document.createElement('div');
   backdrop.style.cssText='position:fixed;inset:0;z-index:9998';
   backdrop.onclick=_horClosePicker;
   const picker=document.createElement('div');
   picker.className='hor-picker';
-  picker.dataset.d=d;picker.dataset.m=m;
+  picker.style.fontFamily="'Nunito','Segoe UI',sans-serif";
   let top=rect.bottom+6,left=rect.left;
-  if(top+380>window.innerHeight)top=Math.max(8,rect.top-380);
-  if(left+260>window.innerWidth)left=Math.max(8,window.innerWidth-264);
-  picker.style.cssText=`top:${top}px;left:${left}px;max-height:${window.innerHeight-20}px;overflow-y:auto`;
-  const scopeBtn=(v,label)=>`<button id="hor-sc-${v}" onclick="_horSetScope(${v})" style="flex:1;padding:4px 6px;border:1px solid ${_horScope===v?'var(--accent)':'var(--border)'};border-radius:6px;background:${_horScope===v?'rgba(62,181,200,.15)':'var(--surface)'};color:var(--text);font-size:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">${label}</button>`;
+  if(top+420>window.innerHeight)top=Math.max(8,rect.top-420);
+  if(left+268>window.innerWidth)left=Math.max(8,window.innerWidth-272);
+  picker.style.cssText="top:"+top+"px;left:"+left+"px;max-height:"+(window.innerHeight-20)+"px;overflow-y:auto;font-family:'Nunito','Segoe UI',sans-serif";
   const custColor=existing&&!acts.some(a=>a.label===existing.label)?existing.color||'#5eead4':'#5eead4';
-  picker.innerHTML=`
-    <button class="hor-picker-close" onclick="_horClosePicker()">×</button>
-    <div class="hor-picker-title">${DAYS[d]} ${hh}:${mm}</div>
-    <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px">Repetir em:</div>
-    <div style="display:flex;gap:5px;margin-bottom:9px">${scopeBtn(1,'Só aqui')}${scopeBtn(5,'Seg–Sex')}${scopeBtn(7,'Semana toda')}</div>
-    <div id="hor-acts-grid" class="hor-acts">
-      ${acts.map((a,i)=>`
-        <div style="position:relative;display:flex">
-          <button class="hor-act-btn" onclick="_horPickAct(${d},${m},${i})" style="flex:1;${existing&&existing.label===a.label?'border-color:var(--accent);background:rgba(62,181,200,.1)':''}">${a.emoji} ${a.label}</button>
-          ${HOR_ATIVAS_DEFAULT.some(x=>x.label===a.label)?`<button onclick="event.stopPropagation();_horToggleHide('${a.label}')" title="Ocultar" style="position:absolute;top:-4px;right:-4px;background:rgba(30,30,46,.9);border:1px solid var(--border);border-radius:50%;width:14px;height:14px;font-size:8px;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;padding:0">×</button>`:''}
-        </div>`).join('')}
-    </div>
-    <button id="hor-restore-btn" onclick="horariosConfig.hiddenActs=[];_horSave();_horRebuildPickerActs(${d},${m})" style="display:${hidden.length?'block':'none'};width:100%;padding:4px;background:none;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:10px;cursor:pointer;margin-bottom:8px;font-family:'Nunito',sans-serif">↩ Mostrar todas as atividades</button>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:700">Personalizado</div>
-    <div style="display:flex;gap:5px;margin-bottom:5px">
-      <input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center">
-      <input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1">
-      <button class="hor-act-btn" style="flex:none;padding:4px 8px" onclick="_horPickCustom(${d},${m})">✓</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <span style="font-size:10px;color:var(--muted)">Cor:</span>
-      <input type="color" id="hor-cust-color" value="${custColor.startsWith('#')?custColor:'#5eead4'}" style="width:28px;height:22px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer;padding:1px">
-      <span style="font-size:9px;color:var(--muted)">texto e fundo</span>
-    </div>
-    ${existing?`<button onclick="_horClearCell(${d},${m})" style="width:100%;padding:5px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:6px;color:#ef4444;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif">✕ Limpar</button>`:''}`;
+  picker.innerHTML=
+    '<button class="hor-picker-close" onclick="_horClosePicker()">×</button>'+
+    '<div class="hor-picker-title">'+DAYS[d]+' '+hh+':'+mm+'</div>'+
+    '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px">Aplicar em:</div>'+
+    '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">'+
+      DAYS.map(function(day,i){var sel=i===d;return '<button id="hor-d-'+i+'" onclick="_horToggleDay('+i+')" style="padding:4px 9px;border:none;border-radius:99px;background:'+(sel?'rgba(62,181,200,.28)':'rgba(255,255,255,.06)')+';color:'+(sel?'var(--accent)':'var(--muted)')+';font-weight:'+(sel?'700':'400')+';cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;transition:all .15s">'+day+'</button>';}).join('')+
+    '</div>'+
+    '<div id="hor-acts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">'+
+      acts.map(function(a,i){return _horActPillHTML(a,i,existing);}).join('')+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">Personalizado</div>'+
+    '<div style="display:flex;gap:5px;margin-bottom:5px">'+
+      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
+      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<input type="color" id="hor-cust-color" value="'+(custColor.startsWith('#')?custColor:'#5eead4')+'" style="width:28px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:0;background:none">'+
+      '<button onclick="_horPickCustom()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Aplicar</button>'+
+      '<button onclick="_horAddToPreset()" style="flex:1;padding:5px 0;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif">+ Salvar lista</button>'+
+    '</div>'+
+    (existing?'<button onclick="_horClearCell()" style="width:100%;padding:6px;background:rgba(239,68,68,.1);border:none;border-radius:7px;color:#f87171;font-size:12px;cursor:pointer;font-family:Nunito,sans-serif">✕ Limpar célula</button>':'');
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
-  if(existing&&!acts.some(a=>a.label===existing.label&&a.emoji===existing.emoji)){
-    const em=document.getElementById('hor-cust-emoji');const lb=document.getElementById('hor-cust-label');
+  if(existing&&!acts.some(function(a){return a.label===existing.label&&a.emoji===existing.emoji;})){
+    var em=document.getElementById('hor-cust-emoji');var lb=document.getElementById('hor-cust-label');
     if(em)em.value=existing.emoji||'';if(lb)lb.value=existing.label||'';
   }
 }
 function _horClosePicker(){
-  if(_horPickerActive){_horPickerActive.picker?.remove();_horPickerActive.backdrop?.remove();_horPickerActive=null;}
+  if(_horPickerActive){_horPickerActive.picker&&_horPickerActive.picker.remove();_horPickerActive.backdrop&&_horPickerActive.backdrop.remove();_horPickerActive=null;}
 }
-function _horApplyToScope(d,m,actData){
-  const days=_horScope===7?[0,1,2,3,4,5,6]:_horScope===5?[0,1,2,3,4]:[d];
-  days.forEach(di=>horariosGrid[`${di}_${m}`]={...actData});
+function _horApplyToSelDays(m,actData){
+  _horSelDays.forEach(function(di){horariosGrid[di+'_'+m]={emoji:actData.emoji,label:actData.label,bg:actData.bg,color:actData.color};});
 }
-function _horPickAct(d,m,idx){
-  const acts=_horGetActs();
-  const a=acts[idx];
-  _horApplyToScope(d,m,{emoji:a.emoji,label:a.label,bg:a.bg,color:a.color});
+function _horPickAct(idx){
+  var acts=_horGetActs();var a=acts[idx];
+  _horApplyToSelDays(_horPickerDM.m,{emoji:a.emoji,label:a.label,bg:a.bg,color:a.color});
   _horClosePicker();_horSave();_horBuildGrid();
 }
-function _horPickCustom(d,m){
-  const emoji=(document.getElementById('hor-cust-emoji')?.value.trim()||'📌');
-  const label=(document.getElementById('hor-cust-label')?.value.trim()||'Atividade');
-  const hex=document.getElementById('hor-cust-color')?.value||'#5eead4';
-  const bg=_horHexToRgba(hex,.2);
-  _horApplyToScope(d,m,{emoji,label,bg,color:hex});
+function _horPickCustom(){
+  var emoji=(document.getElementById('hor-cust-emoji')&&document.getElementById('hor-cust-emoji').value.trim())||'📌';
+  var label=(document.getElementById('hor-cust-label')&&document.getElementById('hor-cust-label').value.trim())||'Atividade';
+  var hex=(document.getElementById('hor-cust-color')&&document.getElementById('hor-cust-color').value)||'#5eead4';
+  _horApplyToSelDays(_horPickerDM.m,{emoji:emoji,label:label,bg:_horHexToRgba(hex,.2),color:hex});
   _horClosePicker();_horSave();_horBuildGrid();
 }
-function _horClearCell(d,m){
-  delete horariosGrid[`${d}_${m}`];
+function _horClearCell(){
+  var d=_horPickerDM.d,m=_horPickerDM.m;delete horariosGrid[d+'_'+m];
   _horClosePicker();_horSave();_horBuildGrid();
 }
+
 function addCompromisso(){
   _horClosePicker();
   const acts=_horGetActs();
@@ -3362,7 +3356,7 @@ function addCompromisso(){
       <div style="font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600">Tipo</div>
       <select id="hc-type" class="sim-spin" style="width:100%;box-sizing:border-box">${aOpts}</select>
     </div>
-    <button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif">Salvar compromisso</button>`;
+    <button onclick="_horSaveComp()" style="width:100%;padding:8px;background:rgba(62,181,200,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;font-weight:700;font-family:Nunito,sans-serif">Salvar compromisso</button>`;
   document.body.appendChild(backdrop);document.body.appendChild(picker);
   _horPickerActive={picker,backdrop};
 }
