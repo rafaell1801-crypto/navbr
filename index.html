@@ -1190,8 +1190,7 @@ async function saveDailySession(){
 function renderDailyChart(){
   const canvas=document.getElementById('daily-chart');if(!canvas||typeof Chart==='undefined')return;
   const today=new Date();today.setHours(0,0,0,0);
-  const minStart=new Date(today.getTime()-29*86400000);
-  const start=new Date(Math.min(getStartDate().getTime(),minStart.getTime()));
+  const start=getStartDate();
   const labels=[],data=[];
   const cur=new Date(start);
   const [td,tm,ty]=TODAY.split('/');
@@ -2317,8 +2316,7 @@ function renderTopicFreq(){
 function renderCalEdit(){
   const wrap=document.getElementById('cal-edit-wrap');if(!wrap)return;
   const today=new Date();today.setHours(0,0,0,0);
-  const minStart=new Date(today.getTime()-29*86400000);
-  const start=new Date(Math.min(getStartDate().getTime(),minStart.getTime()));
+  const start=getStartDate();
   const[td,tm,ty]=TODAY.split('/');
   const todayIso=`${ty}-${tm}-${td}`;
   const todayLocalSecs=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
@@ -2341,7 +2339,7 @@ function renderCalEdit(){
     const hMin=Math.round((h%1)*60);
     const hText=d.secs>0?(h>=1?Math.floor(h)+'h'+(hMin?String(hMin).padStart(2,'0'):''):'<1h'):'–';
     const col=d.secs===0?'#3a5a6a':d.secs>=7200?'#2dd4a0':d.secs>=3600?'#7dd3fc':'#f5a623';
-    html+=`<div class="cal-day-cell" data-iso="${d.iso}" data-secs="${d.secs}" onclick="openCalEdit(this)" title="${d.label} · ${hText}" style="background:${d.secs>0?col+'22':'var(--surface2)'};border:2px solid ${d.secs>0?col+'66':'var(--border)'};border-radius:7px;height:38px;cursor:pointer;transition:border-color .15s,background .15s"></div>`;
+    html+=`<div class="cal-day-cell" data-iso="${d.iso}" data-secs="${d.secs}" onclick="openCalEdit(this)" title="${d.label} · ${hText}" style="background:${d.secs>0?col+'22':'var(--surface2)'};border:2px solid ${d.secs>0?col+'66':'var(--border)'};border-radius:7px;height:38px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:9px;color:rgba(255,255,255,.4);line-height:1">${d.label.split('/')[0]}</span><span style="font-size:10px;font-weight:700;line-height:1;color:${d.secs>0?col:'rgba(255,255,255,.18)'}">${hText}</span></div>`;
   });
   html+='</div><div id="cal-edit-input-wrap" style="margin-top:8px;display:none"></div>';
   wrap.innerHTML=html;
