@@ -3333,7 +3333,8 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'+swatchesHTML+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text);font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<button onclick="_horPickCustom()" style="width:100%;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
@@ -3387,7 +3388,7 @@ function _horSectorsHTML(acts,currentAct){
           '<span style="font-size:11px;font-weight:700;flex:1;text-transform:uppercase;letter-spacing:.4px;color:rgba(255,255,255,.75)">'+sec.label+'</span>'+
           '<span style="font-size:10px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
         '</button>'+
-        (_horSectorEditMode?'<button onclick="_horRenameSector(\''+sec.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;font-size:11px;opacity:.7;transition:opacity .12s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7" title="Renomear">✏</button>':'')+
+        (_horSectorEditMode?'<button onclick="_horRenameSector(\''+sec.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;opacity:.7;transition:opacity .12s;display:flex;align-items:center" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.7\'" title="Renomear">'+editIconHTML(12)+'</button>':'')+
       '</div>';
     if(open&&secActs.length){
       html+='<div style="margin-top:3px;padding:0 2px">';
@@ -3458,10 +3459,19 @@ function _horRenameSector(id){
   const allSecs=_horAllSecs();
   const sec=allSecs.find(function(s){return s.id===id;});
   if(!sec)return;
-  const v=prompt('Renomear setor "'+sec.label+'":',sec.label);
+  const curIcon=sec.icon||'';
+  const curName=sec.label||'';
+  const v=prompt('Emoji + nome do setor (ex: 🙏 Espírito):',curIcon+' '+curName);
   if(!v||!v.trim())return;
+  const parts=v.trim().match(/^(\S+)\s+(.+)$/);
   if(!horariosConfig.sectorNames)horariosConfig.sectorNames={};
-  horariosConfig.sectorNames[id]=v.trim();
+  if(!horariosConfig.sectorIcons)horariosConfig.sectorIcons={};
+  if(parts){
+    horariosConfig.sectorIcons[id]=parts[1];
+    horariosConfig.sectorNames[id]=parts[2];
+  } else {
+    horariosConfig.sectorNames[id]=v.trim();
+  }
   _horSave();
   _horRebuildSectors();
 }
@@ -3646,21 +3656,27 @@ function _horBuildGrid(){
         } else {m+=slot;}
       }
     }
+    const nowMin=(new Date()).getHours()*60+(new Date()).getMinutes();
     blocks.sort(function(a,b){return a.m-b.m;});
     let rows='';
     blocks.forEach(function(b){
       const hh=String(Math.floor(b.m/60)).padStart(2,'0');
       const mm=String(b.m%60).padStart(2,'0');
+      const blockEndM=b.endM+slot;
+      const isNow=nowMin>=b.m&&nowMin<blockEndM;
       const badge=b.isComp
         ?'<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border-radius:99px;padding:1px 4px;font-weight:600;white-space:nowrap">hoje</span>'
         :b.isExc
         ?'<span style="font-size:9px;background:rgba(165,180,252,.15);color:#a5b4fc;border-radius:99px;padding:1px 4px;font-weight:600;white-space:nowrap">exc</span>'
         :'';
       const borderCol=b.cell.borderColor||b.cell.color;
+      const activeBg=isNow?'rgba(255,255,255,.04)':b.cell.bg;
+      const activeBorder=isNow?'rgba(255,255,255,.18)':borderCol;
+      const activeOpacity=isNow?'opacity:.45;':'';
       rows+='<div onclick="_horEditCell(0,'+b.m+',this)" '+
         'style="display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:8px;cursor:pointer;'+
-        'background:'+b.cell.bg+';border-left:3px solid '+borderCol+';margin-bottom:4px;transition:filter .12s" '+
-        'onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'\'">'+
+        'background:'+activeBg+';border-left:3px solid '+activeBorder+';margin-bottom:4px;transition:filter .12s;'+activeOpacity+'" '+
+        'onmouseover="this.style.filter=\'brightness(1.4)\';this.style.opacity=\'1\'" onmouseout="this.style.filter=\'\';this.style.opacity=\''+(isNow?'.45':'1')+'\'">'+
         '<span style="font-size:9px;color:rgba(255,255,255,.45);min-width:28px;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif;flex-shrink:0">'+hh+':'+mm+'</span>'+
         '<span style="font-size:13px;flex-shrink:0">'+b.cell.emoji+'</span>'+
         '<span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.2px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+b.cell.label+'</span>'+
@@ -3767,23 +3783,17 @@ function _horSetApplyMode(mode){
 function _horRenameAct(idx,newLabel){
   newLabel=(newLabel||'').trim();if(!newLabel)return;
   const customActs=[...(horariosConfig.customActs||[])];
-  if(idx<HOR_ATIVAS_DEFAULT.length){
-    // built-in — can't rename in place, skip (UI shows name as-is)
-    return;
-  }
+  if(idx<HOR_ATIVAS_DEFAULT.length)return;
   const ci=idx-HOR_ATIVAS_DEFAULT.length;
   if(customActs[ci])customActs[ci]={...customActs[ci],label:newLabel};
   horariosConfig={...horariosConfig,customActs};_horSave();
 }
-function _horRenameAct(idx,newLabel){
-  newLabel=(newLabel||'').trim();if(!newLabel)return;
+function _horRenameActEmoji(idx,newEmoji){
+  newEmoji=(newEmoji||'').trim();if(!newEmoji)return;
   const customActs=[...(horariosConfig.customActs||[])];
-  if(idx<HOR_ATIVAS_DEFAULT.length){
-    // built-in — can't rename in place, skip (UI shows name as-is)
-    return;
-  }
+  if(idx<HOR_ATIVAS_DEFAULT.length)return;
   const ci=idx-HOR_ATIVAS_DEFAULT.length;
-  if(customActs[ci])customActs[ci]={...customActs[ci],label:newLabel};
+  if(customActs[ci])customActs[ci]={...customActs[ci],emoji:newEmoji};
   horariosConfig={...horariosConfig,customActs};_horSave();
 }
 function _horRemoveAct(label){
@@ -3792,46 +3802,53 @@ function _horRemoveAct(label){
   if(ci>=0){customActs.splice(ci,1);horariosConfig={...horariosConfig,customActs};}
   else{const h=[...(horariosConfig.hiddenActs||[])];if(!h.includes(label))h.push(label);horariosConfig={...horariosConfig,hiddenActs:h};}
   _horSave();
-  const picker=_horPickerActive?.picker;if(!picker)return;
-  const grid=picker.querySelector('#hor-acts-grid');if(!grid)return;
-  const existing=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];
-  grid.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,existing)).join('');
+  _horRebuildSectors();
 }
 function _horAddToPreset(){
   const emoji=(document.getElementById('hor-cust-emoji')?.value.trim()||'📌');
   const label=(document.getElementById('hor-cust-label')?.value.trim());
   if(!label)return;
   const hex=_horCustColorSel;
+  const sectorSel=document.getElementById('hor-cust-sector')?.value||'estudo';
   const customActs=[...(horariosConfig.customActs||[])];
   if(!customActs.some(a=>a.label===label)){
     customActs.push({emoji,label,bg:_horHexToRgba(hex,.2),color:hex});
-    horariosConfig={...horariosConfig,customActs};_horSave();
-    const picker=_horPickerActive?.picker;
-    if(picker){const g=picker.querySelector('#hor-acts-grid');if(g){const ex=horariosGrid[_horPickerDM.d+'_'+_horPickerDM.m];g.innerHTML=_horGetActs().map((a,i)=>_horActPillHTML(a,i,ex)).join('');}}
+    horariosConfig={...horariosConfig,customActs};
+    _horSetActSector(label,sectorSel);
+    _horSave();
+    _horRebuildSectors();
+    const lbl=document.getElementById('hor-cust-label');if(lbl)lbl.value='';
   }
 }
 function _horActPillHTML(a,i,existing){
   const sel=existing&&a.label===existing.label;
-  const bg=sel?'rgba(62,181,200,.18)':'rgba(255,255,255,.06)';
+  const bg=sel?'rgba(62,181,200,.22)':'rgba(255,255,255,.06)';
   const safeLabel=a.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  const safeEmoji=a.emoji.replace(/'/g,"\\'");
   let s='<div style="position:relative">';
-  if(_horEditModeActs){
-    // edit mode: show emoji, editable name, color dot, delete x
-    s+='<div style="display:flex;align-items:center;gap:4px;background:'+bg+';border-radius:8px;padding:5px 6px">'+
-      '<span style="font-size:14px;flex-shrink:0">'+a.emoji+'</span>'+
+  if(_horSectorEditMode){
+    s+='<div style="display:flex;align-items:center;gap:3px;background:'+bg+';border-radius:7px;padding:3px 5px;border:'+(sel?'1px solid rgba(62,181,200,.4)':'1px solid transparent')+'">'+
+      '<input value="'+a.emoji+'" onblur="_horRenameActEmoji('+i+',this.value)" maxlength="4" '+
+        'style="width:22px;background:transparent;border:none;color:var(--text);font-family:Nunito,sans-serif;font-size:13px;outline:none;text-align:center;padding:0;flex-shrink:0">'+
       '<input value="'+safeLabel+'" onblur="_horRenameAct('+i+',this.value)" '+
-        'style="flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:Nunito,sans-serif;font-size:11px;outline:none;font-weight:500">'+
+        'style="flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:Nunito,sans-serif;font-size:10px;outline:none;font-weight:500">'+
       '<button onclick="event.stopPropagation();_horRemoveAct(\''+safeLabel+'\')" '+
-        'style="width:15px;height:15px;border:none;border-radius:50%;background:rgba(239,68,68,.25);color:#f87171;cursor:pointer;font-size:10px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>'+
+        'style="width:14px;height:14px;border:none;border-radius:50%;background:rgba(239,68,68,.3);color:#f87171;cursor:pointer;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>'+
     '</div>';
   } else {
-    s+='<button onclick="_horPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:6px;padding:6px 8px;border:none;border-radius:8px;background:'+bg+';color:var(--text);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;text-align:left">'+
-      '<span style="font-size:15px;flex-shrink:0">'+a.emoji+'</span>'+
-      '<span style="'+(sel?'color:var(--accent);font-weight:700':'')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+a.label+'</span>'+
+    s+='<button onclick="_horConfirmPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:5px;padding:4px 7px;border:none;border-radius:7px;background:'+bg+';color:var(--text);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;text-align:left;'+(sel?'border:1px solid rgba(62,181,200,.35)':'')+'">'+
+      '<span style="font-size:13px;flex-shrink:0">'+a.emoji+'</span>'+
+      '<span style="'+(sel?'color:var(--accent);font-weight:700':'font-weight:500')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.2px">'+a.label+'</span>'+
     '</button>';
   }
   return s+'</div>';
+}
+function _horConfirmPickAct(i){
+  const acts=_horGetActs();const a=acts[i];if(!a)return;
+  const existing=_horPickerDM?horariosGrid['0_'+_horPickerDM.m]:null;
+  if(existing&&existing.label!==a.label){
+    if(!confirm('Trocar "'+existing.label+'" por "'+a.label+'"?'))return;
+  }
+  _horPickAct(i);
 }
 function _horEditCell(d,m,el){
   _horClosePicker();_horEditModeActs=false;
@@ -3885,7 +3902,8 @@ function _horEditCell(d,m,el){
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'+swatchesHTML+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text);font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<div style="display:flex;gap:6px">'+
       '<button onclick="_horPickCustom()" style="flex:1;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>'+
