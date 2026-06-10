@@ -3329,7 +3329,6 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts)+
-    '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px">Personalizado</div>'+
     '<div style="display:flex;gap:5px;margin-bottom:5px">'+
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
@@ -3362,26 +3361,34 @@ function _horSetActSector(label,sectorId){
   _horSave();
 }
 
+function _horAllSecs(){
+  const names=horariosConfig.sectorNames||{};
+  return [
+    ...HOR_SECTOR_DEFS.map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:s.icon};}),
+    {id:'__extra__',label:names['__extra__']||'Personalizadas',icon:'⭐'}
+  ];
+}
 function _horSectorsHTML(acts,currentAct){
   const secMap={};
-  HOR_SECTOR_DEFS.forEach(function(s){secMap[s.id]=[];});
-  secMap['__extra__']=[];
+  _horAllSecs().forEach(function(s){secMap[s.id]=[];});
   acts.forEach(function(a){
     const sid=_horGetActSector(a.label);
     if(secMap[sid])secMap[sid].push(a);else secMap['__extra__'].push(a);
   });
-  const allSecs=[...HOR_SECTOR_DEFS,{id:'__extra__',label:'Personalizadas',icon:'⭐'}];
   let html='<div id="hor-sectors-wrap" style="margin-bottom:10px">';
-  allSecs.forEach(function(sec){
+  _horAllSecs().forEach(function(sec){
     const secActs=secMap[sec.id]||[];
     if(!secActs.length&&!_horSectorEditMode)return;
     const open=_horOpenSectors.has(sec.id);
     html+='<div style="margin-bottom:3px">'+
-      '<button onclick="_horToggleSector(\''+sec.id+'\')" style="width:100%;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:background .12s" onmouseover="this.style.background=\'rgba(255,255,255,.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,.05)\'">'+
-        '<span style="font-size:13px">'+sec.icon+'</span>'+
-        '<span style="font-size:11px;font-weight:700;flex:1;text-transform:uppercase;letter-spacing:.4px;color:rgba(255,255,255,.75)">'+sec.label+'</span>'+
-        '<span style="font-size:10px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
-      '</button>';
+      '<div style="display:flex;align-items:center;gap:4px">'+
+        '<button onclick="_horToggleSector(\''+sec.id+'\')" style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:background .12s" onmouseover="this.style.background=\'rgba(255,255,255,.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,.05)\'">'+
+          '<span style="font-size:13px">'+sec.icon+'</span>'+
+          '<span style="font-size:11px;font-weight:700;flex:1;text-transform:uppercase;letter-spacing:.4px;color:rgba(255,255,255,.75)">'+sec.label+'</span>'+
+          '<span style="font-size:10px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
+        '</button>'+
+        (_horSectorEditMode?'<button onclick="_horRenameSector(\''+sec.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;font-size:11px;opacity:.7;transition:opacity .12s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7" title="Renomear">✏</button>':'')+
+      '</div>';
     if(open&&secActs.length){
       html+='<div style="margin-top:3px;padding:0 2px">';
       for(var i=0;i<secActs.length;i+=2){
@@ -3389,11 +3396,10 @@ function _horSectorsHTML(acts,currentAct){
         for(var j=i;j<Math.min(i+2,secActs.length);j++){
           const a=secActs[j];const idx=acts.indexOf(a);
           if(_horSectorEditMode){
+            const safeLabel=a.label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             html+='<div style="position:relative">';
             html+=_horActPillHTML(a,idx,currentAct);
-            html+='<button onclick="event.stopPropagation();_horMoveSector(\''+a.label.replace(/'/g,"\\'")+'\')" '+
-              'title="Mover para setor" '+
-              'style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.5);border:none;border-radius:4px;color:var(--muted);font-size:9px;cursor:pointer;padding:1px 3px;line-height:1.2;font-family:Nunito,sans-serif">⇄</button>';
+            html+='<button onclick="event.stopPropagation();_horMoveSector(\''+safeLabel+'\')" title="Mover setor" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer;padding:1px 4px;line-height:1.3;font-family:Nunito,sans-serif">⇄</button>';
             html+='</div>';
           } else {
             html+=_horActPillHTML(a,idx,currentAct);
@@ -3403,7 +3409,7 @@ function _horSectorsHTML(acts,currentAct){
       }
       html+='</div>';
     } else if(open&&_horSectorEditMode){
-      html+='<div style="text-align:center;padding:4px;font-size:10px;color:var(--muted);font-style:italic">vazio</div>';
+      html+='<div style="text-align:center;padding:4px;font-size:10px;color:var(--muted);font-style:italic">vazio — mova atividades aqui</div>';
     }
     html+='</div>';
   });
@@ -3422,24 +3428,41 @@ function _horRebuildSectors(){
   wrap.replaceWith(tmp.firstChild);
 }
 function _horMoveSector(label){
-  const allSecs=[...HOR_SECTOR_DEFS,{id:'__extra__',label:'Personalizadas',icon:'⭐'}];
+  document.getElementById('_hor_move_pop')?.remove();
+  const allSecs=_horAllSecs();
   const cur=_horGetActSector(label);
   const pop=document.createElement('div');
-  pop.style.cssText='position:fixed;z-index:10000;background:#0d1f2e;border:1px solid #1e3f5c;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.7);padding:4px;min-width:140px;top:50%;left:50%;transform:translate(-50%,-50%)';
-  pop.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 8px 4px;font-weight:700">Mover para setor</div>'+
+  pop.id='_hor_move_pop';
+  pop.style.cssText='position:fixed;z-index:10001;background:#0d1f2e;border:1px solid #1e3f5c;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.8);padding:4px;min-width:150px;top:50%;left:50%;transform:translate(-50%,-50%)';
+  pop.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 8px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:2px">Mover para setor</div>'+
     allSecs.map(function(s){
       const sel=s.id===cur;
-      return '<button onclick="_horMoveSectorTo(\''+label.replace(/'/g,"\\'")+'\',\''+s.id+'\');this.closest(\'div[style*=\\\"z-index:10000\\\"]\').remove()" '+
+      const safeLabel=label.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return '<button onclick="_horMoveSectorTo(\''+safeLabel+'\',\''+s.id+'\')" '+
         'style="display:block;width:100%;text-align:left;padding:6px 12px;background:'+(sel?'rgba(62,181,200,.15)':'transparent')+';border:none;color:'+(sel?'var(--accent)':'var(--text)')+';font-size:12px;cursor:pointer;border-radius:6px;font-family:Nunito,sans-serif;font-weight:'+(sel?'700':'400')+'">'+
         s.icon+' '+s.label+'</button>';
     }).join('');
   document.body.appendChild(pop);
   setTimeout(function(){
-    document.addEventListener('click',function _c(){pop.remove();document.removeEventListener('click',_c);},{once:true});
-  },10);
+    document.addEventListener('click',function _c(e){
+      if(!pop.contains(e.target)){pop.remove();document.removeEventListener('click',_c);}
+    });
+  },30);
 }
 function _horMoveSectorTo(label,sectorId){
+  document.getElementById('_hor_move_pop')?.remove();
   _horSetActSector(label,sectorId);
+  _horRebuildSectors();
+}
+function _horRenameSector(id){
+  const allSecs=_horAllSecs();
+  const sec=allSecs.find(function(s){return s.id===id;});
+  if(!sec)return;
+  const v=prompt('Renomear setor "'+sec.label+'":',sec.label);
+  if(!v||!v.trim())return;
+  if(!horariosConfig.sectorNames)horariosConfig.sectorNames={};
+  horariosConfig.sectorNames[id]=v.trim();
+  _horSave();
   _horRebuildSectors();
 }
 
@@ -3858,7 +3881,6 @@ function _horEditCell(d,m,el){
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts,existing)+
-    '<div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:5px">Personalizado</div>'+
     '<div style="display:flex;gap:5px;margin-bottom:5px">'+
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
