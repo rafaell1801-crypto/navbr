@@ -3362,7 +3362,7 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<button onclick="_horPickCustom()" style="width:100%;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
@@ -3861,19 +3861,23 @@ function _horSetApplyMode(mode){
 }
 function _horRenameAct(idx,newLabel){
   newLabel=(newLabel||'').trim();if(!newLabel)return;
+  const acts=_horGetActs();
+  const act=acts[idx];if(!act)return;
   const customActs=[...(horariosConfig.customActs||[])];
-  if(idx<HOR_ATIVAS_DEFAULT.length)return;
-  const ci=idx-HOR_ATIVAS_DEFAULT.length;
-  if(customActs[ci])customActs[ci]={...customActs[ci],label:newLabel};
-  horariosConfig={...horariosConfig,customActs};_horSave();
+  const ci=customActs.findIndex(function(a){return a.label===act.label;});
+  if(ci<0)return;
+  customActs[ci]={...customActs[ci],label:newLabel};
+  horariosConfig={...horariosConfig,customActs};_horSave();_horRebuildSectors();
 }
 function _horRenameActEmoji(idx,newEmoji){
   newEmoji=(newEmoji||'').trim();if(!newEmoji)return;
+  const acts=_horGetActs();
+  const act=acts[idx];if(!act)return;
   const customActs=[...(horariosConfig.customActs||[])];
-  if(idx<HOR_ATIVAS_DEFAULT.length)return;
-  const ci=idx-HOR_ATIVAS_DEFAULT.length;
-  if(customActs[ci])customActs[ci]={...customActs[ci],emoji:newEmoji};
-  horariosConfig={...horariosConfig,customActs};_horSave();
+  const ci=customActs.findIndex(function(a){return a.label===act.label;});
+  if(ci<0)return;
+  customActs[ci]={...customActs[ci],emoji:newEmoji};
+  horariosConfig={...horariosConfig,customActs};_horSave();_horRebuildSectors();
 }
 function _horRemoveAct(label){
   const customActs=[...(horariosConfig.customActs||[])];
@@ -3985,7 +3989,7 @@ function _horEditCell(d,m,el){
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<div style="display:flex;gap:6px">'+
       '<button onclick="_horPickCustom()" style="flex:1;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>'+
