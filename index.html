@@ -305,7 +305,7 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 .hor-cell:hover .hor-edit-btn{opacity:1}
 .hor-emoji{font-size:13px;line-height:1}
 .hor-label{font-size:9px;font-weight:500;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
-.hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.55);min-width:210px;max-width:252px}
+.hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.55);width:252px;min-width:210px;max-width:252px;overflow-y:auto;max-height:min(540px,90vh)}
 .hor-picker-title{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;padding-right:18px}
 .hor-acts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px}
 .hor-act-btn{display:flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer;font-size:11px;font-family:'Nunito','Segoe UI',sans-serif;transition:border-color .15s;white-space:nowrap}
@@ -318,8 +318,8 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 .hor-comp-info{flex:1;min-width:0}
 .hor-comp-label{font-size:13px;font-weight:700;color:var(--text)}
 .hor-comp-sub{font-size:11px;color:var(--muted);margin-top:1px}
-.hor-add-btn{display:flex;align-items:center;gap:5px;background:rgba(62,181,200,.1);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:'Nunito','Segoe UI',sans-serif;font-weight:700;transition:background .15s}
-.hor-add-btn:hover{background:rgba(62,181,200,.18)}
+.hor-add-btn{display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--muted);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:20px;font-family:'Nunito','Segoe UI',sans-serif;font-weight:400;transition:color .15s;line-height:1}
+.hor-add-btn:hover{color:var(--accent)}
 
 .disc-badge-link{text-decoration:none;cursor:pointer;transition:opacity .15s}
 .disc-badge-link:hover{opacity:.75;text-decoration:underline}
@@ -499,6 +499,10 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
     </div>
   </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
+  <div class="stats-card">
+    <h3>📊 Frequência por assunto</h3>
+    <div id="topic-freq-content"></div>
+  </div>
   <div class="stats-card">
     <h3>🎯 Aproveitamento em questões</h3>
     <div id="q-stats-content"></div>
@@ -2241,6 +2245,7 @@ function renderStats(){
   renderDailyChart();
   renderCalEdit();
   renderQuestoesStatsCard();
+  renderTopicFreq();
   document.getElementById('disc-list').innerHTML=discNames.map(disc=>{
     const isPort=disc==='Língua Portuguesa';
     const di=getEffectiveAgenda().filter(i=>i.disc===disc&&(isPort?i.port:!i.port));
@@ -2260,6 +2265,37 @@ function renderStats(){
         <span style="font-size:10px;color:var(--muted);white-space:nowrap;min-width:24px;text-align:right">${p}%</span>
       </div>
     </div>`;
+  }).join('');
+}
+
+function renderTopicFreq(){
+  const el=document.getElementById('topic-freq-content');if(!el)return;
+  const agenda=getEffectiveAgenda().filter(i=>!i.port);
+  // Count occurrences per topic (assunto)
+  const freq={};
+  agenda.forEach(function(i){
+    const key=i.assunto||(i.topic)||i.label||'';
+    if(!key)return;
+    if(!freq[key])freq[key]={label:key,disc:i.disc||'',total:0,done:0};
+    freq[key].total++;
+    if(isDone(i.id))freq[key].done++;
+  });
+  const sorted=Object.values(freq).sort(function(a,b){return b.total-a.total;});
+  if(!sorted.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;font-style:italic">Nenhum assunto cadastrado.</div>';return;}
+  const maxVal=sorted[0].total;
+  el.innerHTML=sorted.map(function(t){
+    const c=CORES[t.disc]||'#888';
+    const pct=Math.round(t.total/maxVal*100);
+    const dpct=t.total>0?Math.round(t.done/t.total*100):0;
+    return'<div style="margin-bottom:9px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+        '<span style="font-size:11px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%">'+t.label+'</span>'+
+        '<span style="font-size:10px;color:var(--muted);white-space:nowrap">'+t.done+'/'+t.total+' ('+dpct+'%)</span>'+
+      '</div>'+
+      '<div style="background:var(--surface);border-radius:99px;height:6px;width:100%;overflow:hidden">'+
+        '<div style="height:100%;border-radius:99px;background:'+c+';width:'+pct+'%;transition:width .4s"></div>'+
+      '</div>'+
+    '</div>';
   }).join('');
 }
 
@@ -3271,7 +3307,7 @@ function _horBuildExceptions(){
 }
 function _horDeleteException(id){
   horariosExceptions=horariosExceptions.filter(function(e){return e.id!=id;});
-  _horSave();_horBuildExceptions();_horBuildDaySummary();
+  _horSave();_horBuildExceptions();_horBuildDaySummary();_horBuildGrid();
 }
 function _horAddExcEntry(prefillM){
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
@@ -3348,65 +3384,81 @@ function _horBuildGrid(){
   const wrap=document.getElementById('hor-grid-wrap');if(!wrap)return;
   const {start,end,slot}=horariosConfig;
   const todayISO=new Date().toISOString().slice(0,10);
+  const todayDOW=(new Date().getDay()+6)%7; // Mon=0..Sun=6
   const todayComps=horariosComps.filter(function(c){return c.date===todayISO;});
+  const todayExcs=horariosExceptions.filter(function(e){return e.dayIdx===todayDOW;});
+  // Build override map: exceptions and compromissos override template slots
+  const overrideMap={};
+  todayExcs.forEach(function(e){
+    const eMin=Math.floor(e.m/slot)*slot;
+    const durSlots=Math.max(1,Math.ceil((e.duration||1)*60/slot));
+    const cell={emoji:e.emoji,label:e.label,bg:_horHexToRgba(e.color||'#fbbf24',.28),color:e.color||'#fbbf24'};
+    for(let s=0;s<durSlots;s++)overrideMap[eMin+s*slot]={cell,isExc:true};
+  });
+  todayComps.forEach(function(c){
+    const parts=c.hora.split(':');
+    const cMin=parseInt(parts[0])*60+(parseInt(parts[1])||0);
+    const snapped=Math.floor(cMin/slot)*slot;
+    const durSlots=Math.max(1,Math.ceil((c.duration||1)*60/slot));
+    const cell={emoji:c.emoji||'📅',label:c.label||'Compromisso',bg:_horHexToRgba(c.color||'#fbbf24',.28),color:c.color||'#fbbf24'};
+    for(let s=0;s<durSlots;s++)overrideMap[snapped+s*slot]={cell,isComp:true,compId:c.id};
+  });
   const periods=[
     {icon:'☀️',label:'Manhã',from:start,to:12},
     {icon:'🌤',label:'Tarde',from:12,to:18},
     {icon:'🌙',label:'Noite',from:18,to:end}
   ];
-  let out='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start">';
+  let out='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:start">';
   periods.forEach(function(p){
     const fromM=p.from*60,toM=Math.min(p.to*60,end*60);
     if(fromM>=toM){out+='<div></div>';return;}
-    // collect template blocks
     const blocks=[];
     let m=fromM;
     while(m<toM){
-      const cell=horariosGrid['0_'+m];
-      if(cell){
+      if(overrideMap[m]){
+        const ov=overrideMap[m];
         let endM=m;
-        while(endM+slot<toM){const nxt=horariosGrid['0_'+(endM+slot)];if(nxt&&nxt.label===cell.label)endM+=slot;else break;}
-        blocks.push({m,endM,cell,isComp:false});m=endM+slot;
-      } else {m+=slot;}
-    }
-    // add today's compromissos that fall in this period
-    todayComps.forEach(function(c){
-      const parts=c.hora.split(':');
-      const cMin=parseInt(parts[0])*60+(parseInt(parts[1])||0);
-      if(cMin>=fromM&&cMin<toM){
-        const cCell={emoji:c.emoji||'📅',label:c.label||'Compromisso',bg:_horHexToRgba(c.color||'#fbbf24',.28),color:c.color||'#fbbf24'};
-        const durSlots=Math.max(1,Math.ceil((c.duration||1)*60/slot));
-        const endM=cMin+(durSlots-1)*slot;
-        blocks.push({m:cMin,endM,cell:cCell,isComp:true,compId:c.id});
+        while(endM+slot<toM&&overrideMap[endM+slot]&&overrideMap[endM+slot].cell.label===ov.cell.label)endM+=slot;
+        blocks.push({m,endM,...ov});m=endM+slot;
+      } else {
+        const cell=horariosGrid['0_'+m];
+        if(cell){
+          let endM=m;
+          while(endM+slot<toM){const nxt=horariosGrid['0_'+(endM+slot)];if(nxt&&nxt.label===cell.label&&!overrideMap[endM+slot])endM+=slot;else break;}
+          blocks.push({m,endM,cell,isComp:false});m=endM+slot;
+        } else {m+=slot;}
       }
-    });
-    // sort by start time
+    }
     blocks.sort(function(a,b){return a.m-b.m;});
     let rows='';
     blocks.forEach(function(b){
       const hh=String(Math.floor(b.m/60)).padStart(2,'0');
       const mm=String(b.m%60).padStart(2,'0');
-      const lb=b.isComp?'border-left:3px solid '+b.cell.color+';':'border-left:3px solid '+b.cell.color+';';
+      const badge=b.isComp
+        ?'<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border-radius:99px;padding:1px 4px;font-weight:600;white-space:nowrap">hoje</span>'
+        :b.isExc
+        ?'<span style="font-size:9px;background:rgba(165,180,252,.15);color:#a5b4fc;border-radius:99px;padding:1px 4px;font-weight:600;white-space:nowrap">exc</span>'
+        :'';
       rows+='<div onclick="_horEditCell(0,'+b.m+',this)" '+
-        'style="display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:9px;cursor:pointer;'+
-        'background:'+b.cell.bg+';'+lb+'margin-bottom:5px;transition:filter .12s" '+
+        'style="display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:8px;cursor:pointer;'+
+        'background:'+b.cell.bg+';border-left:3px solid '+b.cell.color+';margin-bottom:4px;transition:filter .12s" '+
         'onmouseover="this.style.filter=\'brightness(1.2)\'" onmouseout="this.style.filter=\'\'">'+
-        '<span style="font-size:9px;color:rgba(255,255,255,.45);min-width:32px;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif;flex-shrink:0">'+hh+':'+mm+'</span>'+
-        '<span style="font-size:14px;flex-shrink:0">'+b.cell.emoji+'</span>'+
-        '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.25px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+b.cell.label+'</span>'+
-        (b.isComp?'<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border-radius:99px;padding:1px 5px;font-weight:600;white-space:nowrap">hoje</span>':'')+
+        '<span style="font-size:9px;color:rgba(255,255,255,.45);min-width:28px;font-variant-numeric:tabular-nums;font-family:Nunito,sans-serif;flex-shrink:0">'+hh+':'+mm+'</span>'+
+        '<span style="font-size:13px;flex-shrink:0">'+b.cell.emoji+'</span>'+
+        '<span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.2px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+b.cell.label+'</span>'+
+        badge+
       '</div>';
     });
     out+=
-      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
-        '<span style="font-size:12px;font-weight:700;color:var(--text)">'+p.icon+' '+p.label+'</span>'+
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
+        '<span style="font-size:11px;font-weight:700;color:var(--text)">'+p.icon+' '+p.label+'</span>'+
         '<button onclick="_horAddInPeriod('+fromM+','+toM+',this)" '+
-          'style="background:rgba(255,255,255,.06);border:none;border-radius:99px;color:var(--muted);'+
-          'font-family:Nunito,sans-serif;font-size:13px;font-weight:700;width:22px;height:22px;'+
-          'display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0">+</button>'+
+          'style="background:transparent;border:none;color:var(--muted);font-family:Nunito,sans-serif;font-size:18px;font-weight:400;'+
+          'width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;line-height:1;transition:color .15s" '+
+          'onmouseover="this.style.color=\'var(--accent)\'" onmouseout="this.style.color=\'var(--muted)\'">+</button>'+
       '</div>'+
-      (rows||'<div style="color:var(--muted);font-size:10px;font-style:italic;padding:4px 0 8px">livre</div>')+
+      (rows||'<div style="color:var(--muted);font-size:10px;font-style:italic;padding:2px 0 6px">livre</div>')+
     '</div>';
   });
   out+='</div>';
@@ -4162,10 +4214,10 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
   <!-- Barra de progresso de simulados -->
   <div class="stats-bar" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;border-radius:12px;border:1px solid var(--border);border-bottom:1px solid var(--border)">
-    <div class="stat" style="border-radius:0">
-      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+    <div class="stat" style="border-radius:0;position:relative">
+      <button onclick="editSimMeta()" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;padding:0;line-height:1;opacity:.6;transition:opacity .15s" title="Editar meta" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'"><img src="editar.png" style="width:13px;height:13px;display:block"></button>
+      <div style="display:flex;align-items:center;justify-content:center">
         <span class="stat-val" id="sim-meta-val">–</span>
-        <button onclick="editSimMeta()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1" title="Editar meta">✎</button>
       </div>
       <div class="stat-lbl">Meta</div>
     </div>
