@@ -1531,6 +1531,7 @@ function applyLateIcon(){
   const el=document.getElementById('late-icon');if(el)el.src=builtinIcons['atrasados']||'atrasados.png';
   const cg=document.getElementById('config-icon');if(cg)cg.src=builtinIcons['config']||'config.png';
   const ct=document.getElementById('cfg-title-icon');if(ct)ct.src=builtinIcons['config']||'config.png';
+  const ca=document.getElementById('hor-comp-add-icon');if(ca)ca.src=builtinIcons['editar']||'editar.png';
 }
 function renderTimerIconsConfig(){
   const wrap=document.getElementById('cfg-timer-icons');if(!wrap)return;
@@ -3310,7 +3311,7 @@ function _horBuildExceptions(){
   const sorted=[...horariosExceptions].sort(function(a,b){return a.dayIdx-b.dayIdx||a.m-b.m;});
   let h2='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
     '<span style="font-size:12px;font-weight:700;color:var(--text)">Exceções</span>'+
-    '<button onclick="_horAddExcEntry()" style="background:rgba(62,181,200,.12);border:1px solid rgba(62,181,200,.3);border-radius:8px;color:var(--accent);font-family:Nunito,sans-serif;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer">+ Adicionar</button>'+
+    '<button onclick="_horAddExcEntry()" title="Adicionar exceção" style="background:transparent;border:none;cursor:pointer;padding:3px;opacity:.6;transition:opacity .15s;display:flex;align-items:center" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.6\'">'+editIconHTML()+'</button>'+
   '</div>';
   if(!sorted.length){
     h2+='<div style="color:var(--muted);font-size:11px;font-style:italic;padding:4px 0">Nenhuma exceção cadastrada.</div>';
@@ -4234,7 +4235,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
   <div style="margin-top:22px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <span style="font-size:13px;font-weight:700;color:var(--text)">Compromissos da semana</span>
-      <button class="hor-add-btn" onclick="addCompromisso()">＋ Adicionar</button>
+      <button onclick="addCompromisso()" title="Adicionar compromisso" style="background:transparent;border:none;cursor:pointer;padding:3px;opacity:.6;transition:opacity .15s;display:flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'"><img id="hor-comp-add-icon" src="editar.png" alt="+" style="width:16px;height:16px;object-fit:contain;display:block"></button>
     </div>
     <div id="hor-comp-list"></div>
   </div>
