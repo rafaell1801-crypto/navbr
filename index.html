@@ -305,7 +305,7 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 .hor-cell:hover .hor-edit-btn{opacity:1}
 .hor-emoji{font-size:13px;line-height:1}
 .hor-label{font-size:9px;font-weight:500;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
-.hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;box-shadow:0 8px 40px rgba(0,0,0,.7);width:340px;min-width:300px;max-width:340px;overflow-y:auto;max-height:min(600px,90vh)}
+.hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;box-shadow:0 8px 40px rgba(0,0,0,.7);width:420px;min-width:360px;max-width:420px;overflow-y:auto;max-height:min(600px,90vh)}
 .hor-picker-title{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;padding-right:18px}
 .hor-acts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px}
 .hor-act-btn{display:flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer;font-size:11px;font-family:'Nunito','Segoe UI',sans-serif;transition:border-color .15s;white-space:nowrap}
@@ -395,7 +395,7 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
   <button class="tab" onclick="showTab('horarios')">Horários</button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
-  <button class="tab" onclick="showTab('content')">Conteúdo</button>
+  <button class="tab" onclick="showTab('content')">Tópicos</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
 
@@ -2140,7 +2140,7 @@ function buildDayHTML(dateStr,days){
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
       <div style="flex:1;min-width:0">
         ${discNameEl}
-        <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px">${item.topico}</div>
+        <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px;display:flex;align-items:center;gap:5px">${item.topico}${topicFreq[item.id]?`<span style="font-size:9px;font-weight:700;color:#fff;background:rgba(251,191,36,.65);border-radius:99px;padding:1px 6px;flex-shrink:0;white-space:nowrap">${topicFreq[item.id]}%</span>`:''}</div>
         <div style="margin-top:7px;padding-left:16px">
           ${renderLinksRow(item.id, item.disc, 'c')}
         </div>
@@ -2279,30 +2279,34 @@ function renderStats(){
 
 function renderTopicFreq(){
   const el=document.getElementById('topic-freq-content');if(!el)return;
-  const agenda=getEffectiveAgenda().filter(i=>!i.port);
-  // Count occurrences per topic (assunto)
-  const freq={};
-  agenda.forEach(function(i){
-    const key=i.assunto||(i.topic)||i.label||'';
-    if(!key)return;
-    if(!freq[key])freq[key]={label:key,disc:i.disc||'',total:0,done:0};
-    freq[key].total++;
-    if(isDone(i.id))freq[key].done++;
+  // Build list from topicFreq state, which is keyed by topic id
+  const entries=Object.entries(topicFreq).filter(function(e){return e[1]>0;});
+  if(!entries.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:12px;font-style:italic">Nenhuma incidência cadastrada. Preencha o % de cada tópico na aba Tópicos.</div>';
+    return;
+  }
+  // Look up topic names and discs by id
+  const allTopics={};
+  getActiveDiscs().forEach(function(disc){
+    getDiscTopics(disc).forEach(function(t){allTopics[t.id]={topico:t.topico,disc:disc};});
   });
-  const sorted=Object.values(freq).sort(function(a,b){return b.total-a.total;});
-  if(!sorted.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;font-style:italic">Nenhum assunto cadastrado.</div>';return;}
-  const maxVal=sorted[0].total;
-  el.innerHTML=sorted.map(function(t){
+  const items=entries.map(function(e){
+    const id=parseInt(e[0]);const pct=parseInt(e[1]);
+    const info=allTopics[id];
+    return{id:id,pct:pct,topico:info?info.topico:'(id:'+id+')',disc:info?info.disc:''};
+  }).sort(function(a,b){return b.pct-a.pct;});
+  el.innerHTML=items.map(function(t){
     const c=CORES[t.disc]||'#888';
-    const pct=Math.round(t.total/maxVal*100);
-    const dpct=t.total>0?Math.round(t.done/t.total*100):0;
-    return'<div style="margin-bottom:9px">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
-        '<span style="font-size:11px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%">'+t.label+'</span>'+
-        '<span style="font-size:10px;color:var(--muted);white-space:nowrap">'+t.done+'/'+t.total+' ('+dpct+'%)</span>'+
-      '</div>'+
-      '<div style="background:var(--surface);border-radius:99px;height:6px;width:100%;overflow:hidden">'+
-        '<div style="height:100%;border-radius:99px;background:'+c+';width:'+pct+'%;transition:width .4s"></div>'+
+    const done=isDone(t.id);
+    return'<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+          '<span style="font-size:11px;color:'+(done?'var(--muted)':'var(--text)')+';font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%;'+(done?'text-decoration:line-through;opacity:.5;':'')+'">'+t.topico+'</span>'+
+          '<span style="font-size:11px;font-weight:700;color:'+c+';white-space:nowrap">'+t.pct+'%</span>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:99px;height:5px;width:100%;overflow:hidden">'+
+          '<div style="height:100%;border-radius:99px;background:'+c+';width:'+Math.min(t.pct,100)+'%;transition:width .4s"></div>'+
+        '</div>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -2424,7 +2428,7 @@ function renderRev(){
             ${DISC_LINKS[item.disc]?`<a href="${DISC_LINKS[item.disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="rev-disc" style="color:#c8e6f0;text-decoration:none">${item.disc}</a>`:`<span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>`}
             <span class="fsrs-metrics">${metrics}</span>
           </div>
-          <div class="rev-topico">${item.topico}</div>
+          <div class="rev-topico" style="display:flex;align-items:center;gap:5px">${item.topico}${topicFreq[item.id]?`<span style="font-size:9px;font-weight:700;color:#fff;background:rgba(251,191,36,.65);border-radius:99px;padding:1px 6px;flex-shrink:0;white-space:nowrap">${topicFreq[item.id]}%</span>`:''}</div>
           <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}</div>
         </div>
         <div class="rev-right">${grades}</div>
@@ -2617,6 +2621,26 @@ setInterval(()=>{const t=document.getElementById('tab-horarios');if(t&&!t.classL
 // ── Conteúdo Programático ─────────────────────────────────────────────────────
 // customTopics: { discName: [ {id, topico, deleted} ] }
 let customTopics = null;
+// topicFreq: { topicId: pct } — % de incidência em provas, editado na aba Conteúdo
+let topicFreq = {};
+
+function saveTopicFreq(){
+  try{localStorage.setItem('plano_tf',JSON.stringify(topicFreq));}catch{}
+  if(_tfSyncTimer)clearTimeout(_tfSyncTimer);
+  _tfSyncTimer=setTimeout(async function(){
+    try{await sbUpsert('conteudo',{disc:'__topic_freq__',topics:topicFreq});showSync('ok','✓ Frequência salva');}catch{}
+  },2000);
+}
+let _tfSyncTimer=null;
+
+async function loadTopicFreq(){
+  try{const raw=localStorage.getItem('plano_tf');if(raw)topicFreq=JSON.parse(raw)||{};}catch{}
+  try{
+    const rows=await sbGet('conteudo','select=disc,topics');
+    if(rows){const r=rows.find(function(x){return x.disc==='__topic_freq__';});if(r&&r.topics&&typeof r.topics==='object')topicFreq=r.topics;}
+  }catch{}
+  renderContent();
+}
 
 function getDiscTopics(disc) {
   if (customTopics && customTopics[disc] !== undefined) {
@@ -2723,6 +2747,7 @@ function renderContent() {
     const rows = filtered.map((t, ti) => {
       const realIdx = topics.indexOf(t);
       const done = !t.deleted && isDone(t.id);
+      const freqVal=topicFreq[t.id]||'';
       return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
         <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
         <input class="content-topic-input ${t.deleted?'deleted':''}"
@@ -2730,6 +2755,12 @@ function renderContent() {
           onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
           style="${done?'text-decoration:line-through;opacity:.45;':''}"
           ${t.deleted?'disabled':''}>
+        <div style="display:flex;align-items:center;gap:1px;flex-shrink:0">
+          <input type="number" min="0" max="100" value="${freqVal}" placeholder="%" title="% de incidência em provas"
+            onchange="topicFreq[${t.id}]=this.value?parseInt(this.value):undefined;if(!this.value)delete topicFreq[${t.id}];saveTopicFreq()"
+            style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
+          <span style="font-size:9px;color:var(--muted)">%</span>
+        </div>
         ${t.deleted
           ? `<button class="ct-btn ct-restore" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Restaurar">↩</button>`
           : `<button class="ct-btn ct-del" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Remover">✕</button>`
@@ -3325,16 +3356,17 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '</div>'+
     '</div>'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
-      '<span style="font-size:10px;color:var(--muted);font-weight:700">Atividades</span>'+
+      '<span style="font-size:10px;color:rgba(255,255,255,.85);font-weight:700">Atividades</span>'+
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts)+
+    '<div style="font-size:10px;color:rgba(255,255,255,.85);font-weight:700;margin-top:8px;margin-bottom:4px">Atividade...</div>'+
     '<div style="display:flex;gap:5px;margin-bottom:5px">'+
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
-      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
+      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text);font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<button onclick="_horPickCustom()" style="width:100%;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
@@ -3364,10 +3396,32 @@ function _horSetActSector(label,sectorId){
 
 function _horAllSecs(){
   const names=horariosConfig.sectorNames||{};
+  const custom=(horariosConfig.customSectors||[]).map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:s.icon,custom:true};});
   return [
     ...HOR_SECTOR_DEFS.map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:s.icon};}),
+    ...custom,
     {id:'__extra__',label:names['__extra__']||'Personalizadas',icon:'⭐'}
   ];
+}
+function _horAddSector(){
+  const name=prompt('Nome da nova aba:','');
+  if(!name||!name.trim())return;
+  if(!horariosConfig.customSectors)horariosConfig.customSectors=[];
+  const id='cust_'+Date.now();
+  horariosConfig.customSectors.push({id:id,label:name.trim(),icon:'📁'});
+  _horOpenSectors.add(id);
+  _horSave();_horRebuildSectors();
+}
+function _horDeleteSector(id){
+  if(!confirm('Excluir esta aba? As atividades dela serão movidas para Personalizadas.'))return;
+  horariosConfig.customSectors=(horariosConfig.customSectors||[]).filter(function(s){return s.id!==id;});
+  // reassign acts
+  if(horariosConfig.actSectors){
+    Object.keys(horariosConfig.actSectors).forEach(function(k){
+      if(horariosConfig.actSectors[k]===id)horariosConfig.actSectors[k]='__extra__';
+    });
+  }
+  _horSave();_horRebuildSectors();
 }
 function _horSectorsHTML(acts,currentAct){
   const secMap={};
@@ -3383,12 +3437,13 @@ function _horSectorsHTML(acts,currentAct){
     const open=_horOpenSectors.has(sec.id);
     html+='<div style="margin-bottom:3px">'+
       '<div style="display:flex;align-items:center;gap:4px">'+
-        '<button onclick="_horToggleSector(\''+sec.id+'\')" style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:background .12s" onmouseover="this.style.background=\'rgba(255,255,255,.09)\'" onmouseout="this.style.background=\'rgba(255,255,255,.05)\'">'+
+        '<button onclick="_horToggleSector(\''+sec.id+'\')" style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:background .12s" onmouseover="this.style.background=\'rgba(255,255,255,.05)\'" onmouseout="this.style.background=\'rgba(255,255,255,.02)\'">'+
           '<span style="font-size:13px">'+sec.icon+'</span>'+
           '<span style="font-size:11px;font-weight:700;flex:1;text-transform:uppercase;letter-spacing:.4px;color:rgba(255,255,255,.75)">'+sec.label+'</span>'+
           '<span style="font-size:10px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
         '</button>'+
         (_horSectorEditMode?'<button onclick="_horRenameSector(\''+sec.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;opacity:.7;transition:opacity .12s;display:flex;align-items:center" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.7\'" title="Renomear">'+editIconHTML(12)+'</button>':'')+
+        (_horSectorEditMode&&sec.custom?'<button onclick="_horDeleteSector(\''+sec.id+'\')" style="background:none;border:none;color:rgba(248,113,113,.5);font-size:14px;cursor:pointer;padding:2px 4px;transition:color .12s;line-height:1" onmouseover="this.style.color=\'#f87171\'" onmouseout="this.style.color=\'rgba(248,113,113,.5)\'" title="Excluir aba">×</button>':'')+
       '</div>';
     if(open&&secActs.length){
       html+='<div style="margin-top:3px;padding:0 2px">';
@@ -3414,6 +3469,9 @@ function _horSectorsHTML(acts,currentAct){
     }
     html+='</div>';
   });
+  if(_horSectorEditMode){
+    html+='<button onclick="_horAddSector()" style="width:100%;margin-top:4px;padding:5px;background:rgba(62,181,200,.08);border:1px dashed rgba(62,181,200,.3);border-radius:8px;color:var(--accent);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;transition:background .12s" onmouseover="this.style.background=\'rgba(62,181,200,.15)\'" onmouseout="this.style.background=\'rgba(62,181,200,.08)\'">+ Nova aba</button>';
+  }
   html+='</div>';
   return html;
 }
@@ -3461,7 +3519,7 @@ function _horRenameSector(id){
   if(!sec)return;
   const curIcon=sec.icon||'';
   const curName=sec.label||'';
-  const v=prompt('Emoji + nome do setor (ex: 🙏 Espírito):',curIcon+' '+curName);
+  const v=prompt('Nome do setor:',curName);
   if(!v||!v.trim())return;
   const parts=v.trim().match(/^(\S+)\s+(.+)$/);
   if(!horariosConfig.sectorNames)horariosConfig.sectorNames={};
@@ -3483,7 +3541,7 @@ function _horBuildExceptions(){
   const sorted=[...horariosExceptions].sort(function(a,b){return a.dayIdx-b.dayIdx||a.m-b.m;});
   let h2='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
     '<span style="font-size:12px;font-weight:700;color:var(--text)">Exceções</span>'+
-    '<button onclick="_horAddExcEntry()" title="Adicionar exceção" style="background:transparent;border:none;cursor:pointer;padding:3px;opacity:.6;transition:opacity .15s;display:flex;align-items:center" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.6\'">'+editIconHTML()+'</button>'+
+    '<button onclick="_horAddExcEntry()" title="Adicionar exceção" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:50%;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:16px;line-height:1;transition:all .15s" onmouseover="this.style.opacity=\'1\';this.style.borderColor=\'rgba(255,255,255,.5)\'" onmouseout="this.style.opacity=\'.8\';this.style.borderColor=\'rgba(255,255,255,.2)\'">+</button>'+
   '</div>';
   if(!sorted.length){
     h2+='<div style="color:var(--muted);font-size:11px;font-style:italic;padding:4px 0">Nenhuma exceção cadastrada.</div>';
@@ -3517,12 +3575,9 @@ function _horDeleteException(id){
 function _horEditException(id){
   const exc=horariosExceptions.find(function(e){return e.id==id;});
   if(!exc)return;
-  // Delete and re-open the form pre-filled
-  horariosExceptions=horariosExceptions.filter(function(e){return e.id!=id;});
-  _horSave();_horBuildExceptions();_horBuildGrid();
-  _horAddExcEntry(exc.m,exc);
+  _horAddExcEntry(exc.m,exc,id);
 }
-function _horAddExcEntry(prefillM,prefillExc){
+function _horAddExcEntry(prefillM,prefillExc,editId){
   const DAYS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   const {start,end,slot}=horariosConfig;
   // build time options
@@ -3587,7 +3642,13 @@ function _horAddExcEntry(prefillM,prefillExc){
     const durVal=(document.getElementById('exc-dur-input')?.value||'01:00').trim();
     const durPts=durVal.split(':');
     const duration=(parseInt(durPts[0])||0)+((parseInt(durPts[1])||0)/60);
-    horariosExceptions.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration});
+    if(editId){
+      const idx=horariosExceptions.findIndex(function(e){return e.id==editId;});
+      if(idx>=0)horariosExceptions[idx]={id:editId,dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration};
+      else horariosExceptions.push({id:editId,dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration});
+    } else {
+      horariosExceptions.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),dayIdx:selDay,m:selM,emoji,label,color:_horCustColorSel,duration});
+    }
     window._horCloseExcModal();_horSave();_horBuildExceptions();_horBuildDaySummary();
   };
   buildModal();
@@ -3898,12 +3959,13 @@ function _horEditCell(d,m,el){
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts,existing)+
+    '<div style="font-size:10px;color:rgba(255,255,255,.85);font-weight:700;margin-top:8px;margin-bottom:4px">Atividade...</div>'+
     '<div style="display:flex;gap:5px;margin-bottom:5px">'+
       '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
-      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Atividade..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
+      '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--text);font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<div style="display:flex;gap:6px">'+
       '<button onclick="_horPickCustom()" style="flex:1;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>'+
@@ -4378,7 +4440,7 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();app
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();
+render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 </script>
