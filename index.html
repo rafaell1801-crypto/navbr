@@ -2216,9 +2216,10 @@ function render(){
   const pendingDays=dateKeys.filter(d=>!days[d].every(i=>isDone(i.id)));
   const doneDays=dateKeys.filter(d=>days[d].every(i=>isDone(i.id)));
   // Hoje: pendentes do dia atual + atrasados não concluídos
-  const todayPendingItems=getEffectiveAgenda().filter(i=>!i.port&&!isDone(i.id)&&(i.data===TODAY||isPast(i.data)));
+  const todayAllItems=getEffectiveAgenda().filter(i=>!i.port&&(i.data===TODAY||isPast(i.data)));
+  const todayPendingItems=todayAllItems.filter(i=>!isDone(i.id));
   const todayByDay={};
-  todayPendingItems.forEach(i=>{if(!todayByDay[i.data])todayByDay[i.data]=[];todayByDay[i.data].push(i);});
+  todayAllItems.forEach(i=>{if(!todayByDay[i.data])todayByDay[i.data]=[];todayByDay[i.data].push(i);});
   const todayDayKeys=Object.keys(todayByDay).sort();
   const scToday=document.getElementById('sc-today');if(scToday)scToday.textContent=todayPendingItems.length;
   document.getElementById('sc-pending').textContent=pendingDays.length;
@@ -2546,7 +2547,7 @@ function timerCancel(){
   timerSt.remaining=getBlockSecs();
   _timerButtonsUpdate();updateTimerUI();
 }
-function timerPlayPause(){
+async function timerPlayPause(){
   // Sessão concluída: o play reinicia o ciclo
   if(!timerSt.running&&timerSt.remaining<=0){
     timerSt.remaining=getBlockSecs();
@@ -2554,7 +2555,14 @@ function timerPlayPause(){
   }
   if(!timerSt.running&&timerSt.remaining===getBlockSecs()&&!timerSt.startedAt){
     const sel=document.getElementById('timer-disc');if(!sel.value){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);return;}
-    timerSt.currentDisc=sel.value;timerSt.running=true;
+    timerSt.currentDisc=sel.value;
+    // Busca valor remoto antes de iniciar para garantir base correta entre dispositivos
+    try{
+      const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(timerSt.currentDisc));
+      const remoteSecs=r&&r[0]?r[0].segundos:0;
+      if(remoteSecs>(timerSt.timeByDisc[timerSt.currentDisc]||0))timerSt.timeByDisc[timerSt.currentDisc]=remoteSecs;
+    }catch{}
+    timerSt.running=true;
     _timerAnchor();clearInterval(timerSt.interval);timerSt.interval=setInterval(timerTick,500);
   }else if(timerSt.running){
     _commitSubSession();timerTick();
@@ -2570,7 +2578,11 @@ async function timerStop(){
   timerTick();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
-  if(disc&&timerSt.timeByDisc[disc]){await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});showSync('ok','✓ Tempo salvo');}
+  if(disc&&timerSt.timeByDisc[disc]){
+    // Max-merge: garante que valor maior (de outro dispositivo) não seja sobrescrito
+    try{const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));const remoteSecs=r&&r[0]?r[0].segundos:0;if(remoteSecs>timerSt.timeByDisc[disc])timerSt.timeByDisc[disc]=remoteSecs;}catch{}
+    await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});showSync('ok','✓ Tempo salvo');
+  }
   await saveDailySession();
   timerSt.remaining=getBlockSecs();
   _timerButtonsUpdate();updateTimerUI();renderStats();
@@ -2596,11 +2608,14 @@ function timerNotify(disc){
     Notification.requestPermission().then(p=>{if(p==='granted')new Notification('⏱ Sessão concluída!',{body:disc?`Tempo de estudo de ${disc} encerrado.`:'Seu bloco de estudo terminou.',silent:true});});
   }
 }
-function timerFinish(){
+async function timerFinish(){
   _commitSubSession();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
-  if(disc&&timerSt.timeByDisc[disc])sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+  if(disc&&timerSt.timeByDisc[disc]){
+    try{const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));const remoteSecs=r&&r[0]?r[0].segundos:0;if(remoteSecs>timerSt.timeByDisc[disc])timerSt.timeByDisc[disc]=remoteSecs;}catch{}
+    sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+  }
   saveDailySession();
   timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
