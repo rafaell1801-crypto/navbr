@@ -2330,7 +2330,7 @@ function renderCalEdit(){
     cur.setDate(cur.getDate()+1);
   }
   const DOW=['D','S','T','Q','Q','S','S'];
-  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">';
   DOW.forEach(d=>{ html+=`<div style="text-align:center;font-size:10px;color:var(--muted);font-weight:700;padding:3px 0">${d}</div>`; });
   if(days.length>0)for(let i=0;i<days[0].dow;i++)html+='<div></div>';
   days.forEach(d=>{
@@ -2338,10 +2338,7 @@ function renderCalEdit(){
     const hMin=Math.round((h%1)*60);
     const hText=d.secs>0?(h>=1?Math.floor(h)+'h'+(hMin?String(hMin).padStart(2,'0'):''):'<1h'):'–';
     const col=d.secs===0?'#3a5a6a':d.secs>=7200?'#2dd4a0':d.secs>=3600?'#7dd3fc':'#f5a623';
-    html+=`<div class="cal-day-cell" data-iso="${d.iso}" data-secs="${d.secs}" onclick="openCalEdit(this)" title="${d.label}" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 2px;text-align:center;cursor:pointer;transition:border-color .15s">
-      <div style="font-size:9px;color:var(--muted)">${d.label}</div>
-      <div style="font-size:11px;font-weight:700;color:${col};margin-top:1px">${hText}</div>
-    </div>`;
+    html+=`<div class="cal-day-cell" data-iso="${d.iso}" data-secs="${d.secs}" onclick="openCalEdit(this)" title="${d.label} · ${hText}" style="background:${d.secs>0?col+'22':'var(--surface2)'};border:2px solid ${d.secs>0?col+'66':'var(--border)'};border-radius:7px;height:38px;cursor:pointer;transition:border-color .15s,background .15s"></div>`;
   });
   html+='</div><div id="cal-edit-input-wrap" style="margin-top:8px;display:none"></div>';
   wrap.innerHTML=html;
@@ -3360,9 +3357,8 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts)+
-    '<div style="font-size:10px;color:rgba(255,255,255,.85);font-weight:700;margin-top:8px;margin-bottom:4px">Atividade...</div>'+
-    '<div style="display:flex;gap:5px;margin-bottom:5px">'+
-      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
+    '<div style="display:flex;align-items:center;gap:5px;margin-top:8px;margin-bottom:5px">'+
+      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif;flex-shrink:0">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
@@ -3437,10 +3433,10 @@ function _horSectorsHTML(acts,currentAct){
     const open=_horOpenSectors.has(sec.id);
     html+='<div style="margin-bottom:3px">'+
       '<div style="display:flex;align-items:center;gap:4px">'+
-        '<button onclick="_horToggleSector(\''+sec.id+'\')" style="flex:1;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02);border:none;border-radius:8px;padding:5px 8px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:background .12s" onmouseover="this.style.background=\'rgba(255,255,255,.05)\'" onmouseout="this.style.background=\'rgba(255,255,255,.02)\'">'+
-          '<span style="font-size:13px">'+sec.icon+'</span>'+
-          '<span style="font-size:11px;font-weight:700;flex:1;text-transform:uppercase;letter-spacing:.4px;color:rgba(255,255,255,.75)">'+sec.label+'</span>'+
-          '<span style="font-size:10px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
+        '<button onclick="_horToggleSector(\''+sec.id+'\')" style="flex:1;display:flex;align-items:center;gap:6px;background:transparent;border:none;border-radius:6px;padding:3px 6px;cursor:pointer;font-family:Nunito,sans-serif;color:var(--text);text-align:left;transition:opacity .15s;opacity:.38" onmouseover="this.style.opacity=\'0.65\'" onmouseout="this.style.opacity=\'0.38\'">'+
+          '<span style="font-size:10px">'+sec.icon+'</span>'+
+          '<span style="font-size:9px;font-weight:600;flex:1;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.85)">'+sec.label+'</span>'+
+          '<span style="font-size:8px;color:var(--muted);display:inline-block;transform:'+(open?'rotate(180deg)':'none')+'">▾</span>'+
         '</button>'+
         (_horSectorEditMode?'<button onclick="_horRenameSector(\''+sec.id+'\')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:3px;opacity:.7;transition:opacity .12s;display:flex;align-items:center" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'.7\'" title="Renomear">'+editIconHTML(12)+'</button>':'')+
         (_horSectorEditMode&&sec.custom?'<button onclick="_horDeleteSector(\''+sec.id+'\')" style="background:none;border:none;color:rgba(248,113,113,.5);font-size:14px;cursor:pointer;padding:2px 4px;transition:color .12s;line-height:1" onmouseover="this.style.color=\'#f87171\'" onmouseout="this.style.color=\'rgba(248,113,113,.5)\'" title="Excluir aba">×</button>':'')+
@@ -3469,9 +3465,7 @@ function _horSectorsHTML(acts,currentAct){
     }
     html+='</div>';
   });
-  if(_horSectorEditMode){
-    html+='<button onclick="_horAddSector()" style="width:100%;margin-top:4px;padding:5px;background:rgba(62,181,200,.08);border:1px dashed rgba(62,181,200,.3);border-radius:8px;color:var(--accent);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;transition:background .12s" onmouseover="this.style.background=\'rgba(62,181,200,.15)\'" onmouseout="this.style.background=\'rgba(62,181,200,.08)\'">+ Nova aba</button>';
-  }
+  html+='<button onclick="_horAddSector()" style="width:100%;margin-top:4px;padding:5px;background:rgba(62,181,200,.06);border:1px dashed rgba(62,181,200,.25);border-radius:8px;color:rgba(62,181,200,.7);font-size:11px;cursor:pointer;font-family:Nunito,sans-serif;transition:all .12s" onmouseover="this.style.background=\'rgba(62,181,200,.14)\';this.style.color=\'var(--accent)\'" onmouseout="this.style.background=\'rgba(62,181,200,.06)\';this.style.color=\'rgba(62,181,200,.7)\'">+ Nova aba</button>';
   html+='</div>';
   return html;
 }
@@ -3896,10 +3890,13 @@ function _horActPillHTML(a,i,existing){
         'style="width:14px;height:14px;border:none;border-radius:50%;background:rgba(239,68,68,.3);color:#f87171;cursor:pointer;font-size:9px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>'+
     '</div>';
   } else {
-    s+='<button onclick="_horConfirmPickAct('+i+')" style="width:100%;display:flex;align-items:center;gap:5px;padding:4px 7px;border:none;border-radius:7px;background:'+bg+';color:var(--text);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;text-align:left;'+(sel?'border:1px solid rgba(62,181,200,.35)':'')+'">'+
-      '<span style="font-size:13px;flex-shrink:0">'+a.emoji+'</span>'+
-      '<span style="'+(sel?'color:var(--accent);font-weight:700':'font-weight:500')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.2px">'+a.label+'</span>'+
-    '</button>';
+    s+='<div class="_act-pill-wrap" style="position:relative;display:flex;align-items:center;border-radius:7px;background:'+bg+';'+(sel?'border:1px solid rgba(62,181,200,.35)':'border:1px solid transparent')+'" onmouseenter="this.querySelector(\'._act-del-btn\').style.opacity=\'1\'" onmouseleave="this.querySelector(\'._act-del-btn\').style.opacity=\'0\'">'+
+      '<button onclick="_horConfirmPickAct('+i+')" style="flex:1;display:flex;align-items:center;gap:5px;padding:4px 7px;border:none;border-radius:7px;background:transparent;color:var(--text);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;text-align:left;min-width:0">'+
+        '<span style="font-size:13px;flex-shrink:0">'+a.emoji+'</span>'+
+        '<span style="'+(sel?'color:var(--accent);font-weight:700':'font-weight:500')+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-transform:uppercase;letter-spacing:.2px">'+a.label+'</span>'+
+      '</button>'+
+      '<button class="_act-del-btn" onclick="event.stopPropagation();_horRemoveAct(\''+safeLabel+'\')" style="flex-shrink:0;width:16px;height:16px;border:none;border-radius:50%;background:rgba(239,68,68,.25);color:#f87171;cursor:pointer;font-size:10px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;margin-right:4px;opacity:0;transition:opacity .15s" title="Excluir">×</button>'+
+    '</div>';
   }
   return s+'</div>';
 }
@@ -3959,9 +3956,8 @@ function _horEditCell(d,m,el){
       '<button id="hor-editmode-btn" onclick="_horToggleEditModeActs()" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--muted);padding:0;border-radius:4px">'+EDIT_ICON+'</button>'+
     '</div>'+
     _horSectorsHTML(acts,existing)+
-    '<div style="font-size:10px;color:rgba(255,255,255,.85);font-weight:700;margin-top:8px;margin-bottom:4px">Atividade...</div>'+
-    '<div style="display:flex;gap:5px;margin-bottom:5px">'+
-      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif">'+
+    '<div style="display:flex;align-items:center;gap:5px;margin-top:8px;margin-bottom:5px">'+
+      '<input class="hor-custom-input" id="hor-cust-emoji" placeholder="😊" maxlength="4" style="width:36px;text-align:center;font-family:Nunito,sans-serif;flex-shrink:0">'+
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
