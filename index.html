@@ -1189,8 +1189,9 @@ async function saveDailySession(){
 }
 function renderDailyChart(){
   const canvas=document.getElementById('daily-chart');if(!canvas||typeof Chart==='undefined')return;
-  const start=getStartDate();
   const today=new Date();today.setHours(0,0,0,0);
+  const minStart=new Date(today.getTime()-29*86400000);
+  const start=new Date(Math.min(getStartDate().getTime(),minStart.getTime()));
   const labels=[],data=[];
   const cur=new Date(start);
   const [td,tm,ty]=TODAY.split('/');
@@ -2315,8 +2316,9 @@ function renderTopicFreq(){
 
 function renderCalEdit(){
   const wrap=document.getElementById('cal-edit-wrap');if(!wrap)return;
-  const start=getStartDate();
   const today=new Date();today.setHours(0,0,0,0);
+  const minStart=new Date(today.getTime()-29*86400000);
+  const start=new Date(Math.min(getStartDate().getTime(),minStart.getTime()));
   const[td,tm,ty]=TODAY.split('/');
   const todayIso=`${ty}-${tm}-${td}`;
   const todayLocalSecs=Object.values(todayByDisc).reduce((a,b)=>a+(b||0),0);
@@ -2578,10 +2580,20 @@ async function timerStop(){
   timerTick();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
-  if(disc&&timerSt.timeByDisc[disc]){
-    // Max-merge: garante que valor maior (de outro dispositivo) não seja sobrescrito
-    try{const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));const remoteSecs=r&&r[0]?r[0].segundos:0;if(remoteSecs>timerSt.timeByDisc[disc])timerSt.timeByDisc[disc]=remoteSecs;}catch{}
-    await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});showSync('ok','✓ Tempo salvo');
+  if(disc){
+    const sessionElapsed=Math.max(0,(timerSt.timeByDisc[disc]||0)-(timerSt.discBase||0));
+    if(sessionElapsed>0){
+      try{
+        const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));
+        const remoteSecs=r&&r[0]?r[0].segundos:0;
+        const finalSecs=remoteSecs+sessionElapsed;
+        timerSt.timeByDisc[disc]=finalSecs;
+        await sbUpsert('timer_disc',{disc,segundos:finalSecs});
+      }catch{
+        await sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]||0});
+      }
+      showSync('ok','✓ Tempo salvo');
+    }
   }
   await saveDailySession();
   timerSt.remaining=getBlockSecs();
@@ -2612,9 +2624,16 @@ async function timerFinish(){
   _commitSubSession();
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
   const disc=timerSt.currentDisc;
-  if(disc&&timerSt.timeByDisc[disc]){
-    try{const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));const remoteSecs=r&&r[0]?r[0].segundos:0;if(remoteSecs>timerSt.timeByDisc[disc])timerSt.timeByDisc[disc]=remoteSecs;}catch{}
-    sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+  if(disc){
+    const sessionElapsed=Math.max(0,(timerSt.timeByDisc[disc]||0)-(timerSt.discBase||0));
+    if(sessionElapsed>0){
+      try{
+        const r=await sbGet('timer_disc','select=segundos&disc=eq.'+encodeURIComponent(disc));
+        const remoteSecs=r&&r[0]?r[0].segundos:0;
+        timerSt.timeByDisc[disc]=remoteSecs+sessionElapsed;
+      }catch{}
+      sbUpsert('timer_disc',{disc,segundos:timerSt.timeByDisc[disc]});
+    }
   }
   saveDailySession();
   timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();showSync('ok','✓ Sessão concluída');
