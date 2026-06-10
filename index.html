@@ -3362,7 +3362,7 @@ function _horAddInPeriod(fromM,toM,btnEl){
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<button onclick="_horPickCustom()" style="width:100%;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>';
   document.body.appendChild(backdrop);document.body.appendChild(picker);
@@ -3392,11 +3392,12 @@ function _horSetActSector(label,sectorId){
 
 function _horAllSecs(){
   const names=horariosConfig.sectorNames||{};
-  const custom=(horariosConfig.customSectors||[]).map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:s.icon,custom:true};});
+  const icons=horariosConfig.sectorIcons||{};
+  const custom=(horariosConfig.customSectors||[]).map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:icons[s.id]||s.icon,custom:true};});
   return [
-    ...HOR_SECTOR_DEFS.map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:s.icon};}),
+    ...HOR_SECTOR_DEFS.map(function(s){return{id:s.id,label:names[s.id]||s.label,icon:icons[s.id]||s.icon};}),
     ...custom,
-    {id:'__extra__',label:names['__extra__']||'Personalizadas',icon:'⭐'}
+    {id:'__extra__',label:names['__extra__']||'Personalizadas',icon:icons['__extra__']||'⭐'}
   ];
 }
 function _horAddSector(){
@@ -3511,21 +3512,44 @@ function _horRenameSector(id){
   const allSecs=_horAllSecs();
   const sec=allSecs.find(function(s){return s.id===id;});
   if(!sec)return;
-  const curIcon=sec.icon||'';
-  const curName=sec.label||'';
-  const v=prompt('Nome do setor:',curName);
-  if(!v||!v.trim())return;
-  const parts=v.trim().match(/^(\S+)\s+(.+)$/);
-  if(!horariosConfig.sectorNames)horariosConfig.sectorNames={};
-  if(!horariosConfig.sectorIcons)horariosConfig.sectorIcons={};
-  if(parts){
-    horariosConfig.sectorIcons[id]=parts[1];
-    horariosConfig.sectorNames[id]=parts[2];
-  } else {
-    horariosConfig.sectorNames[id]=v.trim();
-  }
-  _horSave();
-  _horRebuildSectors();
+  // remove modal anterior se existir
+  document.getElementById('_hor_rename_modal')?.remove();
+  document.getElementById('_hor_rename_bd')?.remove();
+  const bd=document.createElement('div');
+  bd.id='_hor_rename_bd';
+  bd.style.cssText='position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.5)';
+  const modal=document.createElement('div');
+  modal.id='_hor_rename_modal';
+  modal.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10003;background:#0d1f2e;border:1px solid #1e3f5c;border-radius:12px;padding:18px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.7);font-family:'Nunito','Segoe UI',sans-serif";
+  modal.innerHTML=
+    '<div style="font-size:13px;font-weight:700;color:#e8f4f8;margin-bottom:12px">Editar aba</div>'+
+    '<div style="display:flex;gap:6px;margin-bottom:12px">'+
+      '<input id="_hor_rn_emoji" maxlength="4" value="'+sec.icon+'" placeholder="🙏" style="width:44px;text-align:center;font-size:18px;padding:6px 4px;border:1px solid #1e3f5c;border-radius:7px;background:#071420;color:#fff;font-family:Nunito,sans-serif;outline:none">'+
+      '<input id="_hor_rn_name" value="'+sec.label.replace(/"/g,'&quot;')+'" placeholder="Nome..." style="flex:1;padding:6px 8px;border:1px solid #1e3f5c;border-radius:7px;background:#071420;color:#fff;font-family:Nunito,sans-serif;font-size:13px;outline:none">'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button id="_hor_rn_save" style="flex:1;padding:7px;border:none;border-radius:8px;background:rgba(62,181,200,.18);color:#7dd3fc;font-weight:700;font-size:13px;cursor:pointer;font-family:Nunito,sans-serif">Salvar</button>'+
+      '<button id="_hor_rn_cancel" style="padding:7px 12px;border:1px solid #1e3f5c;border-radius:8px;background:transparent;color:#7fb3c8;font-size:13px;cursor:pointer;font-family:Nunito,sans-serif">Cancelar</button>'+
+    '</div>';
+  document.body.appendChild(bd);
+  document.body.appendChild(modal);
+  document.getElementById('_hor_rn_name').focus();
+  function _close(){bd.remove();modal.remove();}
+  bd.onclick=_close;
+  document.getElementById('_hor_rn_cancel').onclick=_close;
+  document.getElementById('_hor_rn_save').onclick=function(){
+    const newIcon=document.getElementById('_hor_rn_emoji').value.trim()||sec.icon;
+    const newName=document.getElementById('_hor_rn_name').value.trim();
+    if(!newName){_close();return;}
+    if(!horariosConfig.sectorNames)horariosConfig.sectorNames={};
+    if(!horariosConfig.sectorIcons)horariosConfig.sectorIcons={};
+    horariosConfig.sectorNames[id]=newName;
+    horariosConfig.sectorIcons[id]=newIcon;
+    _horSave();
+    _close();
+    _horRebuildSectors();
+  };
+  document.getElementById('_hor_rn_name').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('_hor_rn_save').click();if(e.key==='Escape')_close();});
 }
 
 function _horBuildExceptions(){
@@ -3864,7 +3888,7 @@ function _horAddToPreset(){
   const label=(document.getElementById('hor-cust-label')?.value.trim());
   if(!label)return;
   const hex=_horCustColorSel;
-  const sectorSel=document.getElementById('hor-cust-sector')?.value||'estudo';
+  const sectorSel=document.getElementById('hor-cust-sector')?.value||'__extra__';
   const customActs=[...(horariosConfig.customActs||[])];
   if(!customActs.some(a=>a.label===label)){
     customActs.push({emoji,label,bg:_horHexToRgba(hex,.2),color:hex});
@@ -3961,7 +3985,7 @@ function _horEditCell(d,m,el){
       '<input class="hor-custom-input" id="hor-cust-label" placeholder="Nome..." maxlength="18" style="flex:1;font-family:Nunito,sans-serif">'+
     '</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px">'+swatchesHTML+'</div>'+
-    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
+    '<select id="hor-cust-sector" style="width:100%;padding:4px 7px;border:none;border-radius:7px;background:#0d1a26;color:#fff;font-family:Nunito,sans-serif;font-size:11px;margin-bottom:6px;cursor:pointer;outline:none">'<option value="" style="background:#0d1a26;color:#888">— Selecione —</option>'+_horAllSecs().map(function(s){return'<option value="'+s.id+'" style="background:#0d1a26;color:#fff">'+s.icon+' '+s.label+'</option>';}).join('')+'</select>'+
     '<button onclick="_horAddToPreset()" style="width:100%;padding:5px;border:none;border-radius:7px;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:11px;font-family:Nunito,sans-serif;margin-bottom:6px">+ Salvar lista</button>'+
     '<div style="display:flex;gap:6px">'+
       '<button onclick="_horPickCustom()" style="flex:1;padding:6px;border:none;border-radius:7px;background:rgba(62,181,200,.15);color:var(--accent);cursor:pointer;font-size:12px;font-family:Nunito,sans-serif;font-weight:700">Salvar</button>'+
