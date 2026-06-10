@@ -248,8 +248,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 
 /* CONTEÚDO */
 .content-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px}
-.content-search{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);color:var(--text)}
-.content-disc-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.content-search{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);color:#fff}
+.content-disc-block{background:#05101a;border:none;border-radius:var(--radius);overflow:hidden}
 .content-disc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
 .content-disc-header.open{border-bottom:1px solid var(--border)}
 .content-disc-title{font-size:13px;font-weight:700;flex:1}
@@ -602,6 +602,14 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
       <div class="cfg-group-body">
         <p style="font-size:11px;color:var(--muted);margin:6px 0 8px">Tempo total estudado por disciplina. Edite manualmente se precisar ajustar.</p>
         <div id="timer-edit-list"></div>
+      </div>
+    </details>
+
+    <details class="cfg-group">
+      <summary>Conteúdo Programático</summary>
+      <div class="cfg-group-body">
+        <p style="font-size:11px;color:var(--muted);margin:6px 0 10px">Remove todas as alterações manuais de disciplinas e tópicos, voltando ao conteúdo original do plano.</p>
+        <button onclick="resetContent()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted)">↩ Restaurar original</button>
       </div>
     </details>
 
@@ -2712,11 +2720,13 @@ function renderContent() {
     const isCustomDisc = !baseDiscs.includes(disc);
     const rows = filtered.map((t, ti) => {
       const realIdx = topics.indexOf(t);
+      const done = !t.deleted && isDone(t.id);
       return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
         <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
         <input class="content-topic-input ${t.deleted?'deleted':''}"
           value="${t.topico.replace(/"/g,'&quot;')}"
           onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
+          style="${done?'text-decoration:line-through;opacity:.45;':''}"
           ${t.deleted?'disabled':''}>
         ${t.deleted
           ? `<button class="ct-btn ct-restore" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Restaurar">↩</button>`
@@ -2729,8 +2739,7 @@ function renderContent() {
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
         <span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>
-        <span class="content-disc-meta">${active} tópico${active!==1?'s':''}</span>
-        <button class="del-disc-btn" onclick="event.stopPropagation();deleteDisc('${disc.replace(/'/g,"\\'")}')" title="Excluir disciplina">✕ Excluir</button>
+        <button onclick="event.stopPropagation();_discMenu('${disc.replace(/'/g,"\\'")}',this)" title="Opções da disciplina" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
       <div class="content-disc-body" id="cdb-${di}">
@@ -2750,6 +2759,28 @@ function renderContent() {
     </div>`;
   }).join('');
   populateBulkDiscSelect();
+}
+
+function _discMenu(disc, btn) {
+  // close any existing menu
+  document.querySelectorAll('._disc-menu-pop').forEach(function(el){el.remove();});
+  const pop=document.createElement('div');
+  pop.className='_disc-menu-pop';
+  pop.style.cssText='position:fixed;z-index:9999;background:#0d1f2e;border:1px solid #1e3f5c;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.6);padding:4px;min-width:140px;';
+  const rect=btn.getBoundingClientRect();
+  pop.style.top=(rect.bottom+4)+'px';
+  pop.style.left=Math.max(8,rect.right-140)+'px';
+  pop.innerHTML='<button style="display:block;width:100%;text-align:left;padding:7px 12px;background:transparent;border:none;color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px;font-family:Nunito,sans-serif" '+
+    'onmouseover="this.style.background=\'rgba(239,68,68,.12)\'" onmouseout="this.style.background=\'transparent\'" '+
+    'onclick="_discMenuDel(\''+disc.replace(/'/g,"\\'")+'\')" >✕ Excluir disciplina</button>';
+  document.body.appendChild(pop);
+  setTimeout(function(){
+    document.addEventListener('click',function _close(){pop.remove();document.removeEventListener('click',_close);},{once:true});
+  },10);
+}
+function _discMenuDel(disc){
+  document.querySelectorAll('._disc-menu-pop').forEach(function(el){el.remove();});
+  deleteDisc(disc);
 }
 
 function applyBulk(disc, di) {
@@ -4164,8 +4195,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
   <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
   <div id="content-disc-list"></div>
   <div class="content-save-bar">
-    <button class="content-save-btn" onclick="saveContent()">💾 Salvar alterações</button>
-    <button class="content-reset-btn" onclick="resetContent()">↩ Restaurar original</button>
+    <button class="content-save-btn" onclick="saveContent()" title="Salvar alterações">💾</button>
     <span class="content-save-note" id="content-save-note">Alterações são salvas no Supabase e sincronizadas em todos os dispositivos.</span>
   </div>
 </div>
