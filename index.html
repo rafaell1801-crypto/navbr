@@ -4851,7 +4851,7 @@ function renderMonitor(){
   if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
   if(g('mon-sum-oldest'))g('mon-sum-oldest').textContent=oldestStr;
   if(!monitorCargos.length){
-    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><div style="display:flex;gap:8px;max-width:320px;margin:0 auto"><button onclick="addMonCargo(\'matematica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit">Matemática</button><button onclick="addMonCargo(\'informatica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit">Informática</button><button onclick="addMonCargo(\'espanhol\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit">Espanhol</button></div></div>';
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><div style="display:flex;gap:8px;max-width:320px;margin:0 auto"><button onclick="addMonCargo(\'matematica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit">Matemática</button><button onclick="addMonCargo(\'informatica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit">Informática</button><button onclick="addMonCargo(\'espanhol\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit">Outros</button></div></div>';
     return;
   }
   wrap.innerHTML=monitorCargos.map(cargo=>{
@@ -5197,7 +5197,7 @@ function deleteMonCargo(id){
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button onclick="addMonCargo('matematica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Matemática</button>
       <button onclick="addMonCargo('informatica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Informática</button>
-      <button onclick="addMonCargo('espanhol')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Espanhol</button>
+      <button onclick="addMonCargo('outros')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Outros</button>
     </div>
     <div id="monitor-list"></div>
   </div>
