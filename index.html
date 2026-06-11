@@ -2508,7 +2508,7 @@ function updateTimerUI(){
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,${favSvg}`;
   }else if(rem===0){
     document.title='NAV Brasil | Plano de Estudos';
-    document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>`;
+    document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%232dd4a0'>✅</text></svg>`;
   }else{
     document.title='NAV Brasil | Plano de Estudos';
     document.querySelector('link[rel="icon"]').href=`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23e2e8f0'>✈</text></svg>`;
@@ -2558,7 +2558,7 @@ function _timerButtonsUpdate(){
   if(save)save.classList.toggle('hidden',!started&&!finished);
   if(cancel)cancel.classList.toggle('hidden',!started);
   const disc=document.getElementById('timer-disc');
-  if(disc)disc.disabled=timerSt.running;
+  if(disc){disc.disabled=timerSt.running;disc.classList.toggle('hidden',timerSt.running);}
 }
 function timerCancel(){
   clearInterval(timerSt.interval);timerSt.running=false;timerSt.startedAt=null;
