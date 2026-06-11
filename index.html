@@ -396,6 +396,7 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
   <button class="tab" onclick="showTab('content')">Tópicos</button>
+  <button class="tab" onclick="showTab('trabalho')">Trabalho</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
 
@@ -1877,11 +1878,11 @@ function _enableSpinEdit(el,max,onChange){
 });
 
 function showTab(t){
-  ['ciclo','rev','stats','content','simulados','horarios'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content'][i]===t));
+  ['ciclo','rev','stats','content','simulados','horarios','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content','trabalho'][i]===t));
   const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo'&&t!=='rev');
   if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
-  if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();
+  if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();if(t==='trabalho')renderTrabalho();
 }
 let currentSubtab='today';
 function showSubtab(s){
@@ -4527,10 +4528,287 @@ populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();app
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();
+render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
+// ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
+let monitorCargos=[];
+let monitorOpenCards=new Set();
+let _monSaveTimer=null;
+let _trabalhoSubtab='monitor';
+
+const MON_LINK_FIELDS=[
+  {key:'esqueleto',   label:'Esqueleto'},
+  {key:'edicao',      label:'Edição'},
+  {key:'final',       label:'Final'},
+  {key:'referencia',  label:'Referência'},
+  {key:'pkgAula',     label:'Pkg Aula'},
+  {key:'pkgTrilha',   label:'Pkg Trilha'},
+  {key:'pkgBizu',     label:'Pkg Bizu'},
+  {key:'orientacoes', label:'Orientações'},
+  {key:'estatistica', label:'An. Estatística'},
+  {key:'extras',      label:'Outros'}
+];
+
+function calcTotalTarefas(numAulas,formato){
+  const n=parseInt(numAulas)||0;
+  if(formato==='A')return n*2;
+  if(formato==='B')return n*3;
+  if(formato==='C')return n*3+2;
+  if(formato==='D')return n*3+3;
+  return 0;
+}
+function monDaysSince(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr+'T00:00:00');
+  const now=new Date();now.setHours(0,0,0,0);
+  return Math.max(0,Math.floor((now-d)/86400000));
+}
+
+async function loadMonitor(){
+  try{const s=localStorage.getItem('nav_monitor');if(s)monitorCargos=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__monitor_cargos__');
+    if(d&&d[0]&&d[0].topics&&Array.isArray(d[0].topics)){
+      monitorCargos=d[0].topics;
+      try{localStorage.setItem('nav_monitor',JSON.stringify(monitorCargos));}catch{}
+    }
+  }catch{}
+  const tab=document.getElementById('tab-trabalho');
+  if(tab&&!tab.classList.contains('hidden'))renderMonitor();
+}
+async function _saveMonitor(){
+  try{localStorage.setItem('nav_monitor',JSON.stringify(monitorCargos));}catch{}
+  await sbUpsert('conteudo',{disc:'__monitor_cargos__',topics:monitorCargos});
+}
+
+function showTrabalhoSubtab(tab){
+  _trabalhoSubtab=tab;
+  ['monitor','organizador'].forEach(t=>{
+    const el=document.getElementById('trab-sub-'+t);if(el)el.classList.toggle('hidden',t!==tab);
+    const btn=document.getElementById('trab-btn-'+t);if(btn)btn.classList.toggle('active',t===tab);
+  });
+}
+
+function renderTrabalho(){renderMonitor();}
+
+function renderMonitor(){
+  const wrap=document.getElementById('monitor-list');if(!wrap)return;
+  const totalCargos=monitorCargos.length;
+  const totalTarefas=monitorCargos.reduce((s,c)=>s+calcTotalTarefas(c.numAulas,c.formato),0);
+  const totalFeitas=monitorCargos.reduce((s,c)=>s+(parseInt(c.feitas)||0),0);
+  const totalFaltam=totalTarefas-totalFeitas;
+  const g=id=>document.getElementById(id);
+  if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
+  if(g('mon-sum-tarefas'))g('mon-sum-tarefas').textContent=totalTarefas;
+  if(g('mon-sum-feitas'))g('mon-sum-feitas').textContent=totalFeitas;
+  if(g('mon-sum-faltam'))g('mon-sum-faltam').textContent=totalFaltam;
+  if(!monitorCargos.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
+    return;
+  }
+  wrap.innerHTML=monitorCargos.map(cargo=>{
+    const tot=calcTotalTarefas(cargo.numAulas,cargo.formato);
+    const feit=parseInt(cargo.feitas)||0;
+    const falt=Math.max(0,tot-feit);
+    const pct=tot>0?Math.round(feit/tot*100):0;
+    const days=monDaysSince(cargo.ultimaData);
+    const isOpen=monitorOpenCards.has(cargo.id);
+    const pctColor=pct>=70?'#2dd4a0':pct>=40?'#f5a623':pct>0?'#ef4444':'var(--muted)';
+    const links=cargo.links||{};
+    const circ=(2*Math.PI*14).toFixed(1);
+    const dayLabel=days!==null?(days===0?'hoje':days===1?'ontem':days+'d atrás'):'';
+    const dayColor=days!==null?(days>7?'#f26b5e':days>3?'#f5a623':'#2dd4a0'):'var(--muted)';
+
+    let bodyHTML='';
+    if(isOpen){
+      const linksHTML=MON_LINK_FIELDS.map(f=>{
+        const url=(links[f.key]||'').replace(/"/g,'&quot;');
+        const hasUrl=!!(links[f.key]||'').trim();
+        return `<div style="display:flex;align-items:center;gap:5px;background:${hasUrl?'#071a28':'var(--surface2)'};border:1px solid ${hasUrl?'rgba(62,181,200,.3)':'var(--border)'};border-radius:7px;padding:5px 8px">
+          <span style="font-size:10px;color:${hasUrl?'var(--accent)':'var(--muted)'};white-space:nowrap;width:84px;font-weight:600;flex-shrink:0">${f.label}</span>
+          <input value="${url}" onchange="updateMonLink(${cargo.id},'${f.key}',this.value)" placeholder="cole o link..."
+            style="flex:1;background:transparent;border:none;font-size:11px;color:${hasUrl?'#7dd3fc':'var(--muted)'};outline:none;min-width:0;font-family:inherit">
+          ${hasUrl?`<a href="${url}" target="_blank" rel="noopener" style="font-size:14px;text-decoration:none;flex-shrink:0;opacity:.7;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">↗</a>`:''}
+        </div>`;
+      }).join('');
+
+      let provaInfo='';
+      if(cargo.edital==='pos'&&cargo.provaDate){
+        const dtp=Math.floor((new Date(cargo.provaDate+'T00:00:00')-new Date().setHours(0,0,0,0))/86400000);
+        const [py,pm,pd]=cargo.provaDate.split('-');
+        provaInfo=`<div style="font-size:11px;margin-top:3px;color:${dtp<0?'#f26b5e':dtp<30?'#f5a623':'#2dd4a0'}">${pd}/${pm}/${py} · ${dtp<0?'passou!':dtp+'d'}</div>`;
+      }
+
+      const formatoDesc={A:'Aula + Rev (×2/aula)',B:'+ SQ (×3/aula)',C:'+ 2 SQ finais (×3+2)',D:'+ Bizu final (×3+3)'};
+
+      bodyHTML=`<div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px">
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nome</label>
+            <input value="${(cargo.nome||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'nome',this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Edital</label>
+            <select onchange="updateMonField(${cargo.id},'edital',this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+              <option value="pre" ${cargo.edital==='pre'?'selected':''}>Pré-edital</option>
+              <option value="pos" ${cargo.edital==='pos'?'selected':''}>Pós-edital</option>
+            </select>
+          </div>
+          ${cargo.edital==='pos'?`
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Banca</label>
+            <input value="${(cargo.banca||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'banca',this.value)" placeholder="CESPE, FCC..."
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Data da prova</label>
+            <input type="date" value="${cargo.provaDate||''}" onchange="updateMonField(${cargo.id},'provaDate',this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+            ${provaInfo}
+          </div>`:''}
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
+            <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Formato</label>
+            <select onchange="updateMonField(${cargo.id},'formato',this.value)"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+              <option value="A" ${cargo.formato==='A'?'selected':''}>Aula + Rev (×2/aula)</option>
+              <option value="B" ${cargo.formato==='B'?'selected':''}>+ SQ (×3/aula)</option>
+              <option value="C" ${cargo.formato==='C'?'selected':''}>+ 2 SQ finais (×3+2)</option>
+              <option value="D" ${cargo.formato==='D'?'selected':''}>+ Bizu final (×3+3)</option>
+            </select>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">${formatoDesc[cargo.formato]||''}</div>
+          </div>
+        </div>
+
+        <!-- Stats calculados -->
+        <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
+          <div>
+            <div style="font-size:22px;font-weight:800;color:var(--accent)">${tot}</div>
+            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Total</div>
+          </div>
+          <div>
+            <input type="number" min="0" max="${tot||9999}" value="${feit}"
+              onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
+              style="width:56px;text-align:center;padding:3px;border:1px solid rgba(45,212,160,.4);border-radius:6px;font-size:20px;font-weight:800;background:var(--surface);color:#2dd4a0;font-family:inherit;outline:none">
+            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:3px">Feitas</div>
+          </div>
+          <div>
+            <div style="font-size:22px;font-weight:800;color:${falt>0?'#f26b5e':'#2dd4a0'}">${falt}</div>
+            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Faltam</div>
+          </div>
+          <div>
+            <input type="date" value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)"
+              style="padding:3px 5px;border:1px solid var(--border);border-radius:6px;font-size:10px;background:var(--surface);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box;outline:none">
+            <div style="font-size:14px;font-weight:700;color:${dayColor};margin-top:4px">${dayLabel||'—'}</div>
+            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Última vez</div>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Links</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:5px">${linksHTML}</div>
+        </div>
+      </div>`;
+    }
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:var(--surface2)" onclick="toggleMonCard(${cargo.id})">
+        <svg width="36" height="36" viewBox="0 0 36 36" style="flex-shrink:0">
+          <circle cx="18" cy="18" r="14" fill="none" stroke="#1e3f5c" stroke-width="3"/>
+          <circle cx="18" cy="18" r="14" fill="none" stroke="${pctColor}" stroke-width="3"
+            stroke-dasharray="${(2*Math.PI*14*pct/100).toFixed(1)} ${circ}"
+            stroke-linecap="round" transform="rotate(-90 18 18)"/>
+          <text x="18" y="22" text-anchor="middle" font-size="8" font-weight="700" fill="${pctColor}" font-family="Nunito,sans-serif">${pct}%</text>
+        </svg>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cargo.nome||'(sem nome)'}</div>
+          <div style="display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap">
+            <span style="font-size:11px;color:${pctColor};font-weight:600">${feit}/${tot} tarefas</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'Pós'+(cargo.banca?' · '+cargo.banca:''):'Pré-edital'}</span>
+            ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <button onclick="event.stopPropagation();deleteMonCargo(${cargo.id})" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(239,68,68,.12);color:#ef4444;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✕</button>
+          <span style="font-size:12px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
+        </div>
+      </div>
+      ${bodyHTML}
+    </div>`;
+  }).join('');
+}
+
+function toggleMonCard(id){
+  if(monitorOpenCards.has(id))monitorOpenCards.delete(id);
+  else monitorOpenCards.add(id);
+  renderMonitor();
+}
+function updateMonField(id,field,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  if(field==='numAulas'||field==='feitas')value=parseInt(value)||0;
+  cargo[field]=value;
+  renderMonitor();
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveMonitor().then(()=>showSync('ok','✓ Salvo'));},1500);
+}
+function updateMonLink(id,key,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  if(!cargo.links)cargo.links={};
+  cargo.links[key]=value;
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
+}
+function addMonCargo(){
+  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,formato:'B',feitas:0,ultimaData:'',links:{}};
+  monitorCargos.unshift(cargo);
+  monitorOpenCards.add(cargo.id);
+  _saveMonitor();
+  renderMonitor();
+}
+function deleteMonCargo(id){
+  if(!confirm('Excluir este cargo?'))return;
+  monitorCargos=monitorCargos.filter(c=>c.id!==id);
+  monitorOpenCards.delete(id);
+  _saveMonitor();
+  renderMonitor();
+}
+
 </script>
+
+<!-- TAB TRABALHO -->
+<div id="tab-trabalho" class="hidden" style="font-family:'Nunito','Segoe UI',sans-serif">
+  <div class="subtabs">
+    <button class="subtab active" id="trab-btn-monitor" onclick="showTrabalhoSubtab('monitor')">Monitor</button>
+    <button class="subtab" id="trab-btn-organizador" onclick="showTrabalhoSubtab('organizador')">Organizador</button>
+  </div>
+
+  <!-- Monitor -->
+  <div id="trab-sub-monitor" style="padding:14px 20px">
+    <div class="stats-bar" style="grid-template-columns:repeat(4,1fr);border-radius:12px;border:1px solid var(--border);margin-bottom:14px">
+      <div class="stat"><div class="stat-val" id="mon-sum-total">0</div><div class="stat-lbl">Cargos</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--muted)" id="mon-sum-tarefas">0</div><div class="stat-lbl">Total tarefas</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--success)" id="mon-sum-feitas">0</div><div class="stat-lbl">Feitas</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--accent)" id="mon-sum-faltam">0</div><div class="stat-lbl">Faltam</div></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Novo cargo</button>
+    </div>
+    <div id="monitor-list"></div>
+  </div>
+
+  <!-- Organizador -->
+  <div id="trab-sub-organizador" class="hidden" style="padding:14px 20px">
+    <div style="text-align:center;padding:48px 20px;color:var(--muted);font-size:13px">Em breve ✨</div>
+  </div>
+</div>
 
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
