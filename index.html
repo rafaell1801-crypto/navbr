@@ -4534,14 +4534,39 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
 let monitorCargos=[];
 let monitorOpenCards=new Set();
+let monLinkLabels={};
+let monLinkEditOpen=new Set();
+let monSettingsOpen=false;
 let _monSaveTimer=null;
 let _trabalhoSubtab='monitor';
 
 const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTrilha','pkgBizu','orientacoes','estatistica','extras'];
 const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
+const MON_LINK_ICONS={esqueleto:'📄',edicao:'✏️',final:'✅',referencia:'📌',pkgAula:'🎓',pkgTrilha:'🗺️',pkgBizu:'⚡',orientacoes:'📋',estatistica:'📊',extras:'🔗'};
+const MON_TASK_PRESETS=['Teoria','Teoria + Questões','Revisão','Revisão + Questões','Treino (PDF)','Treino (SQ)'];
 
 function calcTotalTarefas(numAulas,aulaItens,finaisItens){
   return (parseInt(numAulas)||0)*(aulaItens||[]).length+(finaisItens||[]).length;
+}
+
+async function loadMonLinkLabels(){
+  try{const s=localStorage.getItem('nav_mon_labels');if(s)monLinkLabels=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__monitor_link_labels__');
+    if(d&&d[0]&&d[0].topics&&typeof d[0].topics==='object'){
+      monLinkLabels=d[0].topics;
+      try{localStorage.setItem('nav_mon_labels',JSON.stringify(monLinkLabels));}catch{}
+    }
+  }catch{}
+}
+async function saveMonLinkLabels(){
+  try{localStorage.setItem('nav_mon_labels',JSON.stringify(monLinkLabels));}catch{}
+  await sbUpsert('conteudo',{disc:'__monitor_link_labels__',topics:monLinkLabels});
+}
+function updateMonGlobalLabel(key,value){
+  monLinkLabels[key]=value;
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>saveMonLinkLabels(),1500);
 }
 function monDaysSince(ddmm){
   if(!ddmm||!ddmm.includes('/'))return null;
@@ -4566,6 +4591,7 @@ function monOldestEdit(){
 }
 
 async function loadMonitor(){
+  await loadMonLinkLabels();
   try{const s=localStorage.getItem('nav_monitor');if(s)monitorCargos=JSON.parse(s);}catch{}
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__monitor_cargos__');
@@ -4624,11 +4650,29 @@ function renderMonitor(){
   const g=id=>document.getElementById(id);
   if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
   if(g('mon-sum-oldest'))g('mon-sum-oldest').textContent=oldestStr;
+  // settings panel
+  const settingsHTML=`<div style="margin-bottom:14px">
+    <button onclick="monSettingsOpen=!monSettingsOpen;renderMonitor()" style="padding:5px 12px;font-size:11px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configurar links ${monSettingsOpen?'▴':'▾'}
+    </button>
+    ${monSettingsOpen?`<div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px">
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Nomes dos links (globais para todas as monitorias)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px">
+        ${MON_LINK_KEYS.map(key=>`<div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px">
+          <span style="font-size:15px;flex-shrink:0">${MON_LINK_ICONS[key]}</span>
+          <input value="${(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;')}" onchange="updateMonGlobalLabel('${key}',this.value)"
+            style="flex:1;background:transparent;border:none;font-size:11px;color:var(--text);font-family:inherit;outline:none;min-width:0">
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+  </div>`;
+
   if(!monitorCargos.length){
-    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
+    wrap.innerHTML=settingsHTML+'<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
     return;
   }
-  wrap.innerHTML=monitorCargos.map(cargo=>{
+  wrap.innerHTML=settingsHTML+monitorCargos.map(cargo=>{
     const aulaItens=cargo.tarefasAulaItens||[];
     const finaisItens=cargo.tarefasFinaisItens||[];
     const tot=calcTotalTarefas(cargo.numAulas,aulaItens,finaisItens);
@@ -4703,7 +4747,7 @@ function renderMonitor(){
           <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
             <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
-              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+              style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
           </div>
         </div>
 
@@ -4712,30 +4756,34 @@ function renderMonitor(){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div>
               <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Por aula <span style="color:var(--accent);font-weight:700">(${aulaItens.length})</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:6px">
+              <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:26px;margin-bottom:7px">
                 ${aulaItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(62,181,200,.15);border:1px solid rgba(62,181,200,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#7dd3fc">
                   <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'aula',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
                   <button onclick="removeMonTarefaItem(${cargo.id},'aula',${i})" style="background:none;border:none;color:rgba(125,211,252,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
                 </span>`).join('')}
               </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+                ${MON_TASK_PRESETS.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'aula','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(62,181,200,.25);border-radius:5px;background:#0a1d2e;color:#6ba8c0;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+              </div>
               <div style="display:flex;gap:5px">
-                <input id="mon-add-aula-${cargo.id}" placeholder="+ ex: teoria" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
-                  style="flex:1;padding:4px 8px;border:1px dashed rgba(62,181,200,.3);border-radius:6px;font-size:11px;background:transparent;color:var(--text);font-family:inherit;outline:none">
-                <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">+</button>
+                <input id="mon-add-aula-${cargo.id}" placeholder="Por aula" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
+                  style="flex:1;padding:5px 9px;border:1.5px solid rgba(62,181,200,.35);border-radius:6px;font-size:11px;background:#0d2133;color:var(--text);font-family:inherit;outline:none">
+                <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
               </div>
             </div>
             <div>
               <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Tarefas finais <span style="color:#c4b5fd;font-weight:700">(${finaisItens.length})</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:6px">
+              <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:26px;margin-bottom:7px">
                 ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
                   <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
                   <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
                 </span>`).join('')}
               </div>
+              <div style="height:31px;margin-bottom:6px"></div>
               <div style="display:flex;gap:5px">
-                <input id="mon-add-finais-${cargo.id}" placeholder="+ ex: SQ final" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
-                  style="flex:1;padding:4px 8px;border:1px dashed rgba(139,107,232,.3);border-radius:6px;font-size:11px;background:transparent;color:var(--text);font-family:inherit;outline:none">
-                <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:11px;cursor:pointer;font-family:inherit">+</button>
+                <input id="mon-add-finais-${cargo.id}" placeholder="Finais" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
+                  style="flex:1;padding:5px 9px;border:1.5px solid rgba(139,107,232,.35);border-radius:6px;font-size:11px;background:#130d20;color:var(--text);font-family:inherit;outline:none">
+                <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
               </div>
             </div>
           </div>
@@ -4771,14 +4819,48 @@ function renderMonitor(){
         </div>
 
         <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Links <span style="font-weight:400;font-style:italic">(clique no nome para editar)</span></div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:5px">${linksHTML}</div>
+          <div class="links-row-display" style="gap:6px;padding:6px 2px">
+            ${MON_LINK_KEYS.map(key=>{
+              const url=(links[key]||'').trim();
+              const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;');
+              const ico=MON_LINK_ICONS[key];
+              if(url)return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</a>`;
+              return `<span class="link-icon empty" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</span>`;
+            }).join('')}
+            <button onclick="toggleMonLinkEdit(${cargo.id})" class="link-edit-all" title="Editar links" style="margin-left:auto">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          </div>
+          ${monLinkEditOpen.has(cargo.id)?`<div class="link-edit-all-row" style="margin-top:6px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:5px">
+              ${MON_LINK_KEYS.map(key=>{
+                const url=(links[key]||'').replace(/"/g,'&quot;');
+                const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
+                const ico=MON_LINK_ICONS[key];
+                const hasUrl=!!(links[key]||'').trim();
+                return `<div class="lea-cell" style="gap:5px">
+                  <span style="font-size:14px;flex-shrink:0">${ico}</span>
+                  <span style="font-size:10px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:72px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
+                  <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
+                    style="flex:1;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px;min-width:0;font-family:inherit;outline:none">
+                  ${hasUrl?`<a href="${url}" target="_blank" rel="noopener" style="font-size:13px;text-decoration:none;flex-shrink:0;opacity:.6" title="Abrir">↗</a>`:''}
+                </div>`;
+              }).join('')}
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px">
+              <button class="lea-ok" onclick="toggleMonLinkEdit(${cargo.id})">✓ Fechar</button>
+            </div>
+          </div>`:''}
         </div>
       </div>`;
     }
 
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:var(--surface2)" onclick="toggleMonCard(${cargo.id})">
+    const concluido=!!cargo.concluido;
+    return `<div style="background:var(--surface);border:1px solid ${concluido?'rgba(45,212,160,.35)':'var(--border)'};border-radius:12px;overflow:hidden;margin-bottom:10px${concluido?';opacity:.75':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:${concluido?'rgba(45,212,160,.06)':'var(--surface2)'}" onclick="toggleMonCard(${cargo.id})">
         <svg width="36" height="36" viewBox="0 0 36 36" style="flex-shrink:0">
           <circle cx="18" cy="18" r="14" fill="none" stroke="#1e3f5c" stroke-width="3"/>
           <circle cx="18" cy="18" r="14" fill="none" stroke="${pctColor}" stroke-width="3"
@@ -4792,10 +4874,14 @@ function renderMonitor(){
             <span style="font-size:11px;color:${pctColor};font-weight:600">${feit}/${tot} tarefas</span>
             <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'Pós'+(cargo.banca?' · '+cargo.banca:''):'Pré-edital'}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
-            <span style="font-size:10px;color:${editColor}">✏ ${editLabel}</span>
+            <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:${editColor}">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              ${editLabel}
+            </span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:24px;height:24px;border-radius:6px;border:none;background:${concluido?'rgba(45,212,160,.2)':'rgba(255,255,255,.07)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.6)'};cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✓</button>
           <button onclick="event.stopPropagation();deleteMonCargo(${cargo.id})" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(239,68,68,.12);color:#ef4444;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✕</button>
           <span style="font-size:12px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
         </div>
@@ -4858,15 +4944,20 @@ function updateMonLink(id,key,value){
   clearTimeout(_monSaveTimer);
   _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
 }
-function updateMonLinkLabel(id,key,value){
+function toggleMonLinkEdit(id){
+  if(monLinkEditOpen.has(id))monLinkEditOpen.delete(id);
+  else monLinkEditOpen.add(id);
+  renderMonitor();
+}
+function toggleMonConcluido(id){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
-  if(!cargo.linkLabels)cargo.linkLabels={};
-  cargo.linkLabels[key]=value;
+  cargo.concluido=!cargo.concluido;
+  renderMonitor();
   clearTimeout(_monSaveTimer);
-  _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
 }
 function addMonCargo(){
-  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),links:{},linkLabels:{}};
+  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
