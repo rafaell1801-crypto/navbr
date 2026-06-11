@@ -2614,7 +2614,7 @@ async function timerStop(){
   }
   await saveDailySession();
   timerSt.remaining=getBlockSecs();
-  _timerButtonsUpdate();updateTimerUI();renderStats();
+  _timerButtonsUpdate();updateTimerUI();render();renderStats();
 }
 function timerBeep(){
   try{
@@ -2653,7 +2653,7 @@ async function timerFinish(){
     }
   }
   saveDailySession();
-  timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();showSync('ok','✓ Sessão concluída');
+  timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();render();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
 async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
@@ -4537,32 +4537,32 @@ let monitorOpenCards=new Set();
 let _monSaveTimer=null;
 let _trabalhoSubtab='monitor';
 
-const MON_LINK_FIELDS=[
-  {key:'esqueleto',   label:'Esqueleto'},
-  {key:'edicao',      label:'Edição'},
-  {key:'final',       label:'Final'},
-  {key:'referencia',  label:'Referência'},
-  {key:'pkgAula',     label:'Pkg Aula'},
-  {key:'pkgTrilha',   label:'Pkg Trilha'},
-  {key:'pkgBizu',     label:'Pkg Bizu'},
-  {key:'orientacoes', label:'Orientações'},
-  {key:'estatistica', label:'An. Estatística'},
-  {key:'extras',      label:'Outros'}
-];
+const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTrilha','pkgBizu','orientacoes','estatistica','extras'];
+const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
 
-function calcTotalTarefas(numAulas,formato){
-  const n=parseInt(numAulas)||0;
-  if(formato==='A')return n*2;
-  if(formato==='B')return n*3;
-  if(formato==='C')return n*3+2;
-  if(formato==='D')return n*3+3;
-  return 0;
+function calcTotalTarefas(numAulas,tarefasAula,tarefasFinais){
+  return (parseInt(numAulas)||0)*(parseInt(tarefasAula)||0)+(parseInt(tarefasFinais)||0);
 }
-function monDaysSince(dateStr){
-  if(!dateStr)return null;
-  const d=new Date(dateStr+'T00:00:00');
+function monDaysSince(ddmm){
+  if(!ddmm||!ddmm.includes('/'))return null;
+  const parts=ddmm.split('/');
+  const dd=parseInt(parts[0]),mm=parseInt(parts[1]);
+  if(!dd||!mm)return null;
+  const now=new Date();now.setHours(0,0,0,0);
+  let d=new Date(now.getFullYear(),mm-1,dd);
+  if(d>now)d=new Date(now.getFullYear()-1,mm-1,dd);
+  return Math.max(0,Math.floor((now-d)/86400000));
+}
+function monDaysSinceTs(ts){
+  if(!ts)return null;
+  const d=new Date(ts);d.setHours(0,0,0,0);
   const now=new Date();now.setHours(0,0,0,0);
   return Math.max(0,Math.floor((now-d)/86400000));
+}
+function monOldestEdit(){
+  const w=monitorCargos.filter(c=>c.lastEdited);
+  if(!w.length)return null;
+  return new Date(Math.min(...w.map(c=>new Date(c.lastEdited))));
 }
 
 async function loadMonitor(){
@@ -4574,6 +4574,20 @@ async function loadMonitor(){
       try{localStorage.setItem('nav_monitor',JSON.stringify(monitorCargos));}catch{}
     }
   }catch{}
+  monitorCargos.forEach(c=>{
+    if(c.formato!==undefined&&c.tarefasAula===undefined){
+      const map={A:[2,0],B:[3,0],C:[3,2],D:[3,3]};
+      const [ta,tf]=map[c.formato]||[2,0];
+      c.tarefasAula=ta;c.tarefasFinais=tf;c.tarefasAulaLabel='';c.tarefasFinaisLabel='';
+      delete c.formato;
+    }
+    if(c.tarefasAula===undefined)c.tarefasAula=2;
+    if(c.tarefasFinais===undefined)c.tarefasFinais=0;
+    if(!c.tarefasAulaLabel)c.tarefasAulaLabel='';
+    if(!c.tarefasFinaisLabel)c.tarefasFinaisLabel='';
+    if(!c.linkLabels)c.linkLabels={};
+    if(c.lastEdited===undefined)c.lastEdited=null;
+  });
   const tab=document.getElementById('tab-trabalho');
   if(tab&&!tab.classList.contains('hidden'))renderMonitor();
 }
@@ -4595,55 +4609,60 @@ function renderTrabalho(){renderMonitor();}
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
   const totalCargos=monitorCargos.length;
-  const totalTarefas=monitorCargos.reduce((s,c)=>s+calcTotalTarefas(c.numAulas,c.formato),0);
-  const totalFeitas=monitorCargos.reduce((s,c)=>s+(parseInt(c.feitas)||0),0);
-  const totalFaltam=totalTarefas-totalFeitas;
+  const oldest=monOldestEdit();
+  const oldestStr=oldest?`${String(oldest.getDate()).padStart(2,'0')}/${String(oldest.getMonth()+1).padStart(2,'0')}/${oldest.getFullYear()}`:'—';
   const g=id=>document.getElementById(id);
   if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
-  if(g('mon-sum-tarefas'))g('mon-sum-tarefas').textContent=totalTarefas;
-  if(g('mon-sum-feitas'))g('mon-sum-feitas').textContent=totalFeitas;
-  if(g('mon-sum-faltam'))g('mon-sum-faltam').textContent=totalFaltam;
+  if(g('mon-sum-oldest'))g('mon-sum-oldest').textContent=oldestStr;
   if(!monitorCargos.length){
     wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
     return;
   }
   wrap.innerHTML=monitorCargos.map(cargo=>{
-    const tot=calcTotalTarefas(cargo.numAulas,cargo.formato);
+    const tot=calcTotalTarefas(cargo.numAulas,cargo.tarefasAula,cargo.tarefasFinais);
     const feit=parseInt(cargo.feitas)||0;
     const falt=Math.max(0,tot-feit);
     const pct=tot>0?Math.round(feit/tot*100):0;
     const days=monDaysSince(cargo.ultimaData);
+    const daysEdit=monDaysSinceTs(cargo.lastEdited);
     const isOpen=monitorOpenCards.has(cargo.id);
     const pctColor=pct>=70?'#2dd4a0':pct>=40?'#f5a623':pct>0?'#ef4444':'var(--muted)';
     const links=cargo.links||{};
+    const linkLabels=cargo.linkLabels||{};
     const circ=(2*Math.PI*14).toFixed(1);
     const dayLabel=days!==null?(days===0?'hoje':days===1?'ontem':days+'d atrás'):'';
     const dayColor=days!==null?(days>7?'#f26b5e':days>3?'#f5a623':'#2dd4a0'):'var(--muted)';
+    const editLabel=daysEdit!==null?(daysEdit===0?'hoje':daysEdit===1?'ontem':daysEdit+'d'):'—';
+    const editColor=daysEdit!==null?(daysEdit>14?'#f26b5e':daysEdit>7?'#f5a623':'var(--muted)'):'var(--muted)';
 
     let bodyHTML='';
     if(isOpen){
-      const linksHTML=MON_LINK_FIELDS.map(f=>{
-        const url=(links[f.key]||'').replace(/"/g,'&quot;');
-        const hasUrl=!!(links[f.key]||'').trim();
-        return `<div style="display:flex;align-items:center;gap:5px;background:${hasUrl?'#071a28':'var(--surface2)'};border:1px solid ${hasUrl?'rgba(62,181,200,.3)':'var(--border)'};border-radius:7px;padding:5px 8px">
-          <span style="font-size:10px;color:${hasUrl?'var(--accent)':'var(--muted)'};white-space:nowrap;width:84px;font-weight:600;flex-shrink:0">${f.label}</span>
-          <input value="${url}" onchange="updateMonLink(${cargo.id},'${f.key}',this.value)" placeholder="cole o link..."
-            style="flex:1;background:transparent;border:none;font-size:11px;color:${hasUrl?'#7dd3fc':'var(--muted)'};outline:none;min-width:0;font-family:inherit">
+      const linksHTML=MON_LINK_KEYS.map(key=>{
+        const url=(links[key]||'').replace(/"/g,'&quot;');
+        const lbl=(linkLabels[key]||MON_LINK_DEFAULTS[key]||key).replace(/"/g,'&quot;');
+        const hasUrl=!!(links[key]||'').trim();
+        return `<div style="display:flex;align-items:center;gap:5px;background:${hasUrl?'#071a28':'var(--surface2)'};border:1px solid ${hasUrl?'rgba(62,181,200,.3)':'var(--border)'};border-radius:7px;padding:4px 7px">
+          <input value="${lbl}" onchange="updateMonLinkLabel(${cargo.id},'${key}',this.value)"
+            style="width:76px;flex-shrink:0;background:transparent;border:none;border-right:1px solid var(--border);padding-right:5px;margin-right:2px;font-size:10px;font-weight:600;color:${hasUrl?'var(--accent)':'var(--muted)'};outline:none;font-family:inherit;cursor:text">
+          <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
+            style="flex:1;background:transparent;border:none;font-size:11px;color:#fff;outline:none;min-width:0;font-family:inherit">
           ${hasUrl?`<a href="${url}" target="_blank" rel="noopener" style="font-size:14px;text-decoration:none;flex-shrink:0;opacity:.7;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">↗</a>`:''}
         </div>`;
       }).join('');
 
       let provaInfo='';
-      if(cargo.edital==='pos'&&cargo.provaDate){
-        const dtp=Math.floor((new Date(cargo.provaDate+'T00:00:00')-new Date().setHours(0,0,0,0))/86400000);
-        const [py,pm,pd]=cargo.provaDate.split('-');
-        provaInfo=`<div style="font-size:11px;margin-top:3px;color:${dtp<0?'#f26b5e':dtp<30?'#f5a623':'#2dd4a0'}">${pd}/${pm}/${py} · ${dtp<0?'passou!':dtp+'d'}</div>`;
+      if(cargo.edital==='pos'&&cargo.provaDate&&cargo.provaDate.includes('/')){
+        const [pd,pm]=cargo.provaDate.split('/');
+        const now=new Date();now.setHours(0,0,0,0);
+        let yr=now.getFullYear();
+        let dtp=new Date(yr,parseInt(pm)-1,parseInt(pd));
+        if(dtp<now)dtp=new Date(yr+1,parseInt(pm)-1,parseInt(pd));
+        const diff=Math.floor((dtp-now)/86400000);
+        provaInfo=`<div style="font-size:10px;margin-top:3px;color:${diff<0?'#f26b5e':diff<30?'#f5a623':'#2dd4a0'}">${diff<0?'passou!':diff+'d restantes'}</div>`;
       }
 
-      const formatoDesc={A:'Aula + Rev (×2/aula)',B:'+ SQ (×3/aula)',C:'+ 2 SQ finais (×3+2)',D:'+ Bizu final (×3+3)'};
-
       bodyHTML=`<div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:14px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
           <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nome</label>
             <input value="${(cargo.nome||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'nome',this.value)"
@@ -4665,7 +4684,7 @@ function renderMonitor(){
           </div>
           <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Data da prova</label>
-            <input type="date" value="${cargo.provaDate||''}" onchange="updateMonField(${cargo.id},'provaDate',this.value)"
+            <input value="${cargo.provaDate||''}" onchange="updateMonField(${cargo.id},'provaDate',this.value)" placeholder="dd/mm" maxlength="5"
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
             ${provaInfo}
           </div>`:''}
@@ -4674,20 +4693,33 @@ function renderMonitor(){
             <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
           </div>
-          <div>
-            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Formato</label>
-            <select onchange="updateMonField(${cargo.id},'formato',this.value)"
-              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
-              <option value="A" ${cargo.formato==='A'?'selected':''}>Aula + Rev (×2/aula)</option>
-              <option value="B" ${cargo.formato==='B'?'selected':''}>+ SQ (×3/aula)</option>
-              <option value="C" ${cargo.formato==='C'?'selected':''}>+ 2 SQ finais (×3+2)</option>
-              <option value="D" ${cargo.formato==='D'?'selected':''}>+ Bizu final (×3+3)</option>
-            </select>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">${formatoDesc[cargo.formato]||''}</div>
-          </div>
         </div>
 
-        <!-- Stats calculados -->
+        <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:12px">
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Formato das tarefas</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:10px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px">Por aula</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" min="0" max="9" value="${cargo.tarefasAula||0}" onchange="updateMonField(${cargo.id},'tarefasAula',this.value)"
+                  style="width:44px;text-align:center;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--surface2);color:var(--accent);font-family:inherit;outline:none">
+                <input value="${(cargo.tarefasAulaLabel||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'tarefasAulaLabel',this.value)" placeholder="ex: teoria + sq"
+                  style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px">Tarefas finais</label>
+              <div style="display:flex;gap:6px;align-items:center">
+                <input type="number" min="0" max="99" value="${cargo.tarefasFinais||0}" onchange="updateMonField(${cargo.id},'tarefasFinais',this.value)"
+                  style="width:44px;text-align:center;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--surface2);color:var(--accent);font-family:inherit;outline:none">
+                <input value="${(cargo.tarefasFinaisLabel||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'tarefasFinaisLabel',this.value)" placeholder="ex: 2 SQs finais"
+                  style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${cargo.tarefasAula||0} + ${cargo.tarefasFinais||0} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
+        </div>
+
         <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
           <div>
             <div style="font-size:22px;font-weight:800;color:var(--accent)">${tot}</div>
@@ -4703,18 +4735,20 @@ function renderMonitor(){
             <div style="font-size:22px;font-weight:800;color:${falt>0?'#f26b5e':'#2dd4a0'}">${falt}</div>
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Faltam</div>
           </div>
-          <div>
-            <input type="date" value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)"
-              style="padding:3px 5px;border:1px solid var(--border);border-radius:6px;font-size:10px;background:var(--surface);color:var(--text);font-family:inherit;width:100%;box-sizing:border-box;outline:none">
-            <div style="font-size:14px;font-weight:700;color:${dayColor};margin-top:4px">${dayLabel||'—'}</div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+            <div style="display:flex;align-items:center;gap:5px">
+              <input value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)" placeholder="dd/mm" maxlength="5"
+                style="width:54px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;outline:none">
+              <span style="font-size:20px;line-height:1">📅</span>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:${dayColor}">${dayLabel||'—'}</div>
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Última vez</div>
           </div>
         </div>
 
-        <!-- Links -->
         <div>
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Links</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:5px">${linksHTML}</div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Links <span style="font-weight:400;font-style:italic">(clique no nome para editar)</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:5px">${linksHTML}</div>
         </div>
       </div>`;
     }
@@ -4734,6 +4768,7 @@ function renderMonitor(){
             <span style="font-size:11px;color:${pctColor};font-weight:600">${feit}/${tot} tarefas</span>
             <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'Pós'+(cargo.banca?' · '+cargo.banca:''):'Pré-edital'}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
+            <span style="font-size:10px;color:${editColor}">✏ ${editLabel}</span>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -4753,8 +4788,9 @@ function toggleMonCard(id){
 }
 function updateMonField(id,field,value){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
-  if(field==='numAulas'||field==='feitas')value=parseInt(value)||0;
+  if(['numAulas','feitas','tarefasAula','tarefasFinais'].includes(field))value=parseInt(value)||0;
   cargo[field]=value;
+  cargo.lastEdited=new Date().toISOString();
   renderMonitor();
   clearTimeout(_monSaveTimer);
   _monSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveMonitor().then(()=>showSync('ok','✓ Salvo'));},1500);
@@ -4763,11 +4799,19 @@ function updateMonLink(id,key,value){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
   if(!cargo.links)cargo.links={};
   cargo.links[key]=value;
+  cargo.lastEdited=new Date().toISOString();
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
+}
+function updateMonLinkLabel(id,key,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  if(!cargo.linkLabels)cargo.linkLabels={};
+  cargo.linkLabels[key]=value;
   clearTimeout(_monSaveTimer);
   _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
 }
 function addMonCargo(){
-  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,formato:'B',feitas:0,ultimaData:'',links:{}};
+  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAula:2,tarefasAulaLabel:'',tarefasFinais:0,tarefasFinaisLabel:'',feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),links:{},linkLabels:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
@@ -4792,11 +4836,9 @@ function deleteMonCargo(id){
 
   <!-- Monitor -->
   <div id="trab-sub-monitor" style="padding:14px 20px">
-    <div class="stats-bar" style="grid-template-columns:repeat(4,1fr);border-radius:12px;border:1px solid var(--border);margin-bottom:14px">
+    <div class="stats-bar" style="grid-template-columns:repeat(2,1fr);border-radius:12px;border:1px solid var(--border);margin-bottom:14px">
       <div class="stat"><div class="stat-val" id="mon-sum-total">0</div><div class="stat-lbl">Cargos</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--muted)" id="mon-sum-tarefas">0</div><div class="stat-lbl">Total tarefas</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--success)" id="mon-sum-feitas">0</div><div class="stat-lbl">Feitas</div></div>
-      <div class="stat"><div class="stat-val" style="color:var(--accent)" id="mon-sum-faltam">0</div><div class="stat-lbl">Faltam</div></div>
+      <div class="stat"><div class="stat-val" style="font-size:16px;color:var(--muted)" id="mon-sum-oldest">—</div><div class="stat-lbl">Edição mais antiga</div></div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
       <button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Novo cargo</button>
