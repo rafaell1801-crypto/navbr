@@ -904,9 +904,12 @@ function fsrsCurR(card){if(!card||!card.state)return 1;return fsrsRetr(fsrsDaysS
 function fsrsDiff(card){return (!card||!card.state)?0:diffDays(parseDate(card.due));}
 function fsrsItemDiff(itemId){
   const card=fsrsState[itemId];
-  if(card&&card.state)return diffDays(parseDate(card.due));
-  // card novo: só fica disponível no dia SEGUINTE ao da conclusão
   const dd=revState[itemId]&&revState[itemId].doneDate;
+  // se foi re-estudado após o último review FSRS, trata como novo (doneDate+1)
+  if(card&&card.state){
+    if(dd&&parseDate(dd)>parseDate(card.last))return diffDays(addDays(dd,1));
+    return diffDays(parseDate(card.due));
+  }
   return dd?diffDays(addDays(dd,1)):0;
 }
 
@@ -1893,13 +1896,13 @@ function toggleLate(){document.getElementById('late-body').classList.toggle('hid
 async function toggleItem(id){
   state[id]=!state[id];
   const toggledItem=getEffectiveAgenda().find(i=>i.id===id);
-  if(isDone(id)&&toggledItem&&!toggledItem.port&&!revState[id]){revState[id]={doneDate:TODAY,completedRevs:[]};sbUpsert('revisoes',{item_id:id,done_date:TODAY,completed_revs:[]});}
+  if(isDone(id)&&toggledItem&&!toggledItem.port){const ex=revState[id]||{};revState[id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}
   render();
   await sbUpsert('progresso',{id,feito:!!state[id]});showSync('ok','✓ Salvo');
 }
 async function markDayAll(dateStr,val){
   const days=groupByDay(),items=days[dateStr]||[];
-  for(const item of items){state[item.id]=val;if(val&&!item.port&&!revState[item.id]){revState[item.id]={doneDate:TODAY,completedRevs:[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:[]});}}
+  for(const item of items){state[item.id]=val;if(val&&!item.port){const ex=revState[item.id]||{};revState[item.id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}}
   render();showSync('saving','⟳ Salvando...');
   await Promise.all(items.map(item=>sbUpsert('progresso',{id:item.id,feito:!!state[item.id]})));
   showSync('ok','✓ Salvo');
@@ -2418,7 +2421,7 @@ function renderRev(){
       const R=Math.round(fsrsCurR(card)*100);
       const metrics=isNew
         ? `<span title="Novo card — primeira revisão">🆕 novo</span>`
-        : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span>`;
+        : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span><span title="Próxima revisão" style="color:#fff">${card.due}</span>`;
       const grades=`<div class="fsrs-grades">
         <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Reaprender<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
         <button class="fsrs-btn fsrs-hard" onclick="rateCard(${item.id},2)">Difícil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,2))}</span></button>
@@ -3199,11 +3202,13 @@ async function resetEstudos(){
     await Promise.all([
       fetch(SB_URL+'/rest/v1/progresso?id=gte.0',{method:'DELETE',headers:h}),
       fetch(SB_URL+'/rest/v1/revisoes?item_id=gte.0',{method:'DELETE',headers:h}),
+      sbUpsert('conteudo',{disc:'__fsrs__',topics:{}}),
     ]);
   }catch(e){console.error('Erro ao limpar Supabase:',e);}
-  state={};revState={};
+  state={};revState={};fsrsState={};
   try{localStorage.removeItem('nav_state_bkp');}catch{}
   try{localStorage.removeItem('nav_rev_bkp');}catch{}
+  try{localStorage.removeItem('nav_fsrs');}catch{}
   const n=new Date();
   const iso=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
   saveStartDateSetting(iso);saveAppSettings();
