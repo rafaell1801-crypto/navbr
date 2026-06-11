@@ -656,6 +656,11 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
           <p style="font-size:11px;color:var(--muted);margin:0 0 10px">Globais para todas as monitorias.</p>
           <div id="cfg-mon-link-labels" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px"></div>
         </div>
+        <div class="modal-section">
+          <h3>Formatos de tarefas (presets)</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 10px">Chips disponíveis nos cargos para adicionar tarefas.</p>
+          <div id="cfg-mon-presets"></div>
+        </div>
       </div>
     </details>
 
@@ -4555,8 +4560,9 @@ let _trabalhoSubtab='monitor';
 const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTrilha','pkgBizu','orientacoes','estatistica','extras'];
 const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
 const MON_LINK_ICONS={esqueleto:'📄',edicao:'✏️',final:'✅',referencia:'📌',pkgAula:'🎓',pkgTrilha:'🗺️',pkgBizu:'⚡',orientacoes:'📋',estatistica:'📊',extras:'🔗'};
-const MON_TASK_PRESETS=['Teoria','Teoria + Questões','Revisão','Revisão + Questões','Treino (PDF)','Treino (SQ)'];
-const MON_FINAIS_PRESETS=['SQ','BIZU'];
+let monLinkOrder=[...MON_LINK_KEYS];
+let monTaskPresets=['Teoria','Teoria + Questões','Revisão','Revisão + Questões','Treino (PDF)','Treino (SQ)'];
+let monFinaisPresets=['SQ','BIZU'];
 
 function calcTotalTarefas(numAulas,aulaItens,finaisItens){
   return (parseInt(numAulas)||0)*(aulaItens||[]).length+(finaisItens||[]).length;
@@ -4565,19 +4571,24 @@ function calcTotalTarefas(numAulas,aulaItens,finaisItens){
 // General links (4 blocks above cargo list)
 let monGeneralLinks={estatisticas:[],esqueletos:[],drive:[],outros:[]};
 let monGLEditOpen=new Set();
-const MON_GL_SECTIONS=[
+let MON_GL_SECTIONS=[
   {key:'estatisticas',label:'Análises estatísticas',color:'rgba(62,181,200,.2)',border:'rgba(62,181,200,.4)',text:'#7dd3fc'},
   {key:'esqueletos',label:'Esqueletos e Referências',color:'rgba(139,107,232,.2)',border:'rgba(139,107,232,.4)',text:'#c4b5fd'},
   {key:'drive',label:'Drive',color:'rgba(45,212,160,.15)',border:'rgba(45,212,160,.4)',text:'#2dd4a0'},
   {key:'outros',label:'Outros',color:'rgba(245,166,35,.15)',border:'rgba(245,166,35,.4)',text:'#f5a623'}
 ];
 
+function _applyGLLabels(){
+  const labs=monGeneralLinks.__labels__;
+  if(labs&&typeof labs==='object')MON_GL_SECTIONS.forEach(s=>{if(labs[s.key])s.label=labs[s.key];});
+}
 async function loadMonGeneralLinks(){
-  try{const s=localStorage.getItem('nav_mon_gl');if(s)monGeneralLinks=Object.assign({estatisticas:[],esqueletos:[],drive:[],outros:[]},JSON.parse(s));}catch{}
+  try{const s=localStorage.getItem('nav_mon_gl');if(s){monGeneralLinks=Object.assign({estatisticas:[],esqueletos:[],drive:[],outros:[]},JSON.parse(s));_applyGLLabels();}}catch{}
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__monitor_general_links__');
     if(d&&d[0]&&d[0].topics&&typeof d[0].topics==='object'){
       monGeneralLinks=Object.assign({estatisticas:[],esqueletos:[],drive:[],outros:[]},d[0].topics);
+      _applyGLLabels();
       try{localStorage.setItem('nav_mon_gl',JSON.stringify(monGeneralLinks));}catch{}
     }
   }catch{}
@@ -4590,6 +4601,14 @@ function toggleMonGLEdit(key){
   if(monGLEditOpen.has(key))monGLEditOpen.delete(key);
   else monGLEditOpen.add(key);
   renderMonGeneralLinks();
+}
+function updateMonGLLabel(key,val){
+  if(!val)return;
+  const s=MON_GL_SECTIONS.find(x=>x.key===key);if(s)s.label=val;
+  if(!monGeneralLinks.__labels__)monGeneralLinks.__labels__={};
+  monGeneralLinks.__labels__[key]=val;
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>saveMonGeneralLinks(),1500);
 }
 function addMonGLItem(key){
   const lblEl=document.getElementById('mon-gl-lbl-'+key);
@@ -4617,33 +4636,42 @@ function updateMonGLItem(key,i,field,value){
 }
 function renderMonGeneralLinks(){
   const wrap=document.getElementById('mon-general-links');if(!wrap)return;
-  wrap.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+  wrap.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:0 2px">
     ${MON_GL_SECTIONS.map(s=>{
       const items=monGeneralLinks[s.key]||[];
       const isEdit=monGLEditOpen.has(s.key);
-      const itemsHTML=items.map((it,i)=>`<div style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.2);border-radius:5px;padding:3px 6px">
-        ${isEdit
-          ?`<input value="${(it.label||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${s.key}',${i},'label',this.value)" style="flex:1;min-width:0;background:transparent;border:none;font-size:11px;font-weight:600;color:${s.text};outline:none;font-family:inherit">
-            <input value="${(it.url||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${s.key}',${i},'url',this.value)" placeholder="url" style="flex:2;min-width:0;background:transparent;border:none;font-size:10px;color:var(--muted);outline:none;font-family:inherit">
-            <button onclick="removeMonGLItem('${s.key}',${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;font-weight:700;padding:0 2px;flex-shrink:0">×</button>`
-          :`${it.url?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="flex:1;font-size:11px;font-weight:600;color:${s.text};text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(it.url||'').replace(/"/g,'&quot;')}">${it.label||it.url}</a>
-              <a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="font-size:12px;text-decoration:none;opacity:.5;flex-shrink:0">↗</a>`
-            :`<span style="flex:1;font-size:11px;color:var(--muted)">${it.label||it.url}</span>`}`}
-      </div>`).join('');
-      return `<div style="background:var(--surface);border:1px solid ${isEdit?s.border:'var(--border)'};border-radius:10px;padding:10px 12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${items.length||isEdit?'8px':'0'}">
-          <span style="font-size:10px;font-weight:700;color:${s.text};text-transform:uppercase;letter-spacing:.5px">${s.label}</span>
-          <button onclick="toggleMonGLEdit('${s.key}')" style="background:none;border:none;cursor:pointer;color:${isEdit?s.text:'var(--muted)'};padding:0;opacity:${isEdit?1:.6};transition:opacity .15s" title="Editar">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px">${itemsHTML}</div>
-        ${isEdit?`<div style="display:flex;gap:5px;margin-top:8px">
-          <input id="mon-gl-lbl-${s.key}" placeholder="nome" style="width:80px;flex-shrink:0;padding:4px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
-          <input id="mon-gl-url-${s.key}" placeholder="link" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonGLItem('${s.key}');}" style="flex:1;padding:4px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
-          <button onclick="addMonGLItem('${s.key}')" style="padding:4px 10px;border:1px solid ${s.border};border-radius:5px;background:${s.color};color:${s.text};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-        </div>`:''}
-        ${!items.length&&!isEdit?`<div style="font-size:11px;color:var(--muted);text-align:center;padding:4px 0">—</div>`:''}
+      const glKey=s.key;
+      if(isEdit){
+        const rows=items.map((it,i)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+          <input value="${(it.label||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'label',this.value)" placeholder="nome" style="width:90px;flex-shrink:0;padding:3px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:${s.text};font-family:inherit;outline:none;font-weight:600">
+          <input value="${(it.url||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'url',this.value)" placeholder="link" style="flex:1;padding:3px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+          ${it.url?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" style="font-size:12px;text-decoration:none;opacity:.5;flex-shrink:0">↗</a>`:''}
+          <button onclick="removeMonGLItem('${glKey}',${i})" style="background:none;border:none;color:rgba(239,68,68,.5);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(239,68,68,.5)'">×</button>
+        </div>`).join('');
+        return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1px solid ${s.border}">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <input value="${s.label}" onchange="updateMonGLLabel('${glKey}',this.value)" style="flex:1;background:transparent;border:none;font-size:10px;font-weight:700;color:#e8f4f8;text-transform:uppercase;letter-spacing:.5px;outline:none;font-family:inherit">
+            <button onclick="toggleMonGLEdit('${glKey}')" style="background:none;border:none;cursor:pointer;color:${s.text};padding:0;font-size:10px;font-weight:600">fechar</button>
+          </div>
+          ${rows}
+          <div style="display:flex;gap:5px;margin-top:6px">
+            <input id="mon-gl-lbl-${glKey}" placeholder="nome" style="width:90px;flex-shrink:0;padding:3px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+            <input id="mon-gl-url-${glKey}" placeholder="link" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonGLItem('${glKey}');}" style="flex:1;padding:3px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+            <button onclick="addMonGLItem('${glKey}')" style="padding:3px 10px;border:1px solid ${s.border};border-radius:5px;background:${s.color};color:${s.text};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
+          </div>
+        </div>`;
+      }
+      // display mode — ciclo icon style
+      const displayLinks=items.map(it=>it.url
+        ?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${(it.label||it.url).replace(/"/g,'&quot;')}" style="font-size:11px;font-weight:700;width:auto;height:26px;padding:0 8px;border-radius:6px;color:${s.text};background:${s.color};border:1px solid ${s.border};white-space:nowrap;text-decoration:none">${it.label||it.url}</a>`
+        :`<span class="link-icon empty" style="font-size:11px;font-weight:600;width:auto;height:26px;padding:0 8px;border-radius:6px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);white-space:nowrap">${it.label||'?'}</span>`
+      ).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:24px">
+        <span contenteditable="true" onblur="updateMonGLLabel('${glKey}',this.textContent.trim())" style="font-size:10px;font-weight:700;color:#e8f4f8;text-transform:uppercase;letter-spacing:.5px;outline:none;white-space:nowrap;min-width:10px;cursor:text">${s.label}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${displayLinks}</div>
+        <button onclick="toggleMonGLEdit('${glKey}')" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.25);padding:0;flex-shrink:0;transition:color .15s;display:flex;align-items:center" title="Editar" onmouseover="this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.color='rgba(255,255,255,.25)'">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
       </div>`;
     }).join('')}
   </div>`;
@@ -4651,16 +4679,29 @@ function renderMonGeneralLinks(){
 
 async function loadMonLinkLabels(){
   try{const s=localStorage.getItem('nav_mon_labels');if(s)monLinkLabels=JSON.parse(s);}catch{}
+  try{const s=localStorage.getItem('nav_mon_order');if(s){const o=JSON.parse(s);if(Array.isArray(o)&&o.length===MON_LINK_KEYS.length)monLinkOrder=o;}}catch{}
+  try{const s=localStorage.getItem('nav_mon_presets');if(s){const p=JSON.parse(s);if(p.aula)monTaskPresets=p.aula;if(p.finais)monFinaisPresets=p.finais;}}catch{}
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__monitor_link_labels__');
     if(d&&d[0]&&d[0].topics&&typeof d[0].topics==='object'){
-      monLinkLabels=d[0].topics;
+      const t=d[0].topics;
+      monLinkLabels=t;
+      if(Array.isArray(t.__order__)&&t.__order__.length===MON_LINK_KEYS.length)monLinkOrder=t.__order__;
+      if(Array.isArray(t.__presetsAula__))monTaskPresets=t.__presetsAula__;
+      if(Array.isArray(t.__presetsFinais__))monFinaisPresets=t.__presetsFinais__;
       try{localStorage.setItem('nav_mon_labels',JSON.stringify(monLinkLabels));}catch{}
+      try{localStorage.setItem('nav_mon_order',JSON.stringify(monLinkOrder));}catch{}
+      try{localStorage.setItem('nav_mon_presets',JSON.stringify({aula:monTaskPresets,finais:monFinaisPresets}));}catch{}
     }
   }catch{}
 }
 async function saveMonLinkLabels(){
+  monLinkLabels.__order__=monLinkOrder;
+  monLinkLabels.__presetsAula__=monTaskPresets;
+  monLinkLabels.__presetsFinais__=monFinaisPresets;
   try{localStorage.setItem('nav_mon_labels',JSON.stringify(monLinkLabels));}catch{}
+  try{localStorage.setItem('nav_mon_order',JSON.stringify(monLinkOrder));}catch{}
+  try{localStorage.setItem('nav_mon_presets',JSON.stringify({aula:monTaskPresets,finais:monFinaisPresets}));}catch{}
   await sbUpsert('conteudo',{disc:'__monitor_link_labels__',topics:monLinkLabels});
 }
 function renderCfgMonLinkLabels(){
@@ -4671,6 +4712,44 @@ function renderCfgMonLinkLabels(){
     <input value="${(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;')}" onchange="updateMonGlobalLabel('${key}',this.value)"
       style="flex:1;background:transparent;border:none;font-size:11px;color:var(--text);font-family:inherit;outline:none;min-width:0">
   </div>`).join('');
+  renderCfgMonPresets();
+}
+function renderCfgMonPresets(){
+  const el=document.getElementById('cfg-mon-presets');if(!el)return;
+  const chip=(arr,section,color,border,bg)=>arr.map((p,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${bg};border:1px solid ${border};border-radius:5px;padding:2px 7px;font-size:11px;font-weight:600;color:${color}">
+    <span contenteditable="true" onblur="monUpdatePreset('${section}',${i},this.textContent.trim());saveMonLinkLabels()" style="outline:none;min-width:16px">${p.replace(/</g,'&lt;')}</span>
+    <button onclick="monRemovePreset('${section}',${i});renderCfgMonLinkLabels()" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:10px;padding:0;line-height:1">×</button>
+  </span>`).join('');
+  el.innerHTML=`<div style="margin-bottom:10px">
+    <div style="font-size:10px;color:#7dd3fc;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Por aula</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${chip(monTaskPresets,'aula','#7dd3fc','rgba(62,181,200,.3)','rgba(62,181,200,.15)')}</div>
+    <div style="display:flex;gap:4px"><input id="cfg-new-aula-preset" placeholder="novo formato" style="flex:1;padding:4px 8px;border:1px solid rgba(62,181,200,.3);border-radius:5px;font-size:11px;background:#071e2e;color:var(--text);font-family:inherit;outline:none" onkeydown="if(event.key==='Enter'){monAddPreset('aula');renderCfgMonLinkLabels();}">
+    <button onclick="monAddPreset('aula');renderCfgMonLinkLabels()" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:5px;background:rgba(62,181,200,.1);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button></div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#c4b5fd;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Tarefas finais</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${chip(monFinaisPresets,'finais','#c4b5fd','rgba(139,107,232,.3)','rgba(139,107,232,.15)')}</div>
+    <div style="display:flex;gap:4px"><input id="cfg-new-finais-preset" placeholder="novo formato" style="flex:1;padding:4px 8px;border:1px solid rgba(139,107,232,.3);border-radius:5px;font-size:11px;background:#0e0a1e;color:var(--text);font-family:inherit;outline:none" onkeydown="if(event.key==='Enter'){monAddPreset('finais');renderCfgMonLinkLabels();}">
+    <button onclick="monAddPreset('finais');renderCfgMonLinkLabels()" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:5px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button></div>
+  </div>`;
+}
+function monAddPreset(section){
+  const id=section==='aula'?'cfg-new-aula-preset':'cfg-new-finais-preset';
+  const el=document.getElementById(id);if(!el||!el.value.trim())return;
+  if(section==='aula')monTaskPresets.push(el.value.trim());
+  else monFinaisPresets.push(el.value.trim());
+  el.value='';
+  saveMonLinkLabels();
+}
+function monRemovePreset(section,i){
+  if(section==='aula')monTaskPresets.splice(i,1);
+  else monFinaisPresets.splice(i,1);
+  saveMonLinkLabels();
+}
+function monUpdatePreset(section,i,val){
+  if(!val)return;
+  if(section==='aula')monTaskPresets[i]=val;
+  else monFinaisPresets[i]=val;
 }
 function updateMonGlobalLabel(key,value){
   monLinkLabels[key]=value;
@@ -4860,17 +4939,9 @@ function renderMonitor(){
                     <button onclick="removeMonTarefaItem(${cargo.id},'aula',${i})" style="background:none;border:none;color:rgba(125,211,252,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
                   </span>`).join('')}
                 </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
-                  ${MON_TASK_PRESETS.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'aula','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(62,181,200,.25);border-radius:5px;background:#0a1d2e;color:#6ba8c0;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                  ${monTaskPresets.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'aula','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(62,181,200,.25);border-radius:5px;background:#0a1d2e;color:#6ba8c0;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
                 </div>
-                <details ${monSecOpen.has(cargo.id+'_addaula')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_addaula')" style="border-top:1px solid rgba(62,181,200,.15);padding-top:7px">
-                  <summary style="font-size:10px;color:rgba(125,211,252,.6);font-weight:600;cursor:pointer;list-style:none;user-select:none">+ adicionar novo formato</summary>
-                  <div style="display:flex;gap:5px;margin-top:6px">
-                    <input id="mon-add-aula-${cargo.id}" placeholder="Por aula" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
-                      style="flex:1;padding:5px 9px;border:1.5px solid rgba(62,181,200,.35);border-radius:6px;font-size:11px;background:#0d2133;color:var(--text);font-family:inherit;outline:none">
-                    <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-                  </div>
-                </details>
               </div>
             </details>
 
@@ -4886,20 +4957,9 @@ function renderMonitor(){
                     <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
                   </span>`).join('')}
                 </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
-                  ${MON_FINAIS_PRESETS.map(p=>`<div style="display:inline-flex;align-items:center;gap:3px">
-                    <button onclick="(function(id,p){const qty=parseInt(document.getElementById('mon-fqty-'+id+'-'+p.toLowerCase())||{value:1}).value||1;for(let i=0;i<qty;i++)addMonTarefaItem(id,'finais',p);renderMonitor();})(${cargo.id},'${p}')" style="padding:3px 8px;border:1px solid rgba(139,107,232,.35);border-radius:5px;background:#130d20;color:#a78bfa;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>
-                    <input id="mon-fqty-${cargo.id}-${p.toLowerCase()}" type="number" min="1" max="20" value="1" style="width:32px;padding:2px 4px;border:1px solid rgba(139,107,232,.25);border-radius:4px;font-size:10px;background:#130d20;color:#c4b5fd;text-align:center;font-family:inherit;outline:none">
-                  </div>`).join('')}
+                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                  ${monFinaisPresets.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'finais','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(139,107,232,.35);border-radius:5px;background:#130d20;color:#a78bfa;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
                 </div>
-                <details ${monSecOpen.has(cargo.id+'_addfinais')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_addfinais')" style="border-top:1px solid rgba(139,107,232,.15);padding-top:7px">
-                  <summary style="font-size:10px;color:rgba(196,181,253,.6);font-weight:600;cursor:pointer;list-style:none;user-select:none">+ adicionar novo formato</summary>
-                  <div style="display:flex;gap:5px;margin-top:6px">
-                    <input id="mon-add-finais-${cargo.id}" placeholder="Finais" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
-                      style="flex:1;padding:5px 9px;border:1.5px solid rgba(139,107,232,.35);border-radius:6px;font-size:11px;background:#130d20;color:var(--text);font-family:inherit;outline:none">
-                    <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-                  </div>
-                </details>
               </div>
             </details>
 
@@ -4915,7 +4975,7 @@ function renderMonitor(){
           <div>
             <input type="number" min="0" max="${tot||9999}" value="${feit}"
               onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
-              style="width:56px;text-align:center;padding:3px;border:1px solid rgba(45,212,160,.4);border-radius:6px;font-size:20px;font-weight:800;background:var(--surface);color:#2dd4a0;font-family:inherit;outline:none">
+              style="width:56px;text-align:center;padding:3px;border:1px solid rgba(45,212,160,.4);border-radius:6px;font-size:20px;font-weight:800;background:var(--surface);color:#2dd4a0;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield">
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:3px">Feitas</div>
           </div>
           <div>
@@ -4937,33 +4997,42 @@ function renderMonitor(){
 
         <div>
           <div class="links-row-display" style="gap:6px;padding:6px 2px">
-            ${MON_LINK_KEYS.map(key=>{
+            ${monLinkOrder.map(key=>{
               const url=(links[key]||'').trim();
               const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;');
               const ico=MON_LINK_ICONS[key];
               if(url)return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</a>`;
               return `<span class="link-icon empty" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</span>`;
             }).join('')}
-            <button onclick="toggleMonLinkEdit(${cargo.id})" class="link-edit-all" title="Editar links" style="margin-left:auto">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </button>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+              <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:22px;height:22px;border-radius:6px;border:none;background:${concluido?'rgba(45,212,160,.2)':'rgba(255,255,255,.06)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.4)'};cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:all .15s">✓</button>
+              <button onclick="toggleMonLinkEdit(${cargo.id})" class="link-edit-all" title="Editar links">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
           </div>
           ${monLinkEditOpen.has(cargo.id)?`<div class="link-edit-all-row" style="margin-top:6px;position:relative">
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:5px">
-              ${MON_LINK_KEYS.map(key=>{
+            <div style="display:flex;flex-direction:column;gap:4px">
+              ${monLinkOrder.map((key,idx)=>{
                 const url=(links[key]||'').replace(/"/g,'&quot;');
                 const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
                 const ico=MON_LINK_ICONS[key];
                 const hasUrl=!!(links[key]||'').trim();
-                return `<div class="lea-cell" style="gap:5px">
-                  <span style="font-size:14px;flex-shrink:0">${ico}</span>
-                  <span style="font-size:10px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:72px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
-                  <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
-                    style="flex:1;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px;min-width:0;font-family:inherit;outline:none">
-                  ${hasUrl?`<a href="${url}" target="_blank" rel="noopener" style="font-size:13px;text-decoration:none;flex-shrink:0;opacity:.6" title="Abrir">↗</a>`:''}
+                return `<div style="display:flex;align-items:center;gap:5px">
+                  <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+                    <button onclick="moveMonLink(${idx},-1)" style="width:14px;height:12px;border-radius:2px;border:none;background:rgba(255,255,255,.05);color:rgba(255,255,255,.3);cursor:pointer;font-size:7px;padding:0;display:flex;align-items:center;justify-content:center;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">▲</button>
+                    <button onclick="moveMonLink(${idx},1)" style="width:14px;height:12px;border-radius:2px;border:none;background:rgba(255,255,255,.05);color:rgba(255,255,255,.3);cursor:pointer;font-size:7px;padding:0;display:flex;align-items:center;justify-content:center;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">▼</button>
+                  </div>
+                  <div class="lea-cell" style="gap:5px;flex:1">
+                    <span style="font-size:14px;flex-shrink:0">${ico}</span>
+                    <span style="font-size:10px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:72px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
+                    <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
+                      style="flex:1;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:10.5px;background:var(--surface2);color:var(--text);height:24px;min-width:0;font-family:inherit;outline:none">
+                    ${hasUrl?`<a href="${url}" target="_blank" rel="noopener" style="font-size:13px;text-decoration:none;flex-shrink:0;opacity:.6" title="Abrir">↗</a>`:''}
+                  </div>
                 </div>`;
               }).join('')}
             </div>
@@ -4990,22 +5059,12 @@ function renderMonitor(){
           <div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cargo.nome||'(sem nome)'}</div>
           <div style="display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap">
             <span style="font-size:11px;color:${pctColor};font-weight:600">${feit}/${tot}</span>
-            <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'Pós'+(cargo.banca?' · '+cargo.banca:''):'Pré-edital'}</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'PÓS'+(cargo.banca?' · '+cargo.banca:''):'PRÉ'}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
-            <span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:${editColor}">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              ${editLabel}
-            </span>
+            <span style="font-size:10px;color:${editColor}">${editLabel}</span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <div style="display:flex;flex-direction:column;gap:1px" onclick="event.stopPropagation()">
-            <button onclick="moveMonCargo(${cargo.id},-1)" title="Mover para cima" style="width:18px;height:16px;border-radius:3px;border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">▲</button>
-            <button onclick="moveMonCargo(${cargo.id},1)" title="Mover para baixo" style="width:18px;height:16px;border-radius:3px;border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">▼</button>
-          </div>
-          <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:24px;height:24px;border-radius:6px;border:none;background:${concluido?'rgba(45,212,160,.2)':'rgba(255,255,255,.07)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.6)'};cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✓</button>
-          <span style="font-size:12px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
-        </div>
+        <span style="font-size:12px;color:var(--muted);flex-shrink:0">${isOpen?'▴':'▾'}</span>
       </div>
       ${bodyHTML}
     </div>`;
@@ -5082,6 +5141,13 @@ function addMonCargo(){
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
+  renderMonitor();
+}
+function moveMonLink(idx,dir){
+  const j=idx+dir;
+  if(j<0||j>=monLinkOrder.length)return;
+  [monLinkOrder[idx],monLinkOrder[j]]=[monLinkOrder[j],monLinkOrder[idx]];
+  saveMonLinkLabels();
   renderMonitor();
 }
 function moveMonCargo(id,dir){
