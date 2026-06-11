@@ -649,6 +649,17 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
     </details>
 
     <details class="cfg-group">
+      <summary>Trabalho</summary>
+      <div class="cfg-group-body">
+        <div class="modal-section">
+          <h3>Nomes dos links (Monitor)</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 10px">Globais para todas as monitorias.</p>
+          <div id="cfg-mon-link-labels" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="cfg-group">
       <summary>Dados</summary>
       <div class="cfg-group-body">
         <div class="modal-section">
@@ -1470,6 +1481,7 @@ function openSettings(){
   document.getElementById('settings-modal').classList.remove('hidden');
   buildTimerEditList('timer-edit-list');
   calcBlockTotal();
+  renderCfgMonLinkLabels();
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 
@@ -4536,7 +4548,7 @@ let monitorCargos=[];
 let monitorOpenCards=new Set();
 let monLinkLabels={};
 let monLinkEditOpen=new Set();
-let monSettingsOpen=false;
+let monSecOpen=new Set();
 let _monSaveTimer=null;
 let _trabalhoSubtab='monitor';
 
@@ -4544,6 +4556,7 @@ const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTri
 const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
 const MON_LINK_ICONS={esqueleto:'📄',edicao:'✏️',final:'✅',referencia:'📌',pkgAula:'🎓',pkgTrilha:'🗺️',pkgBizu:'⚡',orientacoes:'📋',estatistica:'📊',extras:'🔗'};
 const MON_TASK_PRESETS=['Teoria','Teoria + Questões','Revisão','Revisão + Questões','Treino (PDF)','Treino (SQ)'];
+const MON_FINAIS_PRESETS=['SQ','BIZU'];
 
 function calcTotalTarefas(numAulas,aulaItens,finaisItens){
   return (parseInt(numAulas)||0)*(aulaItens||[]).length+(finaisItens||[]).length;
@@ -4650,6 +4663,15 @@ async function saveMonLinkLabels(){
   try{localStorage.setItem('nav_mon_labels',JSON.stringify(monLinkLabels));}catch{}
   await sbUpsert('conteudo',{disc:'__monitor_link_labels__',topics:monLinkLabels});
 }
+function renderCfgMonLinkLabels(){
+  const el=document.getElementById('cfg-mon-link-labels');
+  if(!el)return;
+  el.innerHTML=MON_LINK_KEYS.map(key=>`<div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px">
+    <span style="font-size:15px;flex-shrink:0">${MON_LINK_ICONS[key]}</span>
+    <input value="${(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;')}" onchange="updateMonGlobalLabel('${key}',this.value)"
+      style="flex:1;background:transparent;border:none;font-size:11px;color:var(--text);font-family:inherit;outline:none;min-width:0">
+  </div>`).join('');
+}
 function updateMonGlobalLabel(key,value){
   monLinkLabels[key]=value;
   clearTimeout(_monSaveTimer);
@@ -4737,29 +4759,11 @@ function renderMonitor(){
   const g=id=>document.getElementById(id);
   if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
   if(g('mon-sum-oldest'))g('mon-sum-oldest').textContent=oldestStr;
-  // settings panel
-  const settingsHTML=`<div style="margin-bottom:14px">
-    <button onclick="monSettingsOpen=!monSettingsOpen;renderMonitor()" style="padding:5px 12px;font-size:11px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Configurar links ${monSettingsOpen?'▴':'▾'}
-    </button>
-    ${monSettingsOpen?`<div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px">
-      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Nomes dos links (globais para todas as monitorias)</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:5px">
-        ${MON_LINK_KEYS.map(key=>`<div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px">
-          <span style="font-size:15px;flex-shrink:0">${MON_LINK_ICONS[key]}</span>
-          <input value="${(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;')}" onchange="updateMonGlobalLabel('${key}',this.value)"
-            style="flex:1;background:transparent;border:none;font-size:11px;color:var(--text);font-family:inherit;outline:none;min-width:0">
-        </div>`).join('')}
-      </div>
-    </div>`:''}
-  </div>`;
-
   if(!monitorCargos.length){
-    wrap.innerHTML=settingsHTML+'<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><button onclick="addMonCargo()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:rgba(62,181,200,.12);color:var(--accent);cursor:pointer;font-family:inherit">+ Adicionar primeiro cargo</button></div>';
     return;
   }
-  wrap.innerHTML=settingsHTML+monitorCargos.map(cargo=>{
+  wrap.innerHTML=monitorCargos.map(cargo=>{
     const aulaItens=cargo.tarefasAulaItens||[];
     const finaisItens=cargo.tarefasFinaisItens||[];
     const tot=calcTotalTarefas(cargo.numAulas,aulaItens,finaisItens);
@@ -4775,7 +4779,7 @@ function renderMonitor(){
     const circ=(2*Math.PI*14).toFixed(1);
     const dayLabel=days!==null?(days===0?'hoje':days===1?'ontem':days+'d atrás'):'';
     const dayColor=days!==null?(days>7?'#f26b5e':days>3?'#f5a623':'#2dd4a0'):'var(--muted)';
-    const editLabel=daysEdit!==null?(daysEdit===0?'hoje':daysEdit===1?'ontem':daysEdit+'d'):'—';
+    const editLabel=daysEdit!==null?(daysEdit+'d'):'—';
     const editColor=daysEdit!==null?(daysEdit>14?'#f26b5e':daysEdit>7?'#f5a623':'var(--muted)'):'var(--muted)';
 
     let bodyHTML='';
@@ -4838,44 +4842,70 @@ function renderMonitor(){
           </div>
         </div>
 
-        <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:12px">
-          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Formato das tarefas</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div>
-              <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Por aula <span style="color:var(--accent);font-weight:700">(${aulaItens.length})</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:26px;margin-bottom:7px">
-                ${aulaItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(62,181,200,.15);border:1px solid rgba(62,181,200,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#7dd3fc">
-                  <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'aula',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
-                  <button onclick="removeMonTarefaItem(${cargo.id},'aula',${i})" style="background:none;border:none;color:rgba(125,211,252,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
-                </span>`).join('')}
+        <details ${monSecOpen.has(cargo.id+'_fmt')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_fmt')" style="background:#05101a;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <summary style="padding:10px 12px;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none">
+            <span>Formato das tarefas</span>
+            <span style="color:var(--accent);font-weight:600">${tot} tarefas &nbsp;▾</span>
+          </summary>
+          <div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:8px">
+            <details ${monSecOpen.has(cargo.id+'_aula')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_aula')" style="border:1px solid rgba(62,181,200,.2);border-radius:8px;overflow:hidden;background:#071e2e">
+              <summary style="padding:7px 10px;font-size:10px;color:#7dd3fc;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none;text-transform:uppercase;letter-spacing:.4px">
+                <span>Por aula</span>
+                <span style="color:var(--accent)">${aulaItens.length} ▾</span>
+              </summary>
+              <div style="padding:8px 10px">
+                <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:7px">
+                  ${aulaItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(62,181,200,.15);border:1px solid rgba(62,181,200,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#7dd3fc">
+                    <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'aula',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                    <button onclick="removeMonTarefaItem(${cargo.id},'aula',${i})" style="background:none;border:none;color:rgba(125,211,252,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                  </span>`).join('')}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
+                  ${MON_TASK_PRESETS.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'aula','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(62,181,200,.25);border-radius:5px;background:#0a1d2e;color:#6ba8c0;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+                </div>
+                <details ${monSecOpen.has(cargo.id+'_addaula')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_addaula')" style="border-top:1px solid rgba(62,181,200,.15);padding-top:7px">
+                  <summary style="font-size:10px;color:rgba(125,211,252,.6);font-weight:600;cursor:pointer;list-style:none;user-select:none">+ adicionar novo formato</summary>
+                  <div style="display:flex;gap:5px;margin-top:6px">
+                    <input id="mon-add-aula-${cargo.id}" placeholder="Por aula" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
+                      style="flex:1;padding:5px 9px;border:1.5px solid rgba(62,181,200,.35);border-radius:6px;font-size:11px;background:#0d2133;color:var(--text);font-family:inherit;outline:none">
+                    <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
+                  </div>
+                </details>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">
-                ${MON_TASK_PRESETS.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'aula','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(62,181,200,.25);border-radius:5px;background:#0a1d2e;color:#6ba8c0;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+            </details>
+
+            <details ${monSecOpen.has(cargo.id+'_finais')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_finais')" style="border:1px solid rgba(139,107,232,.2);border-radius:8px;overflow:hidden;background:#0e0a1e">
+              <summary style="padding:7px 10px;font-size:10px;color:#c4b5fd;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none;text-transform:uppercase;letter-spacing:.4px">
+                <span>Tarefas finais</span>
+                <span style="color:#c4b5fd">${finaisItens.length} ▾</span>
+              </summary>
+              <div style="padding:8px 10px">
+                <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:7px">
+                  ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
+                    <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                    <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                  </span>`).join('')}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
+                  ${MON_FINAIS_PRESETS.map(p=>`<div style="display:inline-flex;align-items:center;gap:3px">
+                    <button onclick="(function(id,p){const qty=parseInt(document.getElementById('mon-fqty-'+id+'-'+p.toLowerCase())||{value:1}).value||1;for(let i=0;i<qty;i++)addMonTarefaItem(id,'finais',p);renderMonitor();})(${cargo.id},'${p}')" style="padding:3px 8px;border:1px solid rgba(139,107,232,.35);border-radius:5px;background:#130d20;color:#a78bfa;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>
+                    <input id="mon-fqty-${cargo.id}-${p.toLowerCase()}" type="number" min="1" max="20" value="1" style="width:32px;padding:2px 4px;border:1px solid rgba(139,107,232,.25);border-radius:4px;font-size:10px;background:#130d20;color:#c4b5fd;text-align:center;font-family:inherit;outline:none">
+                  </div>`).join('')}
+                </div>
+                <details ${monSecOpen.has(cargo.id+'_addfinais')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_addfinais')" style="border-top:1px solid rgba(139,107,232,.15);padding-top:7px">
+                  <summary style="font-size:10px;color:rgba(196,181,253,.6);font-weight:600;cursor:pointer;list-style:none;user-select:none">+ adicionar novo formato</summary>
+                  <div style="display:flex;gap:5px;margin-top:6px">
+                    <input id="mon-add-finais-${cargo.id}" placeholder="Finais" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
+                      style="flex:1;padding:5px 9px;border:1.5px solid rgba(139,107,232,.35);border-radius:6px;font-size:11px;background:#130d20;color:var(--text);font-family:inherit;outline:none">
+                    <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
+                  </div>
+                </details>
               </div>
-              <div style="display:flex;gap:5px">
-                <input id="mon-add-aula-${cargo.id}" placeholder="Por aula" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
-                  style="flex:1;padding:5px 9px;border:1.5px solid rgba(62,181,200,.35);border-radius:6px;font-size:11px;background:#0d2133;color:var(--text);font-family:inherit;outline:none">
-                <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-              </div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Tarefas finais <span style="color:#c4b5fd;font-weight:700">(${finaisItens.length})</span></div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:26px;margin-bottom:7px">
-                ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
-                  <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
-                  <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
-                </span>`).join('')}
-              </div>
-              <div style="height:31px;margin-bottom:6px"></div>
-              <div style="display:flex;gap:5px">
-                <input id="mon-add-finais-${cargo.id}" placeholder="Finais" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
-                  style="flex:1;padding:5px 9px;border:1.5px solid rgba(139,107,232,.35);border-radius:6px;font-size:11px;background:#130d20;color:var(--text);font-family:inherit;outline:none">
-                <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
-              </div>
-            </div>
+            </details>
+
+            <div style="font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${aulaItens.length} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
           </div>
-          <div style="margin-top:10px;font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${aulaItens.length} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
-        </div>
+        </details>
 
         <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
           <div>
@@ -4900,7 +4930,7 @@ function renderMonitor(){
                 onchange="(function(v,id){const p=v.split('-');const ddmm=p[2]+'/'+p[1];document.getElementById('mon-ult-'+id).value=ddmm;updateMonField(id,'ultimaData',ddmm);})(this.value,${cargo.id})">
               <span onclick="(function(id){const el=document.getElementById('mon-ult-picker-'+id);if(el.showPicker)el.showPicker();else el.focus();})(${cargo.id})" style="font-size:22px;line-height:1;cursor:pointer;user-select:none" title="Escolher data">📅</span>
             </div>
-            <div style="font-size:13px;font-weight:700;color:${dayColor}">${dayLabel||'—'}</div>
+            ${dayLabel?`<div style="font-size:13px;font-weight:700;color:${dayColor}">${dayLabel}</div>`:''}
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Última edição</div>
           </div>
         </div>
@@ -4937,9 +4967,9 @@ function renderMonitor(){
                 </div>`;
               }).join('')}
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-              <button onclick="deleteMonCargo(${cargo.id})" style="padding:4px 12px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;font-family:inherit">✕ Excluir cargo</button>
-              <button class="lea-ok" onclick="toggleMonLinkEdit(${cargo.id})">✓ Fechar</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+              <button onclick="deleteMonCargo(${cargo.id})" style="background:none;border:none;font-size:10px;font-weight:600;color:rgba(239,68,68,.5);cursor:pointer;font-family:inherit;padding:2px 4px;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(239,68,68,.5)'">excluir cargo</button>
+              <button onclick="toggleMonLinkEdit(${cargo.id})" style="background:none;border:none;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;padding:2px 4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">fechar</button>
             </div>
           </div>`:''}
         </div>
@@ -4968,7 +4998,11 @@ function renderMonitor(){
             </span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <div style="display:flex;flex-direction:column;gap:1px" onclick="event.stopPropagation()">
+            <button onclick="moveMonCargo(${cargo.id},-1)" title="Mover para cima" style="width:18px;height:16px;border-radius:3px;border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">▲</button>
+            <button onclick="moveMonCargo(${cargo.id},1)" title="Mover para baixo" style="width:18px;height:16px;border-radius:3px;border:none;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">▼</button>
+          </div>
           <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:24px;height:24px;border-radius:6px;border:none;background:${concluido?'rgba(45,212,160,.2)':'rgba(255,255,255,.07)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.6)'};cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0">✓</button>
           <span style="font-size:12px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
         </div>
@@ -5047,6 +5081,15 @@ function addMonCargo(){
   const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
+  _saveMonitor();
+  renderMonitor();
+}
+function moveMonCargo(id,dir){
+  const i=monitorCargos.findIndex(c=>c.id==id);
+  if(i<0)return;
+  const j=i+dir;
+  if(j<0||j>=monitorCargos.length)return;
+  [monitorCargos[i],monitorCargos[j]]=[monitorCargos[j],monitorCargos[i]];
   _saveMonitor();
   renderMonitor();
 }
