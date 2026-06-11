@@ -4540,8 +4540,8 @@ let _trabalhoSubtab='monitor';
 const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTrilha','pkgBizu','orientacoes','estatistica','extras'];
 const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
 
-function calcTotalTarefas(numAulas,tarefasAula,tarefasFinais){
-  return (parseInt(numAulas)||0)*(parseInt(tarefasAula)||0)+(parseInt(tarefasFinais)||0);
+function calcTotalTarefas(numAulas,aulaItens,finaisItens){
+  return (parseInt(numAulas)||0)*(aulaItens||[]).length+(finaisItens||[]).length;
 }
 function monDaysSince(ddmm){
   if(!ddmm||!ddmm.includes('/'))return null;
@@ -4575,16 +4575,26 @@ async function loadMonitor(){
     }
   }catch{}
   monitorCargos.forEach(c=>{
-    if(c.formato!==undefined&&c.tarefasAula===undefined){
-      const map={A:[2,0],B:[3,0],C:[3,2],D:[3,3]};
-      const [ta,tf]=map[c.formato]||[2,0];
-      c.tarefasAula=ta;c.tarefasFinais=tf;c.tarefasAulaLabel='';c.tarefasFinaisLabel='';
-      delete c.formato;
+    // migrate old formato A/B/C/D → itens arrays
+    if(c.formato!==undefined&&!c.tarefasAulaItens){
+      const map={A:['Aula','Rev'],B:['Aula','Rev','SQ'],C:['Aula','Rev','SQ'],D:['Aula','Rev','SQ']};
+      const mf={A:[],B:[],C:['SQ final','SQ final'],D:['SQ final','SQ final','Bizu']};
+      c.tarefasAulaItens=map[c.formato]||['Aula','Rev'];
+      c.tarefasFinaisItens=mf[c.formato]||[];
+      delete c.formato;delete c.tarefasAula;delete c.tarefasFinais;
+      delete c.tarefasAulaLabel;delete c.tarefasFinaisLabel;
     }
-    if(c.tarefasAula===undefined)c.tarefasAula=2;
-    if(c.tarefasFinais===undefined)c.tarefasFinais=0;
-    if(!c.tarefasAulaLabel)c.tarefasAulaLabel='';
-    if(!c.tarefasFinaisLabel)c.tarefasFinaisLabel='';
+    // migrate number-based tarefasAula → itens arrays
+    if(!c.tarefasAulaItens){
+      const n=parseInt(c.tarefasAula)||0;
+      c.tarefasAulaItens=n>0?Array.from({length:n},(_,i)=>['Aula','Rev','SQ','Bizu'][i]||'Tarefa '+(i+1)):[];
+      delete c.tarefasAula;
+    }
+    if(!c.tarefasFinaisItens){
+      const n=parseInt(c.tarefasFinais)||0;
+      c.tarefasFinaisItens=n>0?Array.from({length:n},(_,i)=>'Final '+(i+1)):[];
+      delete c.tarefasFinais;
+    }
     if(!c.linkLabels)c.linkLabels={};
     if(c.lastEdited===undefined)c.lastEdited=null;
   });
@@ -4619,7 +4629,9 @@ function renderMonitor(){
     return;
   }
   wrap.innerHTML=monitorCargos.map(cargo=>{
-    const tot=calcTotalTarefas(cargo.numAulas,cargo.tarefasAula,cargo.tarefasFinais);
+    const aulaItens=cargo.tarefasAulaItens||[];
+    const finaisItens=cargo.tarefasFinaisItens||[];
+    const tot=calcTotalTarefas(cargo.numAulas,aulaItens,finaisItens);
     const feit=parseInt(cargo.feitas)||0;
     const falt=Math.max(0,tot-feit);
     const pct=tot>0?Math.round(feit/tot*100):0;
@@ -4697,27 +4709,37 @@ function renderMonitor(){
 
         <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:12px">
           <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Formato das tarefas</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div>
-              <label style="font-size:10px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px">Por aula</label>
-              <div style="display:flex;gap:6px;align-items:center">
-                <input type="number" min="0" max="9" value="${cargo.tarefasAula||0}" onchange="updateMonField(${cargo.id},'tarefasAula',this.value)"
-                  style="width:44px;text-align:center;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--surface2);color:var(--accent);font-family:inherit;outline:none">
-                <input value="${(cargo.tarefasAulaLabel||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'tarefasAulaLabel',this.value)" placeholder="ex: teoria + sq"
-                  style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+              <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Por aula <span style="color:var(--accent);font-weight:700">(${aulaItens.length})</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:6px">
+                ${aulaItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(62,181,200,.15);border:1px solid rgba(62,181,200,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#7dd3fc">
+                  <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'aula',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                  <button onclick="removeMonTarefaItem(${cargo.id},'aula',${i})" style="background:none;border:none;color:rgba(125,211,252,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                </span>`).join('')}
+              </div>
+              <div style="display:flex;gap:5px">
+                <input id="mon-add-aula-${cargo.id}" placeholder="+ ex: teoria" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'aula',this.value.trim());this.value='';}"
+                  style="flex:1;padding:4px 8px;border:1px dashed rgba(62,181,200,.3);border-radius:6px;font-size:11px;background:transparent;color:var(--text);font-family:inherit;outline:none">
+                <button onclick="addMonTarefaItem(${cargo.id},'aula',document.getElementById('mon-add-aula-${cargo.id}').value.trim());document.getElementById('mon-add-aula-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(62,181,200,.3);border-radius:6px;background:rgba(62,181,200,.1);color:var(--accent);font-size:11px;cursor:pointer;font-family:inherit">+</button>
               </div>
             </div>
             <div>
-              <label style="font-size:10px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px">Tarefas finais</label>
-              <div style="display:flex;gap:6px;align-items:center">
-                <input type="number" min="0" max="99" value="${cargo.tarefasFinais||0}" onchange="updateMonField(${cargo.id},'tarefasFinais',this.value)"
-                  style="width:44px;text-align:center;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--surface2);color:var(--accent);font-family:inherit;outline:none">
-                <input value="${(cargo.tarefasFinaisLabel||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'tarefasFinaisLabel',this.value)" placeholder="ex: 2 SQs finais"
-                  style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+              <div style="font-size:10px;color:var(--muted);font-weight:600;margin-bottom:6px">Tarefas finais <span style="color:#c4b5fd;font-weight:700">(${finaisItens.length})</span></div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:6px">
+                ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
+                  <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                  <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                </span>`).join('')}
+              </div>
+              <div style="display:flex;gap:5px">
+                <input id="mon-add-finais-${cargo.id}" placeholder="+ ex: SQ final" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonTarefaItem(${cargo.id},'finais',this.value.trim());this.value='';}"
+                  style="flex:1;padding:4px 8px;border:1px dashed rgba(139,107,232,.3);border-radius:6px;font-size:11px;background:transparent;color:var(--text);font-family:inherit;outline:none">
+                <button onclick="addMonTarefaItem(${cargo.id},'finais',document.getElementById('mon-add-finais-${cargo.id}').value.trim());document.getElementById('mon-add-finais-${cargo.id}').value=''" style="padding:4px 10px;border:1px solid rgba(139,107,232,.3);border-radius:6px;background:rgba(139,107,232,.1);color:#c4b5fd;font-size:11px;cursor:pointer;font-family:inherit">+</button>
               </div>
             </div>
           </div>
-          <div style="margin-top:8px;font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${cargo.tarefasAula||0} + ${cargo.tarefasFinais||0} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${aulaItens.length} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
         </div>
 
         <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
@@ -4736,10 +4758,12 @@ function renderMonitor(){
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Faltam</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
-            <div style="display:flex;align-items:center;gap:5px">
-              <input value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)" placeholder="dd/mm" maxlength="5"
+            <div style="display:flex;align-items:center;gap:5px;position:relative">
+              <input id="mon-ult-${cargo.id}" value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)" placeholder="dd/mm" maxlength="5"
                 style="width:54px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;outline:none">
-              <span style="font-size:20px;line-height:1">📅</span>
+              <input type="date" tabindex="-1" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" id="mon-ult-picker-${cargo.id}"
+                onchange="(function(v,id){const p=v.split('-');const ddmm=p[2]+'/'+p[1];document.getElementById('mon-ult-'+id).value=ddmm;updateMonField(id,'ultimaData',ddmm);})(this.value,${cargo.id})">
+              <span onclick="(function(id){const el=document.getElementById('mon-ult-picker-'+id);if(el.showPicker)el.showPicker();else el.focus();})(${cargo.id})" style="font-size:22px;line-height:1;cursor:pointer;user-select:none" title="Escolher data">📅</span>
             </div>
             <div style="font-size:13px;font-weight:700;color:${dayColor}">${dayLabel||'—'}</div>
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Última vez</div>
@@ -4788,12 +4812,43 @@ function toggleMonCard(id){
 }
 function updateMonField(id,field,value){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
-  if(['numAulas','feitas','tarefasAula','tarefasFinais'].includes(field))value=parseInt(value)||0;
+  if(['numAulas','feitas'].includes(field))value=parseInt(value)||0;
   cargo[field]=value;
   cargo.lastEdited=new Date().toISOString();
   renderMonitor();
   clearTimeout(_monSaveTimer);
   _monSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveMonitor().then(()=>showSync('ok','✓ Salvo'));},1500);
+}
+function addMonTarefaItem(id,section,value){
+  if(!value)return;
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  const key=section==='aula'?'tarefasAulaItens':'tarefasFinaisItens';
+  if(!cargo[key])cargo[key]=[];
+  cargo[key].push(value);
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function removeMonTarefaItem(id,section,index){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  const key=section==='aula'?'tarefasAulaItens':'tarefasFinaisItens';
+  if(!cargo[key])return;
+  cargo[key].splice(index,1);
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function updateMonTarefaItem(id,section,index,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  const key=section==='aula'?'tarefasAulaItens':'tarefasFinaisItens';
+  if(!cargo[key])return;
+  if(!value){cargo[key].splice(index,1);}
+  else{cargo[key][index]=value;}
+  cargo.lastEdited=new Date().toISOString();
+  clearTimeout(_monSaveTimer);
+  _monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
 }
 function updateMonLink(id,key,value){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
@@ -4811,7 +4866,7 @@ function updateMonLinkLabel(id,key,value){
   _monSaveTimer=setTimeout(()=>_saveMonitor(),2000);
 }
 function addMonCargo(){
-  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAula:2,tarefasAulaLabel:'',tarefasFinais:0,tarefasFinaisLabel:'',feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),links:{},linkLabels:{}};
+  const cargo={id:Date.now(),nome:'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),links:{},linkLabels:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
