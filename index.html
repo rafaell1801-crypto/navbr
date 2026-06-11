@@ -4570,7 +4570,8 @@ function calcTotalTarefas(numAulas,aulaItens,finaisItens){
 
 // General links (4 blocks above cargo list)
 let monGeneralLinks={estatisticas:[],esqueletos:[],drive:[],outros:[]};
-let monGLEditOpen=new Set();
+let monGLOpen=new Set();
+let monGLEditMode=false;
 let MON_GL_SECTIONS=[
   {key:'estatisticas',label:'Análises estatísticas',color:'rgba(62,181,200,.2)',border:'rgba(62,181,200,.4)',text:'#7dd3fc'},
   {key:'esqueletos',label:'Esqueletos e Referências',color:'rgba(139,107,232,.2)',border:'rgba(139,107,232,.4)',text:'#c4b5fd'},
@@ -4597,9 +4598,13 @@ async function saveMonGeneralLinks(){
   try{localStorage.setItem('nav_mon_gl',JSON.stringify(monGeneralLinks));}catch{}
   await sbUpsert('conteudo',{disc:'__monitor_general_links__',topics:monGeneralLinks});
 }
-function toggleMonGLEdit(key){
-  if(monGLEditOpen.has(key))monGLEditOpen.delete(key);
-  else monGLEditOpen.add(key);
+function toggleMonGLSection(key){
+  if(monGLOpen.has(key))monGLOpen.delete(key);
+  else monGLOpen.add(key);
+  renderMonGeneralLinks();
+}
+function setMonGLEditMode(val){
+  monGLEditMode=!!val;
   renderMonGeneralLinks();
 }
 function updateMonGLLabel(key,val){
@@ -4636,44 +4641,47 @@ function updateMonGLItem(key,i,field,value){
 }
 function renderMonGeneralLinks(){
   const wrap=document.getElementById('mon-general-links');if(!wrap)return;
-  wrap.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:0 2px">
-    ${MON_GL_SECTIONS.map(s=>{
-      const items=monGeneralLinks[s.key]||[];
-      const isEdit=monGLEditOpen.has(s.key);
-      const glKey=s.key;
-      if(isEdit){
-        const rows=items.map((it,i)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
-          <input value="${(it.label||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'label',this.value)" placeholder="nome" style="width:90px;flex-shrink:0;padding:3px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:${s.text};font-family:inherit;outline:none;font-weight:600">
-          <input value="${(it.url||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'url',this.value)" placeholder="link" style="flex:1;padding:3px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
-          ${it.url?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" style="font-size:12px;text-decoration:none;opacity:.5;flex-shrink:0">↗</a>`:''}
-          <button onclick="removeMonGLItem('${glKey}',${i})" style="background:none;border:none;color:rgba(239,68,68,.5);cursor:pointer;font-size:12px;padding:0 2px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(239,68,68,.5)'">×</button>
+  const editBtnHTML=monGLEditMode
+    ?`<button onclick="setMonGLEditMode(false)" style="background:none;border:none;cursor:pointer;color:#2dd4a0;font-size:18px;font-weight:700;padding:0 2px;line-height:1;display:flex;align-items:center" title="Concluir">✓</button>`
+    :`<button onclick="setMonGLEditMode(true)" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.25);padding:0;display:flex;align-items:center;transition:color .15s" title="Editar links" onmouseover="this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.color='rgba(255,255,255,.25)'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>`;
+  const sectionsHTML=MON_GL_SECTIONS.map(s=>{
+    const items=monGeneralLinks[s.key]||[];
+    const isOpen=monGLOpen.has(s.key);
+    const glKey=s.key;
+    const headerHTML=`<div onclick="toggleMonGLSection('${glKey}')" style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;user-select:none">
+      <span style="font-size:10px;font-weight:700;color:${s.text};text-transform:uppercase;letter-spacing:.5px;flex:1">${s.label}</span>
+      ${items.length?`<span style="font-size:9px;font-weight:700;color:${s.text};opacity:.6;background:${s.color};border-radius:10px;padding:1px 6px">${items.length}</span>`:''}
+      <span style="font-size:9px;color:rgba(255,255,255,.3)">${isOpen?'▴':'▾'}</span>
+    </div>`;
+    let bodyHTML='';
+    if(isOpen){
+      if(monGLEditMode){
+        const rows=items.map((it,i)=>`<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+          <input value="${(it.label||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'label',this.value)" placeholder="nome" style="width:80px;flex-shrink:0;padding:2px 6px;border:1px solid ${s.border};border-radius:4px;font-size:10px;background:var(--surface2);color:${s.text};font-family:inherit;outline:none;font-weight:600">
+          <input value="${(it.url||'').replace(/"/g,'&quot;')}" onchange="updateMonGLItem('${glKey}',${i},'url',this.value)" placeholder="link" style="flex:1;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+          <button onclick="removeMonGLItem('${glKey}',${i})" style="background:rgba(239,68,68,.12);border:none;color:#fff;cursor:pointer;font-size:16px;font-weight:700;padding:0 5px;flex-shrink:0;line-height:1;border-radius:4px;transition:background .15s" onmouseover="this.style.background='rgba(239,68,68,.35)'" onmouseout="this.style.background='rgba(239,68,68,.12)'">×</button>
         </div>`).join('');
-        return `<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;border:1px solid ${s.border}">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-            <input value="${s.label}" onchange="updateMonGLLabel('${glKey}',this.value)" style="flex:1;background:transparent;border:none;font-size:10px;font-weight:700;color:#e8f4f8;text-transform:uppercase;letter-spacing:.5px;outline:none;font-family:inherit">
-            <button onclick="toggleMonGLEdit('${glKey}')" style="background:none;border:none;cursor:pointer;color:${s.text};padding:0;font-size:10px;font-weight:600">fechar</button>
-          </div>
+        bodyHTML=`<div style="padding:6px 10px 8px">
           ${rows}
-          <div style="display:flex;gap:5px;margin-top:6px">
-            <input id="mon-gl-lbl-${glKey}" placeholder="nome" style="width:90px;flex-shrink:0;padding:3px 7px;border:1px solid ${s.border};border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
-            <input id="mon-gl-url-${glKey}" placeholder="link" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonGLItem('${glKey}');}" style="flex:1;padding:3px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
-            <button onclick="addMonGLItem('${glKey}')" style="padding:3px 10px;border:1px solid ${s.border};border-radius:5px;background:${s.color};color:${s.text};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
+          <div style="display:flex;gap:4px;margin-top:5px">
+            <input id="mon-gl-lbl-${glKey}" placeholder="nome" style="width:80px;flex-shrink:0;padding:2px 6px;border:1px solid ${s.border};border-radius:4px;font-size:10px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+            <input id="mon-gl-url-${glKey}" placeholder="link" onkeydown="if(event.key==='Enter'){event.preventDefault();addMonGLItem('${glKey}');}" style="flex:1;padding:2px 6px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none">
+            <button onclick="addMonGLItem('${glKey}')" style="padding:2px 8px;border:1px solid ${s.border};border-radius:4px;background:${s.color};color:${s.text};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+</button>
           </div>
         </div>`;
+      } else {
+        const displayLinks=items.map(it=>it.url
+          ?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${(it.label||it.url).replace(/"/g,'&quot;')}" style="font-size:11px;font-weight:700;height:24px;padding:0 8px;border-radius:5px;color:${s.text};background:${s.color};border:1px solid ${s.border};white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center">${it.label||it.url}</a>`
+          :`<span style="font-size:11px;font-weight:600;height:24px;padding:0 8px;border-radius:5px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);white-space:nowrap;display:inline-flex;align-items:center">${it.label||'?'}</span>`
+        ).join('');
+        bodyHTML=`<div style="padding:0 10px 8px;display:flex;flex-wrap:wrap;gap:4px">${displayLinks||'<span style="font-size:10px;color:var(--muted);opacity:.5">sem links</span>'}</div>`;
       }
-      // display mode — ciclo icon style
-      const displayLinks=items.map(it=>it.url
-        ?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${(it.label||it.url).replace(/"/g,'&quot;')}" style="font-size:11px;font-weight:700;width:auto;height:26px;padding:0 8px;border-radius:6px;color:${s.text};background:${s.color};border:1px solid ${s.border};white-space:nowrap;text-decoration:none">${it.label||it.url}</a>`
-        :`<span class="link-icon empty" style="font-size:11px;font-weight:600;width:auto;height:26px;padding:0 8px;border-radius:6px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);white-space:nowrap">${it.label||'?'}</span>`
-      ).join('');
-      return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:24px">
-        <span contenteditable="true" onblur="updateMonGLLabel('${glKey}',this.textContent.trim())" style="font-size:10px;font-weight:700;color:#e8f4f8;text-transform:uppercase;letter-spacing:.5px;outline:none;white-space:nowrap;min-width:10px;cursor:text">${s.label}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${displayLinks}</div>
-        <button onclick="toggleMonGLEdit('${glKey}')" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.25);padding:0;flex-shrink:0;transition:color .15s;display:flex;align-items:center" title="Editar" onmouseover="this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.color='rgba(255,255,255,.25)'">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        </button>
-      </div>`;
-    }).join('')}
+    }
+    return `<div style="border:1px solid ${s.border};border-radius:8px;background:${s.color}">${headerHTML}${bodyHTML}</div>`;
+  }).join('');
+  wrap.innerHTML=`<div style="margin-bottom:14px">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:6px;padding:0 2px">${editBtnHTML}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:0 2px">${sectionsHTML}</div>
   </div>`;
 }
 
@@ -5061,7 +5069,6 @@ function renderMonitor(){
             <span style="font-size:11px;color:${pctColor};font-weight:600">${feit}/${tot}</span>
             <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'PÓS'+(cargo.banca?' · '+cargo.banca:''):'PRÉ'}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
-            <span style="font-size:10px;color:${editColor}">${editLabel}</span>
           </div>
         </div>
         <span style="font-size:12px;color:var(--muted);flex-shrink:0">${isOpen?'▴':'▾'}</span>
