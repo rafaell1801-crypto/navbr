@@ -4675,7 +4675,7 @@ function renderMonGeneralLinks(){
         </div>`;
       } else {
         const displayLinks=items.map(it=>it.url
-          ?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${(it.label||it.url).replace(/"/g,'&quot;')}" style="font-size:18px;width:32px;height:32px;border-radius:6px;background:${s.color};border:1px solid ${s.border};text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s" onmouseover="this.title='${(it.label||it.url).replace(/'/g,"\\'")}'" >${it.emoji||'🔗'}</a>`
+          ?`<a href="${(it.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${(it.label||it.url).replace(/"/g,'&quot;')}" style="font-size:18px;width:32px;height:32px;border-radius:6px;background:${s.color};border:none;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s" onmouseover="this.title='${(it.label||it.url).replace(/'/g,"\\'")}'" >${it.emoji||'🔗'}</a>`
           :`<span style="font-size:18px;width:32px;height:32px;border-radius:6px;background:var(--surface2);border:1px dashed var(--border);display:inline-flex;align-items:center;justify-content:center;opacity:.4">${it.emoji||'🔗'}</span>`
         ).join('');
         bodyHTML=`<div style="padding:4px 10px 8px;display:flex;flex-wrap:wrap;gap:5px">${displayLinks||'<span style="font-size:10px;color:var(--muted);opacity:.5">sem links</span>'}</div>`;
@@ -5029,17 +5029,17 @@ function renderMonitor(){
             </div>
           </div>
           ${monLinkEditOpen.has(cargo.id)?`<div class="link-edit-all-row" style="margin-top:4px;position:relative">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
               ${monLinkOrder.map((key,idx)=>{
                 const url=(links[key]||'').replace(/"/g,'&quot;');
                 const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
                 const ico=MON_LINK_ICONS[key];
                 const hasUrl=!!(links[key]||'').trim();
-                return `<div style="display:flex;align-items:center;gap:4px;background:${hasUrl?'rgba(62,181,200,.06)':'var(--surface2)'};border-radius:5px;padding:3px 5px">
-                  <span style="font-size:12px;flex-shrink:0">${ico}</span>
-                  <span style="font-size:9px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:54px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
+                return `<div style="display:flex;align-items:center;gap:3px;border-radius:4px;padding:2px 4px">
+                  <span style="font-size:10px;flex-shrink:0">${ico}</span>
+                  <span style="font-size:8px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:46px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
                   <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
-                    style="flex:1;padding:2px 4px;border:1px solid var(--border);border-radius:3px;font-size:9px;background:var(--surface);color:var(--text);min-width:0;font-family:inherit;outline:none;height:18px">
+                    style="flex:1;padding:1px 4px;border:1px solid var(--border);border-radius:3px;font-size:8px;background:var(--surface);color:var(--text);min-width:0;font-family:inherit;outline:none;height:16px">
                 </div>`;
               }).join('')}
             </div>
