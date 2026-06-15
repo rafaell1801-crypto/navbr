@@ -471,6 +471,9 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
       <div class="timer-display" id="sw-display">0:00:00</div>
       <div class="timer-label" id="sw-label">Cronômetro</div>
     </div>
+    <select class="timer-disc-select" id="sw-disc">
+      <option value="">— Selecione a disciplina —</option>
+    </select>
     <button class="timer-icon-btn tibtn-playpause" id="sw-btn-playpause" onclick="swPlayPause()" title="Iniciar / Pausar">▶</button>
     <button class="timer-icon-btn tibtn-save hidden" id="sw-btn-save" onclick="swStop()" title="Concluir e salvar">✓</button>
     <button class="timer-icon-btn tibtn-stop hidden" id="sw-btn-cancel" onclick="swCancel()" title="Cancelar">✕</button>
@@ -1914,7 +1917,7 @@ function showTab(t){
   ['ciclo','rev','stats','content','simulados','horarios','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content','trabalho'][i]===t));
   const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo');
-  if(t==='rev'){renderRev();updateSwUI();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
+  if(t==='rev'){renderRev();populateSwDisc();updateSwUI();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
   if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();if(t==='trabalho')renderTrabalho();
 }
 let currentSubtab='today';
@@ -2072,6 +2075,7 @@ function toggleEditAll(ctx,itemId){
   const el=document.getElementById('lea-'+ctx+'-'+itemId);if(!el)return;
   const hidden=el.classList.toggle('hidden');
   if(!hidden){const inp=el.querySelector('input');if(inp)inp.focus();}
+  const m=document.getElementById('lea-m-'+ctx+'-'+itemId);if(m)m.classList.toggle('hidden',hidden);
 }
 
 async function saveAllLinksForItem(ctx,itemId,disc){
@@ -2424,7 +2428,7 @@ async function saveCalEdit(iso){
 let revFilter='pending_today';
 function setRevFilter(f,el){revFilter=f;document.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderRev();}
 function renderRev(){
-  const doneItems=getEffectiveAgenda().filter(i=>isDone(i.id));
+  const doneItems=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id));
   const rows=doneItems.map(item=>{
     const card=fsrsState[item.id];
     const diff=fsrsItemDiff(item.id);
@@ -2468,10 +2472,9 @@ function renderRev(){
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
             <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0;display:inline-block"></span>
             ${DISC_LINKS[item.disc]?`<a href="${DISC_LINKS[item.disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="rev-disc" style="color:#c8e6f0;text-decoration:none">${item.disc}</a>`:`<span class="rev-disc" style="color:#c8e6f0">${item.disc}</span>`}
-            <span class="fsrs-metrics">${metrics}</span>
           </div>
           <div class="rev-topico" style="display:flex;align-items:center;gap:5px">${item.topico}${topicFreq[item.id]?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:9px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.75)':'rgba(251,191,36,.65)'};border-radius:99px;padding:1px 6px;flex-shrink:0;white-space:nowrap">${topicFreq[item.id]}%</span>`;})():''}</div>
-          <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}</div>
+          <div style="margin-top:5px">${renderLinksRow(item.id, item.disc, 'r')}<div class="fsrs-metrics hidden" id="lea-m-r-${item.id}" style="margin-top:5px;flex-wrap:wrap">${metrics}</div></div>
         </div>
         <div class="rev-right">${grades}</div>
       </div>`;}).join('');
@@ -2651,8 +2654,13 @@ async function timerStop(){
   _timerButtonsUpdate();updateTimerUI();render();renderStats();
 }
 // ── Cronômetro (aba Revisões) ────────────────────────────────────────────────
-const swSt={running:false,startedAt:null,elapsed:0,interval:null};
+const swSt={running:false,startedAt:null,elapsed:0,_base:0,currentDisc:'',interval:null};
 function fmtSw(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function populateSwDisc(){
+  const sel=document.getElementById('sw-disc');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">— Selecione a disciplina —</option>'+getActiveDiscs().map(d=>`<option value="${d}"${d===prev?' selected':''}>${d}</option>`).join('');
+}
 function updateSwUI(){
   const el=id=>document.getElementById(id);
   const s=swSt.elapsed;
@@ -2662,13 +2670,15 @@ function updateSwUI(){
   const disp=el('sw-display');
   if(disp){disp.textContent=fmtSw(s);disp.className='timer-display'+(swSt.running?' running':'');}
   const lbl=el('sw-label');
-  if(lbl)lbl.textContent=swSt.running?'Cronômetro · em andamento':s>0?'Cronômetro · pausado':'Cronômetro';
+  if(lbl)lbl.textContent=swSt.running?'Estudando: '+(swSt.currentDisc||'—'):s>0?'Cronômetro · pausado':'Cronômetro';
   const pp=el('sw-btn-playpause');
   if(pp){pp.innerHTML=swSt.running?timerIconHTML('pausa','⏸'):timerIconHTML('play','▶');pp.title=swSt.running?'Pausar':'Iniciar';}
   const save=el('sw-btn-save'),cancel=el('sw-btn-cancel');
   const started=swSt.running||s>0;
   if(save){save.innerHTML=timerIconHTML('concluir','✓');save.classList.toggle('hidden',!started);}
   if(cancel){cancel.innerHTML=timerIconHTML('cancelar','✕');cancel.classList.toggle('hidden',!started);}
+  const disc=el('sw-disc');
+  if(disc){disc.disabled=swSt.running;disc.classList.toggle('hidden',swSt.running);}
 }
 function swTick(){
   if(!swSt.running||!swSt.startedAt)return;
@@ -2680,16 +2690,37 @@ function swPlayPause(){
     swSt.elapsed=swSt._base+Math.floor((Date.now()-swSt.startedAt)/1000);
     swSt._base=swSt.elapsed;swSt.running=false;clearInterval(swSt.interval);swSt.startedAt=null;
   }else{
+    if(!swSt.elapsed){
+      const sel=document.getElementById('sw-disc');
+      if(!sel||!sel.value){if(sel){sel.style.borderColor='#ef4444';setTimeout(()=>sel.style.borderColor='',1200);}return;}
+      swSt.currentDisc=sel.value;
+    }
     swSt.startedAt=Date.now();swSt._base=swSt.elapsed||0;swSt.running=true;
     clearInterval(swSt.interval);swSt.interval=setInterval(swTick,500);
   }
   updateSwUI();
 }
 function swStop(){
+  if(swSt.running&&swSt.startedAt){
+    const elapsed=Math.floor((Date.now()-swSt.startedAt)/1000);
+    swSt.elapsed=swSt._base+elapsed;
+  }
+  if(swSt.elapsed>0&&swSt.currentDisc){
+    todayByDisc[swSt.currentDisc]=(todayByDisc[swSt.currentDisc]||0)+swSt.elapsed;
+    saveTodayByDisc();
+    showSync('ok','✓ Tempo salvo');
+  }
   clearInterval(swSt.interval);swSt.running=false;swSt.startedAt=null;
-  swSt.elapsed=0;swSt._base=0;updateSwUI();
+  swSt.elapsed=0;swSt._base=0;swSt.currentDisc='';
+  const sel=document.getElementById('sw-disc');if(sel)sel.value='';
+  updateSwUI();
 }
-function swCancel(){swStop();}
+function swCancel(){
+  clearInterval(swSt.interval);swSt.running=false;swSt.startedAt=null;
+  swSt.elapsed=0;swSt._base=0;swSt.currentDisc='';
+  const sel=document.getElementById('sw-disc');if(sel)sel.value='';
+  updateSwUI();
+}
 // ────────────────────────────────────────────────────────────────────────────
 
 function timerBeep(){
@@ -4614,7 +4645,7 @@ function replanLate(){
 
 // Limpa localStorage antigo se a versão do ciclo mudou
 (function(){const V='pdf-v3';if(localStorage.getItem('agenda_ver')!==V){localStorage.removeItem('plano_ct');localStorage.removeItem('plano_cc');localStorage.setItem('agenda_ver',V);}})();
-populateDiscSelect();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
+populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerButtonsUpdate();applyLateIcon();
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
