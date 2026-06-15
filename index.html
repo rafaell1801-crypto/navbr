@@ -3160,7 +3160,7 @@ function getDynamicAgenda() {
     if (disc === 'Língua Portuguesa' || !Array.isArray(topics)) continue; // null = excluída
     const g = grupo[disc] ?? 2;
     for (const t of topics) {
-      if (!t.deleted) byGroup[g].push({disc, topico: t.topico});
+      if (!t.deleted) byGroup[g].push({id: t.id, disc, topico: t.topico});
     }
   }
 
@@ -3188,7 +3188,7 @@ function getDynamicAgenda() {
     const blocoIdx = i % 4;
     const dt = new Date(start); dt.setDate(dt.getDate()+diaIdx);
     const dd=String(dt.getDate()).padStart(2,'0'), mm=String(dt.getMonth()+1).padStart(2,'0');
-    agenda.push({id, data:dd+'/'+mm+'/'+dt.getFullYear(), dia_idx:diaIdx,
+    agenda.push({id: conteudos[i].id ?? id, data:dd+'/'+mm+'/'+dt.getFullYear(), dia_idx:diaIdx,
       bloco:BLOCOS[blocoIdx], disc:conteudos[i].disc, topico:conteudos[i].topico, port:false});
     id++;
   }
