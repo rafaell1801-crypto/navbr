@@ -2280,7 +2280,7 @@ function render(){
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
-  const alertCount=getEffectiveAgenda().filter(i=>isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
+  const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
 }
@@ -2460,7 +2460,7 @@ function renderRev(){
       const R=Math.round(fsrsCurR(card)*100);
       const metrics=isNew
         ? `<span title="Novo card — primeira revisão">🆕 novo</span>`
-        : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span><span title="Próxima revisão" style="color:#fff">${(()=>{const[d,m,y]=card.due.split('/');return y>='2027'?card.due:d+'/'+m;})()}</span>`;
+        : `<span title="Probabilidade de recordar agora">R ${R}%</span><span title="Estabilidade (força da memória)">S ${fmtIvShort(Math.round(card.S))}</span><span title="Dificuldade 1-10">D ${card.D.toFixed(1)}</span>`;
       const grades=`<div class="fsrs-grades">
         <button class="fsrs-btn fsrs-again" onclick="rateCard(${item.id},1)">Reaprender<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,1))}</span></button>
         <button class="fsrs-btn fsrs-hard" onclick="rateCard(${item.id},2)">Difícil<span class="fsrs-iv">${fmtIvShort(fsrsPreviewIv(card,2))}</span></button>
