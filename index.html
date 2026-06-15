@@ -368,6 +368,7 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
   .timer-disc-select{max-width:none;width:100%;order:5;flex-basis:100%}
   .days-list{padding:8px 10px}
   .stats-page,.rev-page,.content-page{padding:10px 12px}
+  .sw-timer-bar{margin:-10px -12px 12px!important}
   .rev-summary-bar{grid-template-columns:repeat(3,1fr)}
   .bloco-row{flex-wrap:wrap}
   .bloco-info{width:calc(100% - 34px)}
@@ -459,6 +460,21 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 
 <!-- TAB REVISÕES -->
 <div id="tab-rev" class="hidden rev-page">
+  <div class="timer-bar sw-timer-bar" style="margin:-14px -20px 12px;border-radius:0">
+    <svg class="timer-ring" viewBox="0 0 38 38">
+      <circle cx="19" cy="19" r="16" fill="none" stroke="#e5e7eb" stroke-width="3"/>
+      <circle cx="19" cy="19" r="16" fill="none" stroke="#94a3b8" stroke-width="3"
+        stroke-dasharray="100.5 100.5" stroke-dashoffset="100.5"
+        stroke-linecap="round" transform="rotate(-90 19 19)" id="sw-arc"/>
+    </svg>
+    <div>
+      <div class="timer-display" id="sw-display">0:00:00</div>
+      <div class="timer-label" id="sw-label">Cronômetro</div>
+    </div>
+    <button class="timer-icon-btn tibtn-playpause" id="sw-btn-playpause" onclick="swPlayPause()" title="Iniciar / Pausar">▶</button>
+    <button class="timer-icon-btn tibtn-save hidden" id="sw-btn-save" onclick="swStop()" title="Concluir e salvar">✓</button>
+    <button class="timer-icon-btn tibtn-stop hidden" id="sw-btn-cancel" onclick="swCancel()" title="Cancelar">✕</button>
+  </div>
   <div class="rev-summary-bar">
     <div class="stat"><div class="stat-val c-over" id="rv-over">–</div><div class="stat-lbl">Atrasadas</div></div>
     <div class="stat"><div class="stat-val c-today" id="rv-today">–</div><div class="stat-lbl">Hoje</div></div>
@@ -1897,8 +1913,8 @@ function _enableSpinEdit(el,max,onChange){
 function showTab(t){
   ['ciclo','rev','stats','content','simulados','horarios','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content','trabalho'][i]===t));
-  const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo'&&t!=='rev');
-  if(t==='rev'){renderRev();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
+  const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo');
+  if(t==='rev'){renderRev();updateSwUI();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
   if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();if(t==='trabalho')renderTrabalho();
 }
 let currentSubtab='today';
@@ -1914,13 +1930,13 @@ function toggleLate(){document.getElementById('late-body').classList.toggle('hid
 async function toggleItem(id){
   state[id]=!state[id];
   const toggledItem=getEffectiveAgenda().find(i=>i.id===id);
-  if(isDone(id)&&toggledItem&&!toggledItem.port){const ex=revState[id]||{};revState[id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}
+  if(isDone(id)&&toggledItem){const ex=revState[id]||{};revState[id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}
   render();
   await sbUpsert('progresso',{id,feito:!!state[id]});showSync('ok','✓ Salvo');
 }
 async function markDayAll(dateStr,val){
   const days=groupByDay(),items=days[dateStr]||[];
-  for(const item of items){state[item.id]=val;if(val&&!item.port){const ex=revState[item.id]||{};revState[item.id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}}
+  for(const item of items){state[item.id]=val;if(val){const ex=revState[item.id]||{};revState[item.id]={doneDate:TODAY,completedRevs:ex.completedRevs||[]};sbUpsert('revisoes',{item_id:item.id,done_date:TODAY,completed_revs:ex.completedRevs||[]});}}
   render();showSync('saving','⟳ Salvando...');
   await Promise.all(items.map(item=>sbUpsert('progresso',{id:item.id,feito:!!state[item.id]})));
   showSync('ok','✓ Salvo');
@@ -2205,12 +2221,13 @@ function render(){
     const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     function inWeek(ds){if(!ds)return false;const[d,m,y]=ds.split('/');const dt=new Date(+y,+m-1,+d);return dt>=mon&&dt<=sun;}
-    const weekItems=getEffectiveAgenda().filter(i=>!i.port&&inWeek(i.data));
+    const weekItems=getEffectiveAgenda().filter(i=>inWeek(i.data));
     const weekDone=weekItems.filter(i=>isDone(i.id)).length;
     const weekPend=weekItems.length-weekDone;
     const weekIds=new Set(weekItems.map(i=>i.id));
-    const {a,t}=getQuestoesTotals(id=>weekIds.has(id));
-    const wPct=t>0?Math.round(a/t*100):null;
+    const {a:wA,t:wT}=getQuestoesTotals(id=>weekIds.has(id));
+    const {pct:allPct,t:allT}=getQuestoesTotals();
+    const wPct=wT>0?Math.round(wA/wT*100):(allT>0?allPct:null);
     const el=n=>document.getElementById(n);
     if(el('s-week-total'))el('s-week-total').textContent=weekItems.length;
     if(el('s-week-done')){el('s-week-done').textContent=weekDone;}
@@ -2243,7 +2260,7 @@ function render(){
   const pendingDays=dateKeys.filter(d=>!days[d].every(i=>isDone(i.id)));
   const doneDays=dateKeys.filter(d=>days[d].every(i=>isDone(i.id)));
   // Hoje: pendentes do dia atual + atrasados não concluídos
-  const todayAllItems=getEffectiveAgenda().filter(i=>i.data===TODAY||(!i.port&&isPast(i.data)));
+  const todayAllItems=getEffectiveAgenda().filter(i=>i.data===TODAY||isPast(i.data));
   const todayPendingItems=todayAllItems.filter(i=>!isDone(i.id));
   const todayByDay={};
   todayPendingItems.forEach(i=>{if(!todayByDay[i.data])todayByDay[i.data]=[];todayByDay[i.data].push(i);});
@@ -2259,7 +2276,7 @@ function render(){
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
     :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
-  const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
+  const alertCount=getEffectiveAgenda().filter(i=>isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
 }
@@ -2407,7 +2424,7 @@ async function saveCalEdit(iso){
 let revFilter='pending_today';
 function setRevFilter(f,el){revFilter=f;document.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderRev();}
 function renderRev(){
-  const doneItems=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id));
+  const doneItems=getEffectiveAgenda().filter(i=>isDone(i.id));
   const rows=doneItems.map(item=>{
     const card=fsrsState[item.id];
     const diff=fsrsItemDiff(item.id);
@@ -2633,6 +2650,48 @@ async function timerStop(){
   timerSt.remaining=getBlockSecs();
   _timerButtonsUpdate();updateTimerUI();render();renderStats();
 }
+// ── Cronômetro (aba Revisões) ────────────────────────────────────────────────
+const swSt={running:false,startedAt:null,elapsed:0,interval:null};
+function fmtSw(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function updateSwUI(){
+  const el=id=>document.getElementById(id);
+  const s=swSt.elapsed;
+  const CIRC=100.5,cycle=getBlockSecs(),pct=(s%cycle)/cycle;
+  const arc=el('sw-arc');
+  if(arc){arc.setAttribute('stroke-dashoffset',(CIRC*(1-pct)).toFixed(2));arc.setAttribute('stroke',swSt.running?'#1d5fa8':'#94a3b8');}
+  const disp=el('sw-display');
+  if(disp){disp.textContent=fmtSw(s);disp.className='timer-display'+(swSt.running?' running':'');}
+  const lbl=el('sw-label');
+  if(lbl)lbl.textContent=swSt.running?'Cronômetro · em andamento':s>0?'Cronômetro · pausado':'Cronômetro';
+  const pp=el('sw-btn-playpause');
+  if(pp){pp.innerHTML=swSt.running?timerIconHTML('pausa','⏸'):timerIconHTML('play','▶');pp.title=swSt.running?'Pausar':'Iniciar';}
+  const save=el('sw-btn-save'),cancel=el('sw-btn-cancel');
+  const started=swSt.running||s>0;
+  if(save){save.innerHTML=timerIconHTML('concluir','✓');save.classList.toggle('hidden',!started);}
+  if(cancel){cancel.innerHTML=timerIconHTML('cancelar','✕');cancel.classList.toggle('hidden',!started);}
+}
+function swTick(){
+  if(!swSt.running||!swSt.startedAt)return;
+  swSt.elapsed=swSt._base+Math.floor((Date.now()-swSt.startedAt)/1000);
+  updateSwUI();
+}
+function swPlayPause(){
+  if(swSt.running){
+    swSt.elapsed=swSt._base+Math.floor((Date.now()-swSt.startedAt)/1000);
+    swSt._base=swSt.elapsed;swSt.running=false;clearInterval(swSt.interval);swSt.startedAt=null;
+  }else{
+    swSt.startedAt=Date.now();swSt._base=swSt.elapsed||0;swSt.running=true;
+    clearInterval(swSt.interval);swSt.interval=setInterval(swTick,500);
+  }
+  updateSwUI();
+}
+function swStop(){
+  clearInterval(swSt.interval);swSt.running=false;swSt.startedAt=null;
+  swSt.elapsed=0;swSt._base=0;updateSwUI();
+}
+function swCancel(){swStop();}
+// ────────────────────────────────────────────────────────────────────────────
+
 function timerBeep(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
