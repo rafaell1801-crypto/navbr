@@ -428,11 +428,12 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 
 <!-- TAB CICLO -->
 <div id="tab-ciclo">
-  <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
+  <div class="stats-bar" style="grid-template-columns:repeat(5,1fr)">
     <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-week-done">–</div><div class="stat-lbl">Vistos</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--muted)" id="s-week-pend">–</div><div class="stat-lbl">Restam</div></div>
     <div class="stat" onclick="showTab('stats')" style="cursor:pointer"><div class="stat-val" id="s-week-acertos">–</div><div class="stat-lbl">% Acertos</div></div>
+    <div class="stat"><div class="stat-val" id="s-analise" contenteditable="true" oninput="localStorage.setItem('nav_analise',this.textContent.trim())" style="outline:none;cursor:text;font-size:15px" title="Clique para editar">•</div><div class="stat-lbl">An. Estatística</div></div>
   </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
@@ -2236,7 +2237,7 @@ function render(){
     if(el('s-week-total'))el('s-week-total').textContent=weekItems.length;
     if(el('s-week-done')){el('s-week-done').textContent=weekDone;}
     if(el('s-week-pend'))el('s-week-pend').textContent=weekPend;
-    if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct+'%':'–';
+    if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct:'–';
     const ac=el('s-week-acertos');if(ac)ac.style.color=wPct===null?'':wPct>=70?'var(--success)':wPct>=50?'var(--warn)':'var(--danger)';
   })()}catch(e){console.warn('week stats:',e);}
   document.getElementById('prog-bar').style.width=pct+'%';
@@ -4649,6 +4650,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
+const _anEl=document.getElementById('s-analise');if(_anEl){const _anV=localStorage.getItem('nav_analise');if(_anV)_anEl.textContent=_anV;}
 render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
