@@ -428,12 +428,11 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 
 <!-- TAB CICLO -->
 <div id="tab-ciclo">
-  <div class="stats-bar" style="grid-template-columns:repeat(5,1fr)">
+  <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-week-done">–</div><div class="stat-lbl">Vistos</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--muted)" id="s-week-pend">–</div><div class="stat-lbl">Restam</div></div>
     <div class="stat" onclick="showTab('stats')" style="cursor:pointer"><div class="stat-val" id="s-week-acertos">–</div><div class="stat-lbl">% Acertos</div></div>
-    <div class="stat"><div class="stat-val" id="s-analise" contenteditable="true" oninput="localStorage.setItem('nav_analise',this.textContent.trim())" style="outline:none;cursor:text;font-size:15px" title="Clique para editar">•</div><div class="stat-lbl">An. Estatística</div></div>
   </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
@@ -2056,8 +2055,6 @@ function renderLinksRow(itemId, disc, ctx){
     ${cadUrl?`<a href="${safeCad}" target="_blank" rel="noopener" class="link-icon" title="Questões">${iconImg('questoes')}</a>`:`<span class="link-icon empty" title="sem questões">${iconImg('questoes')}</span>`}
     ${drvUrl?`<a href="${safeDrv}" target="_blank" rel="noopener" class="link-icon" title="Drive">${iconImg('drive')}</a>`:`<span class="link-icon empty" title="sem Drive">${iconImg('drive')}</span>`}
     ${customIconsHtml}
-    ${qt>0?`<span class="link-pct" title="${qa}/${qt}">${qpct}%</span>`:`<span class="link-pct empty">–</span>`}
-    <button class="link-edit-all" onclick="toggleEditAll('${ctx}',${itemId})" title="Adicionar ou editar links">${editIconHTML()}</button>
   </div>`;
   const editForm=`<div class="link-edit-all-row hidden" id="lea-${idp}">
     <div class="lea-inline">
@@ -2188,14 +2185,18 @@ function buildDayHTML(dateStr,days){
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
       <div style="flex:1;min-width:0">
         ${discNameEl}
-        <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px;display:flex;align-items:center;gap:5px">${item.topico}${topicFreq[item.id]?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:9px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.75)':'rgba(251,191,36,.65)'};border-radius:99px;padding:1px 6px;flex-shrink:0;white-space:nowrap">${topicFreq[item.id]}%</span>`;})():''}</div>
+        <div class="bloco-topic-name ${done?'done-text':''}" style="padding-left:16px">${item.topico}</div>
         <div style="margin-top:7px;padding-left:16px">
           ${renderLinksRow(item.id, item.disc, 'c')}
         </div>
       </div>
-      <div style="flex-shrink:0;text-align:right;padding-top:2px">
+      <div style="flex-shrink:0;text-align:right;padding-top:2px;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
         <div style="font-size:11px;color:#7fb3c8;white-space:nowrap">${getBlocoLabel(item.bloco)}</div>
         ${isToday?`<div class="disc-timer-tag" data-disc="${item.disc}"></div>`:''}
+        <div style="display:flex;align-items:center;gap:5px;margin-top:4px">
+          ${topicFreq[item.id]?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${topicFreq[item.id]}%</span>`;})():''}
+          <button class="link-edit-all" onclick="toggleEditAll('c',${item.id})" title="Adicionar ou editar links">${editIconHTML()}</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -4650,7 +4651,6 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-const _anEl=document.getElementById('s-analise');if(_anEl){const _anV=localStorage.getItem('nav_analise');if(_anV)_anEl.textContent=_anV;}
 render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
