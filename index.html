@@ -598,7 +598,9 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
     <details class="cfg-group">
       <summary>Horários</summary>
       <div class="cfg-group-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 10px">
+        <div class="modal-row" style="margin-top:6px"><label>Início do dia</label><div class="spin-wrap"><span class="spin-val" id="spin-hor-start">06</span><span class="spin-sep">h</span></div></div>
+        <div class="modal-row"><label>Fim do dia</label><div class="spin-wrap"><span class="spin-val" id="spin-hor-end">23</span><span class="spin-sep">h</span></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 10px">
           <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horários dos blocos</span>
           <span style="font-size:11px;color:var(--muted);white-space:nowrap">Total/dia <span id="cfg-block-total" style="color:#7dd3fc;font-weight:700">–</span></span>
         </div>
@@ -1502,6 +1504,9 @@ function openSettings(){
   const thEl=document.getElementById('spin-timer-h'),tmEl=document.getElementById('spin-timer-m');
   if(thEl)thEl.textContent=String(bh).padStart(2,'0');
   if(tmEl)tmEl.textContent=String(bm).padStart(2,'0');
+  const hsEl=document.getElementById('spin-hor-start'),heEl=document.getElementById('spin-hor-end');
+  if(hsEl)hsEl.textContent=String(horariosConfig.start).padStart(2,'0');
+  if(heEl)heEl.textContent=String(horariosConfig.end).padStart(2,'0');
   document.getElementById('settings-modal').classList.remove('hidden');
   buildTimerEditList('timer-edit-list');
   calcBlockTotal();
@@ -1761,6 +1766,16 @@ function saveSettings(){
   const sdEl=document.getElementById('cfg-start-date');if(sdEl&&sdEl.value){saveStartDateSetting(sdEl.value);}
   customBlocos=['b1','b2','b3','b4','b5'].map((k,i)=>blocoFromSpan(k,i));
   localStorage.setItem('nav_blocos_v2',JSON.stringify(customBlocos));
+  const hsEl=document.getElementById('spin-hor-start'),heEl=document.getElementById('spin-hor-end');
+  if(hsEl&&heEl){
+    const ns=parseInt(hsEl.textContent),ne=parseInt(heEl.textContent);
+    if(!isNaN(ns)&&!isNaN(ne)&&ns<ne){
+      horariosConfig.start=ns;horariosConfig.end=ne;
+      document.getElementById('hor-start').value=ns;
+      document.getElementById('hor-end').value=ne;
+      _horSave();renderHorarios();
+    }
+  }
   const thEl=document.getElementById('spin-timer-h'),tmEl=document.getElementById('spin-timer-m');
   if(thEl&&tmEl){
     const secs=parseInt(thEl.textContent)*3600+parseInt(tmEl.textContent)*60;
@@ -1912,6 +1927,11 @@ function _enableSpinEdit(el,max,onChange){
   const el=document.getElementById('spin-timer-'+f);if(!el)return;
   _enableSpinEdit(el,f==='h'?24:60,null);
 });
+(function(){
+  const es=document.getElementById('spin-hor-start'),ee=document.getElementById('spin-hor-end');
+  if(es)_enableSpinEdit(es,24,null);
+  if(ee)_enableSpinEdit(ee,24,null);
+})();
 
 function showTab(t){
   ['ciclo','rev','stats','content','simulados','horarios','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
@@ -5172,6 +5192,15 @@ function renderMonitor(){
           <div style="display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap">
             <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'PÓS'+(cargo.banca?' · '+cargo.banca:''):'PRÉ'}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:3px;margin-top:6px;flex-wrap:wrap" onclick="event.stopPropagation()">
+            ${monLinkOrder.map(key=>{
+              const url=(links[key]||'').trim();
+              const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;');
+              const ico=MON_LINK_ICONS[key];
+              if(url)return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${lbl}" style="font-size:18px;width:26px;height:26px">${ico}</a>`;
+              return `<span class="link-icon empty" title="${lbl}" style="font-size:18px;width:26px;height:26px;opacity:.25">${ico}</span>`;
+            }).join('')}
           </div>
         </div>
         <span style="font-size:12px;color:var(--muted);flex-shrink:0">${isOpen?'▴':'▾'}</span>
