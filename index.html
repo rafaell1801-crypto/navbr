@@ -4690,8 +4690,11 @@ let monLinkOrder=[...MON_LINK_KEYS];
 let monTaskPresets=['Teoria','Teoria + Questões','Revisão','Revisão + Questões','Treino (PDF)','Treino (SQ)'];
 let monFinaisPresets=['SQ','BIZU'];
 
-function calcTotalTarefas(numAulas,aulaItens,finaisItens){
-  return (parseInt(numAulas)||0)*(aulaItens||[]).length+(finaisItens||[]).length;
+function calcTotalTarefas(numAulas,aulaItens,finaisItens,intervaloGroups){
+  const n=parseInt(numAulas)||0;
+  let tot=n*(aulaItens||[]).length+(finaisItens||[]).length;
+  (intervaloGroups||[]).forEach(g=>{const iv=Math.max(1,parseInt(g.intervalo)||1);tot+=Math.floor(n/iv)*(g.itens||[]).length;});
+  return tot;
 }
 
 // General links (4 blocks above cargo list)
@@ -4983,7 +4986,8 @@ function renderMonitor(){
   wrap.innerHTML=monitorCargos.map(cargo=>{
     const aulaItens=cargo.tarefasAulaItens||[];
     const finaisItens=cargo.tarefasFinaisItens||[];
-    const tot=calcTotalTarefas(cargo.numAulas,aulaItens,finaisItens);
+    const intervaloGroups=cargo.tarefasIntervaloGroups||[];
+    const tot=calcTotalTarefas(cargo.numAulas,aulaItens,finaisItens,intervaloGroups);
     const feit=parseInt(cargo.feitas)||0;
     const falt=Math.max(0,tot-feit);
     const pct=tot>0?Math.round(feit/tot*100):0;
@@ -5054,10 +5058,13 @@ function renderMonitor(){
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
             ${provaInfo}
           </div>`:''}
-          <div>
-            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
-            <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
-              style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <div>
+              <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
+              <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
+                style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+            </div>
+            <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:34px;height:34px;border-radius:8px;border:1px solid ${concluido?'rgba(45,212,160,.4)':'var(--border)'};background:${concluido?'rgba(45,212,160,.15)':'var(--surface2)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.3)'};cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:all .15s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(45,212,160,.5)';this.style.color='#2dd4a0'" onmouseout="this.style.borderColor='${concluido?'rgba(45,212,160,.4)':'var(--border)'}';this.style.color='${concluido?'#2dd4a0':'rgba(255,255,255,.3)'}'" title="${concluido?'Concluído — clique para desmarcar':'Marcar como concluído'}">✓</button>
           </div>
         </div>
 
@@ -5103,7 +5110,37 @@ function renderMonitor(){
               </div>
             </details>
 
-            <div style="font-size:11px;color:var(--muted)">${cargo.numAulas||0} aulas × ${aulaItens.length} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
+            ${intervaloGroups.map((g,gi)=>{
+              const iv=Math.max(1,parseInt(g.intervalo)||1);
+              const gitens=g.itens||[];
+              const occurrences=Math.floor((parseInt(cargo.numAulas)||0)/iv);
+              return `<details ${monSecOpen.has(cargo.id+'_iv'+gi)?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_iv${gi}')" style="border:1px solid rgba(245,166,35,.2);border-radius:8px;overflow:hidden;background:#1a1200">
+                <summary style="padding:7px 10px;font-size:10px;color:#f5a623;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none;text-transform:uppercase;letter-spacing:.4px">
+                  <span style="display:flex;align-items:center;gap:6px">A cada
+                    <input type="number" min="1" max="999" value="${iv}" onclick="event.stopPropagation()" onchange="updateMonIntervaloField(${cargo.id},${gi},'intervalo',this.value)"
+                      style="width:38px;text-align:center;padding:1px 3px;border:1px solid rgba(245,166,35,.4);border-radius:4px;font-size:10px;font-weight:700;background:#0e0900;color:#f5a623;font-family:inherit;outline:none;-moz-appearance:textfield;-webkit-appearance:none">
+                    aulas
+                  </span>
+                  <span style="display:flex;align-items:center;gap:8px;color:#f5a623">${gitens.length} ▾
+                    <button onclick="event.stopPropagation();removeMonIntervaloGroup(${cargo.id},${gi})" style="background:none;border:none;color:rgba(245,166,35,.4);cursor:pointer;font-size:12px;line-height:1;padding:0;font-family:inherit" title="Remover grupo">✕</button>
+                  </span>
+                </summary>
+                <div style="padding:8px 10px">
+                  <div style="font-size:9px;color:rgba(245,166,35,.5);margin-bottom:6px">${occurrences}× em ${cargo.numAulas||0} aulas</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:7px">
+                    ${gitens.map((item,ii)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,166,35,.15);border:1px solid rgba(245,166,35,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#f5a623">
+                      <span contenteditable="true" onblur="updateMonIntervaloItem(${cargo.id},${gi},${ii},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                      <button onclick="removeMonIntervaloItem(${cargo.id},${gi},${ii})" style="background:none;border:none;color:rgba(245,166,35,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                    </span>`).join('')}
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px">
+                    ${monTaskPresets.map(p=>`<button onclick="addMonIntervaloItem(${cargo.id},${gi},'${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(245,166,35,.25);border-radius:5px;background:#0e0900;color:#c08020;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+                  </div>
+                </div>
+              </details>`;
+            }).join('')}
+            <button onclick="addMonIntervaloGroup(${cargo.id})" style="padding:4px 10px;border:1px dashed rgba(245,166,35,.3);border-radius:6px;background:transparent;color:rgba(245,166,35,.6);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='rgba(245,166,35,.6)';this.style.color='#f5a623'" onmouseout="this.style.borderColor='rgba(245,166,35,.3)';this.style.color='rgba(245,166,35,.6)'">+ A cada X aulas</button>
+            <div style="font-size:11px;color:var(--muted)">${cargo.numAulas||0} × ${aulaItens.length}${intervaloGroups.map(g=>{const iv=Math.max(1,parseInt(g.intervalo)||1);return ` + ⌊${cargo.numAulas||0}÷${iv}⌋×${(g.itens||[]).length}`;}).join('')} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
           </div>
         </details>
 
@@ -5145,7 +5182,6 @@ function renderMonitor(){
               return `<span class="link-icon empty" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</span>`;
             }).join('')}
             <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
-              <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:22px;height:22px;border-radius:6px;border:none;background:${concluido?'rgba(45,212,160,.2)':'rgba(255,255,255,.06)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.4)'};cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:all .15s">✓</button>
               <button onclick="toggleMonLinkEdit(${cargo.id})" class="link-edit-all" title="Editar links">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -5161,11 +5197,11 @@ function renderMonitor(){
                 const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
                 const ico=MON_LINK_ICONS[key];
                 const hasUrl=!!(links[key]||'').trim();
-                return `<div style="display:flex;align-items:center;gap:3px;border-radius:4px;padding:2px 4px">
-                  <span style="font-size:10px;flex-shrink:0">${ico}</span>
-                  <span style="font-size:8px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:600;white-space:nowrap;flex-shrink:0;width:46px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
+                return `<div style="display:flex;align-items:center;gap:5px;border-radius:6px;padding:3px 6px;background:var(--surface)">
+                  <span style="font-size:16px;flex-shrink:0;line-height:1">${ico}</span>
+                  <span style="font-size:11px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:700;white-space:nowrap;flex-shrink:0;width:62px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
                   <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
-                    style="flex:1;padding:1px 4px;border:1px solid var(--border);border-radius:3px;font-size:8px;background:var(--surface);color:var(--text);min-width:0;font-family:inherit;outline:none;height:16px">
+                    style="flex:1;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:#05101a;color:var(--text);min-width:0;font-family:inherit;outline:none;height:20px">
                 </div>`;
               }).join('')}
             </div>
@@ -5255,6 +5291,55 @@ function updateMonTarefaItem(id,section,index,value){
   clearTimeout(_monSaveTimer);
   _monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
 }
+function addMonIntervaloGroup(id){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
+  if(!cargo.tarefasIntervaloGroups)cargo.tarefasIntervaloGroups=[];
+  cargo.tarefasIntervaloGroups.push({intervalo:3,itens:[]});
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function removeMonIntervaloGroup(id,gi){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo||!cargo.tarefasIntervaloGroups)return;
+  cargo.tarefasIntervaloGroups.splice(gi,1);
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function updateMonIntervaloField(id,gi,field,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo||!cargo.tarefasIntervaloGroups)return;
+  const g=cargo.tarefasIntervaloGroups[gi];if(!g)return;
+  if(field==='intervalo')value=Math.max(1,parseInt(value)||1);
+  g[field]=value;
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function addMonIntervaloItem(id,gi,value){
+  if(!value)return;
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo||!cargo.tarefasIntervaloGroups)return;
+  const g=cargo.tarefasIntervaloGroups[gi];if(!g)return;
+  if(!g.itens)g.itens=[];
+  g.itens.push(value);
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function removeMonIntervaloItem(id,gi,ii){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo||!cargo.tarefasIntervaloGroups)return;
+  const g=cargo.tarefasIntervaloGroups[gi];if(!g||!g.itens)return;
+  g.itens.splice(ii,1);
+  cargo.lastEdited=new Date().toISOString();
+  renderMonitor();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
+function updateMonIntervaloItem(id,gi,ii,value){
+  const cargo=monitorCargos.find(c=>c.id==id);if(!cargo||!cargo.tarefasIntervaloGroups)return;
+  const g=cargo.tarefasIntervaloGroups[gi];if(!g||!g.itens)return;
+  if(!value)g.itens.splice(ii,1);else g.itens[ii]=value;
+  cargo.lastEdited=new Date().toISOString();
+  clearTimeout(_monSaveTimer);_monSaveTimer=setTimeout(()=>_saveMonitor(),1500);
+}
 function updateMonLink(id,key,value){
   const cargo=monitorCargos.find(c=>c.id==id);if(!cargo)return;
   if(!cargo.links)cargo.links={};
@@ -5278,7 +5363,7 @@ function toggleMonConcluido(id){
 function addMonCargo(tipo){
   const nomes={matematica:'Matemática',informatica:'Informática',outros:'Outros'};
   if(!confirm('Adicionar novo cargo em '+(nomes[tipo]||'Monitor')+'?'))return;
-  const cargo={id:Date.now(),nome:'',tipo:tipo||'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
+  const cargo={id:Date.now(),nome:'',tipo:tipo||'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],tarefasIntervaloGroups:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
