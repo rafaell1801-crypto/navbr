@@ -524,9 +524,12 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
-  <div class="stats-card">
-    <h3>📊 Frequência por assunto</h3>
-    <div id="topic-freq-content"></div>
+  <div class="stats-card" style="padding:0;overflow:hidden">
+    <div onclick="(function(){var c=document.getElementById('topic-freq-content');var a=document.getElementById('topic-freq-arrow');var open=c.style.display!=='none';c.style.display=open?'none':'block';a.textContent=open?'▾':'▴';})()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:14px 16px;user-select:none">
+      <span style="flex:1;font-size:13px;font-weight:700;color:var(--text)">📊 Frequência por assunto</span>
+      <span id="topic-freq-arrow" style="font-size:11px;color:var(--muted)">▴</span>
+    </div>
+    <div id="topic-freq-content" style="padding:0 16px 14px"></div>
   </div>
   <div class="stats-card">
     <h3>🎯 Aproveitamento em questões</h3>
@@ -4923,9 +4926,15 @@ function monDaysSinceTs(ts){
   return Math.max(0,Math.floor((now-d)/86400000));
 }
 function monOldestEdit(){
-  const w=monitorCargos.filter(c=>c.lastEdited);
-  if(!w.length)return null;
-  return new Date(Math.min(...w.map(c=>new Date(c.lastEdited))));
+  const now=new Date();
+  const dts=monitorCargos.filter(c=>c.ultimaData&&c.ultimaData.includes('/')).map(c=>{
+    const[dd,mm]=c.ultimaData.split('/');
+    let d=new Date(now.getFullYear(),parseInt(mm)-1,parseInt(dd));
+    if(d>now)d=new Date(now.getFullYear()-1,parseInt(mm)-1,parseInt(dd));
+    return d;
+  });
+  if(!dts.length)return null;
+  return new Date(Math.min(...dts));
 }
 
 async function loadMonitor(){
