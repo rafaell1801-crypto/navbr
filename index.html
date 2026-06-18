@@ -5107,24 +5107,6 @@ function renderMonitor(){
               </div>
             </details>
 
-            <details ${monSecOpen.has(cargo.id+'_finais')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_finais')" style="border:1px solid rgba(139,107,232,.2);border-radius:8px;overflow:hidden;background:#0e0a1e">
-              <summary style="padding:7px 10px;font-size:10px;color:#c4b5fd;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none;text-transform:uppercase;letter-spacing:.4px">
-                <span>Tarefas finais</span>
-                <span style="color:#c4b5fd">${finaisItens.length} ▾</span>
-              </summary>
-              <div style="padding:8px 10px">
-                <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:7px">
-                  ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
-                    <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
-                    <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
-                  </span>`).join('')}
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px">
-                  ${monFinaisPresets.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'finais','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(139,107,232,.35);border-radius:5px;background:#130d20;color:#a78bfa;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
-                </div>
-              </div>
-            </details>
-
             ${intervaloGroups.map((g,gi)=>{
               const iv=Math.max(1,parseInt(g.intervalo)||1);
               const gitens=g.itens||[];
@@ -5155,7 +5137,24 @@ function renderMonitor(){
               </details>`;
             }).join('')}
             <button onclick="addMonIntervaloGroup(${cargo.id})" style="padding:4px 10px;border:1px dashed rgba(245,166,35,.3);border-radius:6px;background:transparent;color:rgba(245,166,35,.6);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;text-align:center;transition:all .15s" onmouseover="this.style.borderColor='rgba(245,166,35,.6)';this.style.color='#f5a623'" onmouseout="this.style.borderColor='rgba(245,166,35,.3)';this.style.color='rgba(245,166,35,.6)'">+ A cada X aulas</button>
-            <div style="font-size:11px;color:var(--muted)">${cargo.numAulas||0} × ${aulaItens.length}${intervaloGroups.map(g=>{const iv=Math.max(1,parseInt(g.intervalo)||1);return ` + ⌊${cargo.numAulas||0}÷${iv}⌋×${(g.itens||[]).length}`;}).join('')} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
+            <details ${monSecOpen.has(cargo.id+'_finais')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_finais')" style="border:1px solid rgba(139,107,232,.2);border-radius:8px;overflow:hidden;background:#0e0a1e">
+              <summary style="padding:7px 10px;font-size:10px;color:#c4b5fd;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none;text-transform:uppercase;letter-spacing:.4px">
+                <span>Tarefas finais</span>
+                <span style="color:#c4b5fd">${finaisItens.length} ▾</span>
+              </summary>
+              <div style="padding:8px 10px">
+                <div style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;margin-bottom:7px">
+                  ${finaisItens.map((item,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(139,107,232,.15);border:1px solid rgba(139,107,232,.3);border-radius:6px;padding:3px 7px;font-size:11px;font-weight:600;color:#c4b5fd">
+                    <span contenteditable="true" onblur="updateMonTarefaItem(${cargo.id},'finais',${i},this.textContent.trim())" style="outline:none;min-width:20px">${item.replace(/</g,'&lt;')}</span>
+                    <button onclick="removeMonTarefaItem(${cargo.id},'finais',${i})" style="background:none;border:none;color:rgba(196,181,253,.5);cursor:pointer;font-size:11px;line-height:1;padding:0">×</button>
+                  </span>`).join('')}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                  ${monFinaisPresets.map(p=>`<button onclick="addMonTarefaItem(${cargo.id},'finais','${p.replace(/'/g,"\\'")}');renderMonitor()" style="padding:3px 8px;border:1px solid rgba(139,107,232,.35);border-radius:5px;background:#130d20;color:#a78bfa;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">${p}</button>`).join('')}
+                </div>
+              </div>
+            </details>
+            <div style="font-size:11px;color:var(--muted);text-align:right">${cargo.numAulas||0} × ${aulaItens.length}${intervaloGroups.map(g=>{const iv=Math.max(1,parseInt(g.intervalo)||1);return ` + ⌊${cargo.numAulas||0}÷${iv}⌋×${(g.itens||[]).length}`;}).join('')} + ${finaisItens.length} finais = <strong style="color:var(--accent)">${tot} tarefas</strong></div>
           </div>
         </details>
 
@@ -5208,13 +5207,7 @@ function renderMonitor(){
 
         <div>
           <div class="links-row-display" style="gap:6px;padding:6px 2px">
-            ${monLinkOrder.map(key=>{
-              const url=(links[key]||'').trim();
-              const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]).replace(/"/g,'&quot;');
-              const ico=MON_LINK_ICONS[key];
-              if(url)return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="link-icon" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</a>`;
-              return `<span class="link-icon empty" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</span>`;
-            }).join('')}
+            <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Links</span>
             <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
               <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" class="link-edit-all" style="${concluido?'color:#2dd4a0;opacity:1':''}">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -5245,7 +5238,7 @@ function renderMonitor(){
               }).join('')}
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
-              <button onclick="deleteMonCargo(${cargo.id})" style="background:none;border:none;font-size:10px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;padding:2px 4px;opacity:.5;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">Excluir</button>
+              <button onclick="deleteMonCargo(${cargo.id})" style="background:none;border:none;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;padding:2px 4px;transition:color .15s" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--muted)'">Concluir Trilha</button>
               <button onclick="toggleMonLinkEdit(${cargo.id})" style="background:none;border:none;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;padding:2px 4px;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">fechar</button>
             </div>
           </div>`:''}
