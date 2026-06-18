@@ -380,6 +380,8 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
+.mon-drop-item{display:block;width:100%;text-align:left;padding:7px 10px;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text);cursor:pointer;border-radius:7px;font-family:inherit;transition:background .12s}
+.mon-drop-item:hover{background:rgba(255,255,255,.07)}
 </style>
 </head>
 <body>
@@ -4975,8 +4977,23 @@ function showTrabalhoSubtab(tab){
 
 function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
 
+let _monSort='oldest';
 function _monTipoNorm(t){return(t==='espanhol'||t==='outros')?'outros':t||'outros';}
 function setMonFiltro(f){_monFiltro=f;renderMonitor();}
+function toggleMonSortDrop(){const d=document.getElementById('mon-sort-drop');if(d){const open=d.style.display==='none';d.style.display=open?'block':'none';if(open)document.getElementById('mon-add-drop').style.display='none';}}
+function toggleMonAddDrop(){const d=document.getElementById('mon-add-drop');if(d){const open=d.style.display==='none';d.style.display=open?'block':'none';if(open)document.getElementById('mon-sort-drop').style.display='none';}}
+function setMonSort(s){
+  _monSort=s;
+  document.getElementById('mon-sort-drop').style.display='none';
+  ['oldest','newest','closest'].forEach(k=>{const el=document.getElementById('mon-sort-'+k);if(el)el.style.background=k===s?'rgba(255,255,255,.1)':'transparent';});
+  renderMonitor();
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#mon-sort-drop')&&!e.target.closest('#mon-sort-btn')&&!e.target.closest('#mon-add-drop')&&!e.target.closest('[onclick*="toggleMonAddDrop"]')){
+    const sd=document.getElementById('mon-sort-drop');const ad=document.getElementById('mon-add-drop');
+    if(sd)sd.style.display='none';if(ad)ad.style.display='none';
+  }
+});
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
   const totalCargos=monitorCargos.length;
@@ -4990,7 +5007,16 @@ function renderMonitor(){
     const el=document.getElementById('mon-fil-'+f);
     if(el)el.style.background=_monFiltro===f?({'todos':'rgba(255,255,255,.12)','matematica':'rgba(56,139,253,.3)','informatica':'rgba(45,212,160,.3)','outros':'rgba(167,139,250,.3)'}[f]):'transparent';
   });
-  const cargos=_monFiltro==='todos'?monitorCargos:monitorCargos.filter(c=>_monTipoNorm(c.tipo)===_monFiltro);
+  let cargos=_monFiltro==='todos'?[...monitorCargos]:monitorCargos.filter(c=>_monTipoNorm(c.tipo)===_monFiltro);
+  if(_monSort==='oldest')cargos.sort((a,b)=>(a.lastEdited||'')>(b.lastEdited||'')?1:-1);
+  else if(_monSort==='newest')cargos.sort((a,b)=>(a.lastEdited||'')<(b.lastEdited||'')?1:-1);
+  else if(_monSort==='closest'){cargos.sort((a,b)=>{
+    const ta=calcTotalTarefas(a.numAulas,a.tarefasAulaItens||[],a.tarefasFinaisItens||[],a.tarefasIntervaloGroups||[]);
+    const tb=calcTotalTarefas(b.numAulas,b.tarefasAulaItens||[],b.tarefasFinaisItens||[],b.tarefasIntervaloGroups||[]);
+    const pa=ta>0?(ta-(parseInt(a.feitas)||0))/ta:1;
+    const pb=tb>0?(tb-(parseInt(b.feitas)||0))/tb:1;
+    return pa-pb;
+  });}
   if(!monitorCargos.length){
     wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><div style="display:flex;gap:8px;max-width:320px;margin:0 auto"><button onclick="addMonCargo(\'matematica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit">Matemática</button><button onclick="addMonCargo(\'informatica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit">Informática</button><button onclick="addMonCargo(\'espanhol\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit">Outros</button></div></div>';
     return;
@@ -5246,8 +5272,8 @@ function renderMonitor(){
       </div>`;
     }
 
-    return `<div style="background:var(--surface);border:1px solid ${concluido?'rgba(45,212,160,.25)':tipoStyle.border};border-radius:12px;overflow:hidden;margin-bottom:10px${concluido?';opacity:.75':''}">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:${concluido?'rgba(45,212,160,.06)':tipoStyle.bg}" onclick="toggleMonCard(${cargo.id})">
+    return `<div style="background:var(--surface);border:1px solid ${tipoStyle.border};border-radius:12px;overflow:hidden;margin-bottom:10px${concluido?';opacity:.55':''}">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:${tipoStyle.bg}" onclick="toggleMonCard(${cargo.id})">
         <svg width="36" height="36" viewBox="0 0 36 36" style="flex-shrink:0">
           <circle cx="18" cy="18" r="14" fill="none" stroke="#1e3f5c" stroke-width="3"/>
           <circle cx="18" cy="18" r="14" fill="none" stroke="${pctColor}" stroke-width="3"
@@ -5447,10 +5473,23 @@ function deleteMonCargo(id){
       <button id="mon-fil-informatica" onclick="setMonFiltro('informatica')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#2dd4a0;cursor:pointer;font-family:inherit;transition:background .15s">Informática</button>
       <button id="mon-fil-outros" onclick="setMonFiltro('outros')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit;transition:background .15s">Outros</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button onclick="addMonCargo('matematica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Matemática</button>
-      <button onclick="addMonCargo('informatica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Informática</button>
-      <button onclick="addMonCargo('outros')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Outros</button>
+    <div style="display:flex;gap:6px;margin-bottom:12px;position:relative">
+      <div style="position:relative">
+        <button onclick="toggleMonSortDrop()" id="mon-sort-btn" style="padding:7px 12px;font-size:14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;transition:color .15s" title="Ordenar" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↕</button>
+        <div id="mon-sort-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;z-index:100;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+          <button onclick="setMonSort('oldest')" class="mon-drop-item" id="mon-sort-oldest">⏳ Sem editar há mais tempo</button>
+          <button onclick="setMonSort('newest')" class="mon-drop-item" id="mon-sort-newest">🕐 Editado recentemente</button>
+          <button onclick="setMonSort('closest')" class="mon-drop-item" id="mon-sort-closest">🎯 Mais próximo de finalizar</button>
+        </div>
+      </div>
+      <div style="position:relative;margin-left:auto">
+        <button onclick="toggleMonAddDrop()" style="padding:7px 14px;font-size:16px;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-family:inherit;transition:background .15s" title="Adicionar cargo" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='var(--surface2)'">+</button>
+        <div id="mon-add-drop" style="display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;z-index:100;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+          <button onclick="addMonCargo('matematica');toggleMonAddDrop()" class="mon-drop-item" style="color:#7dd3fc">📐 Matemática</button>
+          <button onclick="addMonCargo('informatica');toggleMonAddDrop()" class="mon-drop-item" style="color:#2dd4a0">💻 Informática</button>
+          <button onclick="addMonCargo('outros');toggleMonAddDrop()" class="mon-drop-item" style="color:#c4b5fd">📚 Outros</button>
+        </div>
+      </div>
     </div>
     <div id="monitor-list"></div>
   </div>
