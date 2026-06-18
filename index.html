@@ -5051,6 +5051,15 @@ function renderMonitor(){
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
           </div>
           <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Tipo</label>
+            <select onchange="updateMonField(${cargo.id},'tipo',this.value);renderMonitor()"
+              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
+              <option value="matematica" ${(cargo.tipo||'')==='matematica'?'selected':''}>Matemática</option>
+              <option value="informatica" ${(cargo.tipo||'')==='informatica'?'selected':''}>Informática</option>
+              <option value="outros" ${(cargo.tipo||'')==='outros'?'selected':''}>Outros</option>
+            </select>
+          </div>
+          <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Edital</label>
             <select onchange="updateMonField(${cargo.id},'edital',this.value)"
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
@@ -5230,11 +5239,11 @@ function renderMonitor(){
                 const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
                 const ico=MON_LINK_ICONS[key];
                 const hasUrl=!!(links[key]||'').trim();
-                return `<div style="display:flex;align-items:center;gap:5px;border-radius:6px;padding:3px 6px;background:var(--surface)">
+                return `<div style="display:flex;align-items:center;gap:5px;border-radius:6px;padding:3px 6px;background:var(--surface);overflow:hidden;min-width:0">
                   <span style="font-size:16px;flex-shrink:0;line-height:1">${ico}</span>
                   <span style="font-size:11px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:700;white-space:nowrap;flex-shrink:0;width:62px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
                   <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
-                    style="flex:1;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:9px;background:#05101a;color:var(--text);min-width:0;font-family:inherit;outline:none;height:18px;max-width:90px">
+                    style="width:0;flex:1;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:9px;background:#05101a;color:var(--text);min-width:0;font-family:inherit;outline:none;height:18px">
                 </div>`;
               }).join('')}
             </div>
