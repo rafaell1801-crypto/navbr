@@ -377,6 +377,9 @@ select.sim-spin{-moz-appearance:auto;appearance:auto}
   .tabs{padding:0 8px;gap:0}
   .tab{padding:10px 10px;font-size:12px}
 }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
 </style>
 </head>
 <body>
@@ -4682,6 +4685,7 @@ let monLinkEditOpen=new Set();
 let monSecOpen=new Set();
 let _monSaveTimer=null;
 let _trabalhoSubtab='monitor';
+let _monFiltro='todos';
 
 const MON_LINK_KEYS=['esqueleto','edicao','final','referencia','pkgAula','pkgTrilha','pkgBizu','orientacoes','estatistica','extras'];
 const MON_LINK_DEFAULTS={esqueleto:'Esqueleto',edicao:'Edição',final:'Final',referencia:'Referência',pkgAula:'Pkg Aula',pkgTrilha:'Pkg Trilha',pkgBizu:'Pkg Bizu',orientacoes:'Orientações',estatistica:'An. Estatística',extras:'Outros'};
@@ -4971,6 +4975,7 @@ function showTrabalhoSubtab(tab){
 
 function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
 
+function setMonFiltro(f){_monFiltro=f;renderMonitor();}
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
   const totalCargos=monitorCargos.length;
@@ -4979,11 +4984,18 @@ function renderMonitor(){
   const g=id=>document.getElementById(id);
   if(g('mon-sum-total'))g('mon-sum-total').textContent=totalCargos;
   if(g('mon-sum-oldest'))g('mon-sum-oldest').textContent=oldestStr;
+  // update filter tabs
+  ['todos','matematica','informatica','outros'].forEach(f=>{
+    const el=document.getElementById('mon-fil-'+f);
+    if(el)el.style.background=_monFiltro===f?({'todos':'rgba(255,255,255,.12)','matematica':'rgba(56,139,253,.3)','informatica':'rgba(45,212,160,.3)','outros':'rgba(167,139,250,.3)'}[f]):'transparent';
+  });
+  const cargos=_monFiltro==='todos'?monitorCargos:monitorCargos.filter(c=>c.tipo===_monFiltro);
   if(!monitorCargos.length){
     wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><div style="display:flex;gap:8px;max-width:320px;margin:0 auto"><button onclick="addMonCargo(\'matematica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit">Matemática</button><button onclick="addMonCargo(\'informatica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit">Informática</button><button onclick="addMonCargo(\'espanhol\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit">Outros</button></div></div>';
     return;
   }
-  wrap.innerHTML=monitorCargos.map(cargo=>{
+  if(!cargos.length){wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Nenhum cargo nessa categoria.</div>';return;}
+  wrap.innerHTML=cargos.map(cargo=>{
     const aulaItens=cargo.tarefasAulaItens||[];
     const finaisItens=cargo.tarefasFinaisItens||[];
     const intervaloGroups=cargo.tarefasIntervaloGroups||[];
@@ -5058,13 +5070,10 @@ function renderMonitor(){
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
             ${provaInfo}
           </div>`:''}
-          <div style="display:flex;align-items:flex-end;gap:8px">
-            <div>
-              <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
-              <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
-                style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
-            </div>
-            <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" style="width:34px;height:34px;border-radius:8px;border:1px solid ${concluido?'rgba(45,212,160,.4)':'var(--border)'};background:${concluido?'rgba(45,212,160,.15)':'var(--surface2)'};color:${concluido?'#2dd4a0':'rgba(255,255,255,.3)'};cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:all .15s;flex-shrink:0" onmouseover="this.style.borderColor='rgba(45,212,160,.5)';this.style.color='#2dd4a0'" onmouseout="this.style.borderColor='${concluido?'rgba(45,212,160,.4)':'var(--border)'}';this.style.color='${concluido?'#2dd4a0':'rgba(255,255,255,.3)'}'" title="${concluido?'Concluído — clique para desmarcar':'Marcar como concluído'}">✓</button>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
+            <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
+              style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit;-webkit-appearance:none;-moz-appearance:textfield">
           </div>
         </div>
 
@@ -5144,31 +5153,50 @@ function renderMonitor(){
           </div>
         </details>
 
-        <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
-          <div>
-            <div style="font-size:22px;font-weight:800;color:var(--accent)">${tot}</div>
-            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Total</div>
-          </div>
-          <div>
-            <input type="number" min="0" max="${tot||9999}" value="${feit}"
-              onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
-              style="width:56px;text-align:center;padding:3px;border:1px solid rgba(45,212,160,.4);border-radius:6px;font-size:20px;font-weight:800;background:var(--surface);color:#2dd4a0;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield">
-            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:3px">Feitas</div>
-          </div>
-          <div>
-            <div style="font-size:22px;font-weight:800;color:${falt>0?'#f26b5e':'#2dd4a0'}">${falt}</div>
-            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Faltam</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
-            <div style="display:flex;align-items:center;gap:5px;position:relative">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+          <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Tarefas</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center">
+                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
+                  <div style="font-size:24px;font-weight:800;color:var(--accent)">${tot}</div>
+                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Calculadas</div>
+                </div>
+                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
+                  <input type="number" min="0" max="${tot||9999}" value="${feit}" onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
+                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:#2dd4a0;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
+                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Feitas</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px">
+              <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Aulas</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center">
+                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
+                  <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)" onfocus="this.select()"
+                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:var(--accent);font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
+                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Total</div>
+                </div>
+                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
+                  <input type="number" min="0" max="${cargo.numAulas||9999}" value="${parseInt(cargo.aulasFeitas)||0}" onchange="updateMonField(${cargo.id},'aulasFeitas',this.value)" onfocus="this.select()"
+                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:#7dd3fc;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
+                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Feitas</div>
+                </div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;align-items:center;justify-content:center;gap:6px">
               <input id="mon-ult-${cargo.id}" value="${cargo.ultimaData||''}" onchange="updateMonField(${cargo.id},'ultimaData',this.value)" placeholder="dd/mm" maxlength="5"
-                style="width:54px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;outline:none">
+                style="width:52px;text-align:center;padding:3px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);font-family:inherit;outline:none">
               <input type="date" tabindex="-1" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0" id="mon-ult-picker-${cargo.id}"
                 onchange="(function(v,id){const p=v.split('-');const ddmm=p[2]+'/'+p[1];document.getElementById('mon-ult-'+id).value=ddmm;updateMonField(id,'ultimaData',ddmm);})(this.value,${cargo.id})">
-              <span onclick="(function(id){const el=document.getElementById('mon-ult-picker-'+id);if(el.showPicker)el.showPicker();else el.focus();})(${cargo.id})" style="font-size:22px;line-height:1;cursor:pointer;user-select:none" title="Escolher data">📅</span>
+              <span onclick="(function(id){const el=document.getElementById('mon-ult-picker-'+id);if(el.showPicker)el.showPicker();else el.focus();})(${cargo.id})" style="font-size:18px;line-height:1;cursor:pointer;user-select:none" title="Escolher data">📅</span>
+              ${dayLabel?`<span style="font-size:11px;font-weight:700;color:${dayColor}">${dayLabel}</span>`:''}
             </div>
-            ${dayLabel?`<div style="font-size:13px;font-weight:700;color:${dayColor}">${dayLabel}</div>`:''}
-            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Última edição</div>
+          </div>
+          <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Observações</div>
+            <textarea onchange="updateMonField(${cargo.id},'obs',this.value)" oninput="this.value=this.value" placeholder="Anotações sobre essa prova..."
+              style="flex:1;resize:none;background:transparent;border:none;outline:none;font-size:11px;color:var(--text);font-family:inherit;line-height:1.5;min-height:60px">${(cargo.obs||'').replace(/</g,'&lt;').replace(/"/g,'&quot;')}</textarea>
           </div>
         </div>
 
@@ -5182,6 +5210,11 @@ function renderMonitor(){
               return `<span class="link-icon empty" title="${lbl}" style="font-size:20px;width:28px;height:28px">${ico}</span>`;
             }).join('')}
             <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+              <button onclick="event.stopPropagation();toggleMonConcluido(${cargo.id})" title="${concluido?'Desmarcar concluído':'Marcar como concluído'}" class="link-edit-all" style="${concluido?'color:#2dd4a0;opacity:1':''}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </button>
               <button onclick="toggleMonLinkEdit(${cargo.id})" class="link-edit-all" title="Editar links">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -5191,7 +5224,7 @@ function renderMonitor(){
             </div>
           </div>
           ${monLinkEditOpen.has(cargo.id)?`<div class="link-edit-all-row" style="margin-top:4px;position:relative">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px">
               ${monLinkOrder.map((key,idx)=>{
                 const url=(links[key]||'').replace(/"/g,'&quot;');
                 const lbl=(monLinkLabels[key]||MON_LINK_DEFAULTS[key]);
@@ -5201,7 +5234,7 @@ function renderMonitor(){
                   <span style="font-size:16px;flex-shrink:0;line-height:1">${ico}</span>
                   <span style="font-size:11px;color:${hasUrl?'var(--accent)':'var(--muted)'};font-weight:700;white-space:nowrap;flex-shrink:0;width:62px;overflow:hidden;text-overflow:ellipsis" title="${lbl}">${lbl}</span>
                   <input value="${url}" onchange="updateMonLink(${cargo.id},'${key}',this.value)" placeholder="link"
-                    style="flex:1;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:#05101a;color:var(--text);min-width:0;font-family:inherit;outline:none;height:20px">
+                    style="flex:1;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font-size:9px;background:#05101a;color:var(--text);min-width:0;font-family:inherit;outline:none;height:18px;max-width:90px">
                 </div>`;
               }).join('')}
             </div>
@@ -5363,7 +5396,7 @@ function toggleMonConcluido(id){
 function addMonCargo(tipo){
   const nomes={matematica:'Matemática',informatica:'Informática',outros:'Outros'};
   if(!confirm('Adicionar novo cargo em '+(nomes[tipo]||'Monitor')+'?'))return;
-  const cargo={id:Date.now(),nome:'',tipo:tipo||'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],tarefasIntervaloGroups:[],feitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
+  const cargo={id:Date.now(),nome:'',tipo:tipo||'',edital:'pre',banca:'',provaDate:'',numAulas:0,tarefasAulaItens:[],tarefasFinaisItens:[],tarefasIntervaloGroups:[],feitas:0,aulasFeitas:0,ultimaData:'',lastEdited:new Date().toISOString(),concluido:false,links:{}};
   monitorCargos.unshift(cargo);
   monitorOpenCards.add(cargo.id);
   _saveMonitor();
@@ -5409,10 +5442,16 @@ function deleteMonCargo(id){
       <div class="stat"><div class="stat-val" style="font-size:16px;color:var(--muted)" id="mon-sum-oldest">—</div><div class="stat-lbl">Edição mais antiga</div></div>
     </div>
     <div id="mon-general-links"></div>
+    <div style="display:flex;gap:4px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px">
+      <button id="mon-fil-todos" onclick="setMonFiltro('todos')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Todos</button>
+      <button id="mon-fil-matematica" onclick="setMonFiltro('matematica')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#7dd3fc;cursor:pointer;font-family:inherit;transition:background .15s">Matemática</button>
+      <button id="mon-fil-informatica" onclick="setMonFiltro('informatica')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#2dd4a0;cursor:pointer;font-family:inherit;transition:background .15s">Informática</button>
+      <button id="mon-fil-outros" onclick="setMonFiltro('outros')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit;transition:background .15s">Outros</button>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button onclick="addMonCargo('matematica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Matemática</button>
-      <button onclick="addMonCargo('informatica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Informática</button>
-      <button onclick="addMonCargo('outros')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">Outros</button>
+      <button onclick="addMonCargo('matematica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Matemática</button>
+      <button onclick="addMonCargo('informatica')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Informática</button>
+      <button onclick="addMonCargo('outros')" style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit;letter-spacing:.2px">+ Outros</button>
     </div>
     <div id="monitor-list"></div>
   </div>
