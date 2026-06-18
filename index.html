@@ -5015,7 +5015,7 @@ function renderMonitor(){
     const editLabel=daysEdit!==null?(daysEdit+'d'):'—';
     const editColor=daysEdit!==null?(daysEdit>14?'#f26b5e':daysEdit>7?'#f5a623':'var(--muted)'):'var(--muted)';
     const concluido=!!cargo.concluido;
-    const tipoStyle={matematica:{border:'rgba(56,139,253,.4)',bg:'rgba(56,139,253,.07)'},informatica:{border:'rgba(45,212,160,.4)',bg:'rgba(45,212,160,.07)'},outros:{border:'rgba(167,139,250,.4)',bg:'rgba(167,139,250,.07)'}}[cargo.tipo||'']||{border:'transparent',bg:'var(--surface2)'};
+    const tipoStyle={matematica:{border:'rgba(56,139,253,.5)',bg:'rgba(56,139,253,.08)'},informatica:{border:'rgba(45,212,160,.5)',bg:'rgba(45,212,160,.08)'},outros:{border:'rgba(180,140,255,.5)',bg:'rgba(180,140,255,.08)'}}[cargo.tipo||'']||{border:'rgba(255,255,255,.08)',bg:'rgba(255,255,255,.02)'};
 
     let bodyHTML='';
     if(isOpen){
@@ -5067,23 +5067,19 @@ function renderMonitor(){
               <option value="pos" ${cargo.edital==='pos'?'selected':''}>Pós-edital</option>
             </select>
           </div>
-          ${cargo.edital==='pos'?`
           <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Banca</label>
             <input value="${(cargo.banca||'').replace(/"/g,'&quot;')}" onchange="updateMonField(${cargo.id},'banca',this.value)" placeholder="CESPE, FCC..."
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
           </div>
+          ${cargo.edital==='pos'?`
           <div>
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Data da prova</label>
             <input value="${cargo.provaDate||''}" onchange="updateMonField(${cargo.id},'provaDate',this.value)" placeholder="dd/mm" maxlength="5"
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
             ${provaInfo}
           </div>`:''}
-          <div>
-            <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Nº de aulas</label>
-            <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)"
-              style="width:72px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit;-webkit-appearance:none;-moz-appearance:textfield">
-          </div>
+
         </div>
 
         <details ${monSecOpen.has(cargo.id+'_fmt')?'open':''} ontoggle="monSecOpen[this.open?'add':'delete']('${cargo.id}_fmt')" style="background:#05101a;border:1px solid var(--border);border-radius:10px;overflow:hidden">
@@ -5268,7 +5264,7 @@ function renderMonitor(){
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cargo.nome||'(sem nome)'}</div>
           <div style="display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap">
-            <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;${cargo.edital==='pos'?'background:rgba(139,107,232,.2);color:#c4b5fd':'background:rgba(62,181,200,.15);color:#7dd3fc'}">${cargo.edital==='pos'?'PÓS'+(cargo.banca?' · '+cargo.banca:''):'PRÉ'}</span>
+            <span style="font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600;background:rgba(160,160,160,.15);color:#a0a0a0">${cargo.edital==='pos'?'PÓS'+(cargo.banca?' · '+cargo.banca:''):'PRÉ'+(cargo.banca?' · '+cargo.banca:'')}</span>
             ${dayLabel?`<span style="font-size:10px;color:${dayColor};font-weight:600">${dayLabel}</span>`:''}
           </div>
           <div style="display:flex;align-items:center;gap:3px;margin-top:6px;flex-wrap:wrap" onclick="event.stopPropagation()">
