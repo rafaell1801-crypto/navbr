@@ -4975,6 +4975,7 @@ function showTrabalhoSubtab(tab){
 
 function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
 
+function _monTipoNorm(t){return(t==='espanhol'||t==='outros')?'outros':t||'outros';}
 function setMonFiltro(f){_monFiltro=f;renderMonitor();}
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
@@ -4989,7 +4990,7 @@ function renderMonitor(){
     const el=document.getElementById('mon-fil-'+f);
     if(el)el.style.background=_monFiltro===f?({'todos':'rgba(255,255,255,.12)','matematica':'rgba(56,139,253,.3)','informatica':'rgba(45,212,160,.3)','outros':'rgba(167,139,250,.3)'}[f]):'transparent';
   });
-  const cargos=_monFiltro==='todos'?monitorCargos:monitorCargos.filter(c=>c.tipo===_monFiltro);
+  const cargos=_monFiltro==='todos'?monitorCargos:monitorCargos.filter(c=>_monTipoNorm(c.tipo)===_monFiltro);
   if(!monitorCargos.length){
     wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum cargo cadastrado.<br><br><div style="display:flex;gap:8px;max-width:320px;margin:0 auto"><button onclick="addMonCargo(\'matematica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(56,139,253,.13);color:#fff;cursor:pointer;font-family:inherit">Matemática</button><button onclick="addMonCargo(\'informatica\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(45,212,160,.13);color:#fff;cursor:pointer;font-family:inherit">Informática</button><button onclick="addMonCargo(\'espanhol\')" style="flex:1;padding:7px 8px;font-size:11px;font-weight:700;border-radius:8px;border:none;background:rgba(167,139,250,.13);color:#fff;cursor:pointer;font-family:inherit">Outros</button></div></div>';
     return;
@@ -5015,7 +5016,7 @@ function renderMonitor(){
     const editLabel=daysEdit!==null?(daysEdit+'d'):'—';
     const editColor=daysEdit!==null?(daysEdit>14?'#f26b5e':daysEdit>7?'#f5a623':'var(--muted)'):'var(--muted)';
     const concluido=!!cargo.concluido;
-    const tipoStyle={matematica:{border:'rgba(56,139,253,.5)',bg:'rgba(56,139,253,.08)'},informatica:{border:'rgba(45,212,160,.5)',bg:'rgba(45,212,160,.08)'},outros:{border:'rgba(180,140,255,.5)',bg:'rgba(180,140,255,.08)'}}[cargo.tipo||'']||{border:'rgba(255,255,255,.08)',bg:'rgba(255,255,255,.02)'};
+    const tipoStyle={matematica:{border:'rgba(56,139,253,.5)',bg:'rgba(56,139,253,.08)'},informatica:{border:'rgba(45,212,160,.5)',bg:'rgba(45,212,160,.08)'},outros:{border:'rgba(180,140,255,.5)',bg:'rgba(180,140,255,.08)'}}[_monTipoNorm(cargo.tipo)]||{border:'rgba(255,255,255,.08)',bg:'rgba(255,255,255,.02)'};
 
     let bodyHTML='';
     if(isOpen){
@@ -5054,9 +5055,9 @@ function renderMonitor(){
             <label style="font-size:10px;color:var(--muted);font-weight:700;display:block;margin-bottom:3px;text-transform:uppercase">Tipo</label>
             <select onchange="updateMonField(${cargo.id},'tipo',this.value);renderMonitor()"
               style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text);font-family:inherit">
-              <option value="matematica" ${(cargo.tipo||'')==='matematica'?'selected':''}>Matemática</option>
-              <option value="informatica" ${(cargo.tipo||'')==='informatica'?'selected':''}>Informática</option>
-              <option value="outros" ${(cargo.tipo||'')==='outros'?'selected':''}>Outros</option>
+              <option value="matematica" ${_monTipoNorm(cargo.tipo)==='matematica'?'selected':''}>Matemática</option>
+              <option value="informatica" ${_monTipoNorm(cargo.tipo)==='informatica'?'selected':''}>Informática</option>
+              <option value="outros" ${_monTipoNorm(cargo.tipo)==='outros'?'selected':''}>Outros</option>
             </select>
           </div>
           <div>
