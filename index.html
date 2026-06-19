@@ -5197,33 +5197,38 @@ function renderMonitor(){
         </details>
 
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
-          <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px">
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Tarefas</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center">
-                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
-                  <div style="font-size:24px;font-weight:800;color:var(--accent)">${tot}</div>
-                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Calculadas</div>
-                </div>
-                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
-                  <input type="number" min="0" max="${tot||9999}" value="${feit}" onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
-                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:#2dd4a0;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
-                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Feitas</div>
+          <div style="background:#05101a;border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:9px;color:var(--muted);background:var(--surface);border-radius:6px;padding:5px 8px;line-height:1.5">
+              ${aulaItens.length}<span style="color:var(--muted)">/aula × </span><span style="color:var(--accent)">${cargo.numAulas||0}</span><span style="color:var(--muted)"> aulas${intervaloGroups.length?intervaloGroups.map(g=>{const step=g.step||1;return ` + ${Math.ceil(g.count/step)}×${g.itens.length}`}).join(''):''} + </span><span style="color:var(--accent)">${finaisItens.length}</span><span style="color:var(--muted)"> finais = </span><strong style="color:var(--accent);font-size:10px">${tot} tarefas</strong>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div>
+                <div style="font-size:8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Tarefas</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:center">
+                  <div style="background:var(--surface);border-radius:6px;padding:5px 2px">
+                    <div style="font-size:16px;font-weight:800;color:var(--accent);line-height:1">${tot}</div>
+                    <div style="font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:1px">calc</div>
+                  </div>
+                  <div style="background:var(--surface);border-radius:6px;padding:5px 2px">
+                    <input type="number" min="0" max="${tot||9999}" value="${feit}" onchange="updateMonField(${cargo.id},'feitas',this.value)" onfocus="this.select()"
+                      style="width:44px;text-align:center;padding:0;border:none;font-size:16px;font-weight:800;background:transparent;color:#2dd4a0;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto;line-height:1">
+                    <div style="font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:1px">feitas</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style="border-top:1px solid var(--border);padding-top:10px">
-              <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Aulas</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center">
-                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
-                  <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)" onfocus="this.select()"
-                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:var(--accent);font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
-                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Total</div>
-                </div>
-                <div style="background:var(--surface);border-radius:8px;padding:8px 4px">
-                  <input type="number" min="0" max="${cargo.numAulas||9999}" value="${parseInt(cargo.aulasFeitas)||0}" onchange="updateMonField(${cargo.id},'aulasFeitas',this.value)" onfocus="this.select()"
-                    style="width:60px;text-align:center;padding:0;border:none;font-size:24px;font-weight:800;background:transparent;color:#7dd3fc;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto">
-                  <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px">Feitas</div>
+              <div>
+                <div style="font-size:8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Aulas</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:center">
+                  <div style="background:var(--surface);border-radius:6px;padding:5px 2px">
+                    <input type="number" min="0" value="${cargo.numAulas||0}" onchange="updateMonField(${cargo.id},'numAulas',this.value)" onfocus="this.select()"
+                      style="width:44px;text-align:center;padding:0;border:none;font-size:16px;font-weight:800;background:transparent;color:var(--accent);font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto;line-height:1">
+                    <div style="font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:1px">total</div>
+                  </div>
+                  <div style="background:var(--surface);border-radius:6px;padding:5px 2px">
+                    <input type="number" min="0" max="${cargo.numAulas||9999}" value="${parseInt(cargo.aulasFeitas)||0}" onchange="updateMonField(${cargo.id},'aulasFeitas',this.value)" onfocus="this.select()"
+                      style="width:44px;text-align:center;padding:0;border:none;font-size:16px;font-weight:800;background:transparent;color:#7dd3fc;font-family:inherit;outline:none;-webkit-appearance:none;-moz-appearance:textfield;display:block;margin:0 auto;line-height:1">
+                    <div style="font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:1px">feitas</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5309,7 +5314,11 @@ function renderMonitor(){
             }).join('')}
           </div>
         </div>
-        <span style="font-size:12px;color:var(--muted);flex-shrink:0">${isOpen?'▴':'▾'}</span>
+        <div style="flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div style="font-size:11px;color:var(--muted)">Tarefa <strong style="color:var(--accent)">${feit}/${tot}</strong></div>
+          <div style="font-size:11px;color:var(--muted)">Aula <strong style="color:#7dd3fc">${parseInt(cargo.aulasFeitas)||0}/${cargo.numAulas||0}</strong></div>
+          <span style="font-size:10px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
+        </div>
       </div>
       ${bodyHTML}
     </div>`;
