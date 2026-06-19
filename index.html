@@ -5006,6 +5006,17 @@ document.addEventListener('click',function(e){
     if(sd)sd.style.display='none';if(ad)ad.style.display='none';
   }
 });
+function _abbrevMonItem(s){
+  const m={'teoria':'T','questões':'Q','questoes':'Q','revisão':'R','revisao':'R','treino':'Tr','pdf':'PDF','sq':'SQ','bizu':'B','passo estratégico':'P','passo estrategico':'P','passo':'P','estratégico':'P'};
+  if(s.includes('+')){return s.split('+').map(p=>_abbrevMonItem(p.trim())).join('+');}
+  const paren=s.match(/\(([^)]+)\)/);
+  if(paren)return paren[1].toUpperCase();
+  return m[s.toLowerCase().trim()]||s.slice(0,3).toUpperCase();
+}
+function _abbrevMonList(arr){
+  const cnt={};arr.forEach(i=>{const a=_abbrevMonItem(i);cnt[a]=(cnt[a]||0)+1;});
+  return Object.entries(cnt).map(([k,v])=>v>1?`${k}(${v}x)`:k).join('+');
+}
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
   const totalCargos=monitorCargos.length;
@@ -5314,9 +5325,14 @@ function renderMonitor(){
             }).join('')}
           </div>
         </div>
-        <div style="flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <div style="font-size:11px;color:var(--muted)">Tarefa <strong style="color:var(--accent)">${feit}/${tot}</strong></div>
-          <div style="font-size:11px;color:var(--muted)">Aula <strong style="color:#7dd3fc">${parseInt(cargo.aulasFeitas)||0}/${cargo.numAulas||0}</strong></div>
+        <div style="flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <div style="display:flex;gap:8px;font-size:11px">
+            <span style="color:var(--muted)">T <strong style="color:var(--accent)">${feit}/${tot}</strong></span>
+            <span style="color:var(--muted)">A <strong style="color:#7dd3fc">${parseInt(cargo.aulasFeitas)||0}/${cargo.numAulas||0}</strong></span>
+          </div>
+          ${aulaItens.length?`<span style="font-size:9px;color:#7dd3fc;letter-spacing:.2px">${_abbrevMonList(aulaItens)}</span>`:''}
+          ${intervaloGroups.map(g=>`<span style="font-size:9px;color:#f5a623">${g.intervalo}a/ [${_abbrevMonList(g.itens||[])}]</span>`).join('')}
+          ${finaisItens.length?`<span style="font-size:9px;color:#c4b5fd">F [${_abbrevMonList(finaisItens)}]</span>`:''}
           <span style="font-size:10px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
         </div>
       </div>
