@@ -5020,8 +5020,8 @@ function renderMonitor(){
     if(el)el.style.background=_monFiltro===f?({'todos':'rgba(255,255,255,.12)','matematica':'rgba(56,139,253,.3)','informatica':'rgba(45,212,160,.3)','outros':'rgba(167,139,250,.3)'}[f]):'transparent';
   });
   let cargos=_monFiltro==='todos'?[...monitorCargos]:monitorCargos.filter(c=>_monTipoNorm(c.tipo)===_monFiltro);
-  if(_monSort==='oldest')cargos.sort((a,b)=>(a.lastEdited||'')>(b.lastEdited||'')?1:-1);
-  else if(_monSort==='newest')cargos.sort((a,b)=>(a.lastEdited||'')<(b.lastEdited||'')?1:-1);
+  if(_monSort==='oldest')cargos.sort((a,b)=>{const da=monDaysSince(a.ultimaData)??-1;const db=monDaysSince(b.ultimaData)??-1;return db-da;});
+  else if(_monSort==='newest')cargos.sort((a,b)=>{const da=monDaysSince(a.ultimaData)??999999;const db=monDaysSince(b.ultimaData)??999999;return da-db;});
   else if(_monSort==='closest'){cargos.sort((a,b)=>{
     const ta=calcTotalTarefas(a.numAulas,a.tarefasAulaItens||[],a.tarefasFinaisItens||[],a.tarefasIntervaloGroups||[]);
     const tb=calcTotalTarefas(b.numAulas,b.tarefasAulaItens||[],b.tarefasFinaisItens||[],b.tarefasIntervaloGroups||[]);
