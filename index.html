@@ -5017,6 +5017,11 @@ function _abbrevMonList(arr){
   const cnt={};arr.forEach(i=>{const a=_abbrevMonItem(i);cnt[a]=(cnt[a]||0)+1;});
   return Object.entries(cnt).map(([k,v])=>v>1?`${k}(${v}x)`:k).join('+');
 }
+function _abbrevAulaItens(arr){
+  if(!arr.length)return '';
+  const parts=arr.map(i=>{const a=_abbrevMonItem(i);return i.includes('+')?`(${a})`:a;});
+  return parts.join(' + ');
+}
 function renderMonitor(){
   const wrap=document.getElementById('monitor-list');if(!wrap)return;
   const totalCargos=monitorCargos.length;
@@ -5330,7 +5335,7 @@ function renderMonitor(){
             <span style="color:var(--muted)">T <strong style="color:var(--accent)">${feit}/${tot}</strong></span>
             <span style="color:var(--muted)">A <strong style="color:#7dd3fc">${parseInt(cargo.aulasFeitas)||0}/${cargo.numAulas||0}</strong></span>
           </div>
-          ${aulaItens.length?`<span style="font-size:9px;color:#7dd3fc;letter-spacing:.2px">${_abbrevMonList(aulaItens)}</span>`:''}
+          ${aulaItens.length?`<span style="font-size:9px;color:#7dd3fc;letter-spacing:.2px">${_abbrevAulaItens(aulaItens)}</span>`:''}
           ${intervaloGroups.map(g=>`<span style="font-size:9px;color:#f5a623">${g.intervalo}a/ [${_abbrevMonList(g.itens||[])}]</span>`).join('')}
           ${finaisItens.length?`<span style="font-size:9px;color:#c4b5fd">F [${_abbrevMonList(finaisItens)}]</span>`:''}
           <span style="font-size:10px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
