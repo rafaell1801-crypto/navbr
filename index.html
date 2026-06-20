@@ -2303,9 +2303,20 @@ function render(){
   document.getElementById('sc-pending').textContent=pendingDays.length;
   document.getElementById('sc-done').textContent=doneDays.length;
   const todayEl=document.getElementById('days-today');
+  const _dbgAllDates=[...new Set(getEffectiveAgenda().map(i=>i.data))].sort();
+  const _dbgPendDates=[...new Set(getEffectiveAgenda().filter(i=>!isDone(i.id)).map(i=>i.data))].sort();
   if(todayEl)todayEl.innerHTML=todayDayKeys.length
     ?todayDayKeys.map(d=>buildDayHTML(d,todayByDay)).join('')
-    :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">🎉 Nada pendente para hoje!</div>';
+    :`<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">
+      🎉 Nada pendente para hoje!
+      <div style="margin-top:12px;font-size:10px;color:#555;text-align:left;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.7">
+        <b>DEBUG</b><br>
+        TODAY = <span style="color:#7dd3fc">${TODAY}</span><br>
+        Start = <span style="color:#7dd3fc">${loadStartDate()}</span><br>
+        Agenda datas: <span style="color:#aaa">${_dbgAllDates.join(', ')}</span><br>
+        Pendentes datas: <span style="color:#f5a623">${_dbgPendDates.join(', ')}</span>
+      </div>
+    </div>`;
   document.getElementById('days-pending').innerHTML=pendingDays.map(d=>buildDayHTML(d,days)).join('');
   document.getElementById('days-done').innerHTML=doneDays.length
     ?doneDays.map(d=>buildDayHTML(d,days)).join('')
