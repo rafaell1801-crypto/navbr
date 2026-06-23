@@ -459,6 +459,10 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-cell .bloco-row{height:100%}
 @media(max-width:600px){.ciclo-rows{grid-template-columns:1fr}.ciclo-rows .ciclo-cell{border-right:none}.ciclo-rows .ciclo-cell:last-child{border-bottom:none}}
 .ciclo-empty{padding:18px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+.ciclo-q-input-wrap{display:flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:4px 10px 4px 8px;cursor:default}
+.ciclo-q-inp{width:34px;background:transparent;border:none;outline:none;font-size:14px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield}
+.ciclo-q-inp::-webkit-inner-spin-button,.ciclo-q-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.ciclo-q-meta{font-size:12px;color:var(--muted);white-space:nowrap}
 </style>
 <div id="tab-ciclo">
   <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
@@ -2212,14 +2216,12 @@ let cicloQState={};
 function cicloQLoad(){try{const s=localStorage.getItem('ciclo_q');if(s)cicloQState=JSON.parse(s);}catch{}}
 function cicloQSave(){try{localStorage.setItem('ciclo_q',JSON.stringify(cicloQState));}catch{}}
 function cicloQTotal(){return Object.values(cicloQState).reduce((a,b)=>a+(b||0),0);}
-function cicloQEdit(key,quota){
-  const cur=cicloQState[key]||0;
-  const v=prompt(`Questões feitas em "${CICLO_GRUPOS.find(g=>g.key===key)?.nome||key}" (meta: ${quota}):`,cur);
-  if(v===null)return;
-  const n=Math.max(0,parseInt(v)||0);
-  cicloQState[key]=n;
+function cicloQSet(key,val){
+  const n=Math.max(0,parseInt(val)||0);
+  if(n===0)delete cicloQState[key]; else cicloQState[key]=n;
   cicloQSave();
-  render();
+  const cqEl=document.getElementById('s-ciclo-q-total');
+  if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
 }
 function toggleCiclo(key){
   const el=document.getElementById('ciclo-g-'+key);
@@ -2248,8 +2250,7 @@ function cicloRowHTML(item){
   const done=isDone(item.id);
   const freq=topicFreq[item.id];
   const freqPill=freq?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${freq}%</span>`;})():'';
-  return`<div class="ciclo-cell"><div class="bloco-row ${done?'done':''}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
-    <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
+  return`<div class="ciclo-cell"><div class="bloco-row" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
     <div style="flex:1;min-width:0">
       <div class="bloco-topic-name">${item.topico}</div>
       <div style="margin-top:7px">${renderLinksRow(item.id,item.disc,'c')}</div>
@@ -2295,7 +2296,11 @@ function buildCicloHTML(){
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <div class="ciclo-quota" onclick="event.stopPropagation();cicloQEdit('${g.key}',${g.quota})" title="Clique para registrar questões feitas" style="cursor:pointer">${(cicloQState[g.key]||0)>0?`<b>${cicloQState[g.key]||0}/${g.quota}</b> feitas`:`<b>${g.quota}</b> questões/dia`}</div>
+          <div class="ciclo-quota"><b>${g.quota}</b> questões/dia</div>
+          <div class="ciclo-q-input-wrap" onclick="event.stopPropagation()" title="Questões feitas">
+            <input class="ciclo-q-inp" type="number" min="0" max="${g.quota}" value="${cicloQState[g.key]||''}" placeholder="0" oninput="cicloQSet('${g.key}',this.value)">
+            <span class="ciclo-q-meta">/${g.quota}</span>
+          </div>
           <span class="ciclo-chevron">▶</span>
         </div>
       </div>
