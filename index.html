@@ -432,6 +432,26 @@ input[type=number]{-moz-appearance:textfield}
 </div><!-- /sticky-shell -->
 
 <!-- TAB CICLO -->
+<style>
+.ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
+.ciclo-intro b{color:var(--text)}
+.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:12px;background:var(--surface);margin-bottom:16px;overflow:hidden}
+.ciclo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 15px 9px}
+.ciclo-head-main{display:flex;align-items:flex-start;gap:9px;min-width:0}
+.ciclo-dot{width:12px;height:12px;border-radius:3px;background:var(--gc,#888);flex-shrink:0;margin-top:4px}
+.ciclo-nome{font-size:16px;font-weight:800;color:var(--text);line-height:1.2}
+.ciclo-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.ciclo-quota{flex-shrink:0;font-size:11px;color:var(--text);background:var(--gc,#888);color:#fff;border-radius:99px;padding:5px 11px;white-space:nowrap;font-weight:600}
+.ciclo-quota b{font-size:15px;font-weight:800}
+.ciclo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:0 15px 11px;font-size:11px;color:var(--muted);font-weight:600}
+.ciclo-cursos{display:flex;flex-wrap:wrap;gap:8px}
+.ciclo-curso-link{font-size:11px;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:99px;padding:2px 9px;font-weight:600}
+.ciclo-curso-link:hover{background:var(--surface2)}
+.ciclo-rows{border-top:1px solid var(--border)}
+.ciclo-rows .bloco-row{border-bottom:1px solid var(--border)}
+.ciclo-rows .bloco-row:last-child{border-bottom:none}
+.ciclo-empty{padding:18px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+</style>
 <div id="tab-ciclo">
   <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
@@ -443,7 +463,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
     <div class="prog-label" id="prog-label">0% concluído</div>
   </div>
-  <div class="prog-wrap" id="day-prog-wrap" style="padding-top:4px;border-top:none">
+  <div class="prog-wrap hidden" id="day-prog-wrap" style="padding-top:4px;border-top:none">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:11px;color:var(--accent);font-weight:600">Hoje</span>
       <div class="prog-outer" style="flex:1;height:6px"><div class="prog-inner" id="day-prog-bar" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#2dd4a0)"></div></div>
@@ -453,14 +473,10 @@ input[type=number]{-moz-appearance:textfield}
     <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
-  <div class="subtabs">
-    <button class="subtab active" id="st-today" onclick="showSubtab('today')">Hoje <span class="subtab-count" id="sc-today">–</span></button>
-    <button class="subtab" id="st-pending" onclick="showSubtab('pending')">A fazer <span class="subtab-count" id="sc-pending">–</span></button>
-    <button class="subtab" id="st-done" onclick="showSubtab('done')">Concluídos <span class="subtab-count done" id="sc-done">–</span></button>
+  <div class="ciclo-intro">
+    <b>Ciclo diário de questões.</b> Faça todos os dias a cota de questões de cada disciplina. Abaixo de cada disciplina estão todos os tópicos das aulas com seus resumos e cadernos de questões.
   </div>
-  <div class="days-list" id="days-today"></div>
-  <div class="days-list hidden" id="days-pending"></div>
-  <div class="days-list hidden" id="days-done"></div>
+  <div class="days-list" id="ciclo-list"></div>
 </div>
 
 <!-- TAB REVISÕES -->
@@ -2183,6 +2199,88 @@ function compactDriveHTML(disc){
   return `<a href="${url}" target="_blank" rel="noopener" class="link-pill link-pill-drive" title="Drive — ${disc.replace(/"/g,'&quot;')}">📁</a>`;
 }
 
+// ── CICLO DIÁRIO POR DISCIPLINA ────────────────────────────────────────────
+const CICLO_GRUPOS=[
+  {key:'lp',nome:'Língua Portuguesa',quota:20,cor:'#e8843a',cursos:['Língua Portuguesa']},
+  {key:'rlm',nome:'Raciocínio Lógico-Matemático (RLM)',quota:8,cor:'#4d9de0',cursos:['Raciocínio Lógico e Matemático']},
+  {key:'inf',nome:'Informática',quota:5,cor:'#3ab5c8',cursos:[]},
+  {key:'leg',nome:'Legislação',quota:7,cor:'#4caf7d',sub:'Noções de Direito Constitucional, Direito Administrativo e Noções de Ética',cursos:['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']},
+  {key:'esp',nome:'Conhecimentos específicos',quota:30,cor:'#8b6be8',sub:'Administração, Teoria Econômica, Orçamento Público, Licitações/Contratos e Suprimentos, Matemática Financeira',cursos:['Administração','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira','Gestão de Suprimentos','Licitações e Contratos','Matemática Financeira']},
+];
+const ESP_DISCS=new Set(['Administração','Gestão de Suprimentos','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira','Matemática Financeira']);
+const LEG_DISCS=new Set(['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']);
+function cicloGrupoOf(item){
+  const d=item.disc;
+  if(d==='Língua Portuguesa')return 'lp';
+  if(d==='Raciocínio Lógico e Matemático')return 'rlm';
+  // Licitações, Contratos e a Lei 14.133 vão para Conhecimentos específicos, mesmo vindos de Dir. Adm. / Ética
+  if(/licita|contrato administrativo|14\.133/i.test(item.topico||''))return 'esp';
+  if(ESP_DISCS.has(d))return 'esp';
+  if(LEG_DISCS.has(d))return 'leg';
+  return 'esp';
+}
+function cicloRowHTML(item){
+  const done=isDone(item.id);
+  const freq=topicFreq[item.id];
+  const freqPill=freq?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${freq}%</span>`;})():'';
+  return`<div class="bloco-row ${done?'done':''}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
+    <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
+    <div style="flex:1;min-width:0">
+      <div class="bloco-topic-name ${done?'done-text':''}">${item.topico}</div>
+      <div style="margin-top:7px">${renderLinksRow(item.id,item.disc,'c')}</div>
+    </div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px">
+      ${freqPill}
+      <button class="link-edit-all" onclick="toggleEditAll('c',${item.id})" title="Adicionar ou editar links">${editIconHTML()}</button>
+    </div>
+  </div>`;
+}
+function buildCicloHTML(){
+  const agenda=getEffectiveAgenda();
+  const byG={lp:[],rlm:[],inf:[],leg:[],esp:[]};
+  agenda.forEach(it=>{const g=cicloGrupoOf(it);(byG[g]||byG.esp).push(it);});
+  return CICLO_GRUPOS.map(g=>{
+    // dedup por texto do tópico, preferindo o id que já tem link cadastrado
+    const seen=new Map();
+    (byG[g.key]||[]).forEach(it=>{
+      const key=(it.topico||'').trim();
+      const has=!!(resumosState[it.id]||cadernosState[it.id]);
+      if(!seen.has(key)){seen.set(key,it);}
+      else if(has){const cur=seen.get(key);if(!(resumosState[cur.id]||cadernosState[cur.id]))seen.set(key,it);}
+    });
+    const items=[...seen.values()].sort((a,b)=>(a.disc===b.disc?0:(a.disc<b.disc?-1:1)));
+    const total=items.length;
+    const done=items.filter(i=>isDone(i.id)).length;
+    const ids=new Set(items.map(i=>i.id));
+    const {a,t}=getQuestoesTotals(id=>ids.has(id));
+    const acpct=t>0?Math.round(a/t*100):null;
+    const cursoLinks=(g.cursos||[]).map(c=>DISC_LINKS[c]?`<a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}">${c} ↗</a>`:'').filter(Boolean).join('');
+    const rows=total
+      ? items.map(it=>cicloRowHTML(it)).join('')
+      : (g.key==='inf'
+          ? `<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Adicione aqui quando tiver as aulas — me envie os tópicos e os links e eu cadastro.</div>`
+          : `<div class="ciclo-empty">Sem tópicos cadastrados.</div>`);
+    return`<div class="ciclo-disc" style="--gc:${g.cor}">
+      <div class="ciclo-head">
+        <div class="ciclo-head-main">
+          <span class="ciclo-dot"></span>
+          <div>
+            <div class="ciclo-nome">${g.nome}</div>
+            ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
+          </div>
+        </div>
+        <div class="ciclo-quota"><b>${g.quota}</b> questões/dia</div>
+      </div>
+      <div class="ciclo-meta">
+        <span>${done}/${total} tópicos vistos</span>
+        ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
+        ${cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:''}
+      </div>
+      <div class="ciclo-rows">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
 function buildDayHTML(dateStr,days){
   const items=days[dateStr];
   const allDone=items.every(i=>isDone(i.id));
@@ -2300,27 +2398,11 @@ function render(){
   todayPendingItems.forEach(i=>{if(!todayByDay[i.data])todayByDay[i.data]=[];todayByDay[i.data].push(i);});
   const todayDayKeys=Object.keys(todayByDay).sort();
   const scToday=document.getElementById('sc-today');if(scToday)scToday.textContent=todayPendingItems.length;
-  document.getElementById('sc-pending').textContent=pendingDays.length;
-  document.getElementById('sc-done').textContent=doneDays.length;
-  const todayEl=document.getElementById('days-today');
-  const _dbgAllDates=[...new Set(getEffectiveAgenda().map(i=>i.data))].sort();
-  const _dbgPendDates=[...new Set(getEffectiveAgenda().filter(i=>!isDone(i.id)).map(i=>i.data))].sort();
-  if(todayEl)todayEl.innerHTML=todayDayKeys.length
-    ?todayDayKeys.map(d=>buildDayHTML(d,todayByDay)).join('')
-    :`<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">
-      🎉 Nada pendente para hoje!
-      <div style="margin-top:12px;font-size:10px;color:#555;text-align:left;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.7">
-        <b>DEBUG</b><br>
-        TODAY = <span style="color:#7dd3fc">${TODAY}</span><br>
-        Start = <span style="color:#7dd3fc">${loadStartDate()}</span><br>
-        Agenda datas: <span style="color:#aaa">${_dbgAllDates.join(', ')}</span><br>
-        Pendentes datas: <span style="color:#f5a623">${_dbgPendDates.join(', ')}</span>
-      </div>
-    </div>`;
-  document.getElementById('days-pending').innerHTML=pendingDays.map(d=>buildDayHTML(d,days)).join('');
-  document.getElementById('days-done').innerHTML=doneDays.length
-    ?doneDays.map(d=>buildDayHTML(d,days)).join('')
-    :'<div style="text-align:center;padding:36px;color:var(--muted);font-size:13px">Nenhum dia concluído ainda.</div>';
+  const _scp=document.getElementById('sc-pending');if(_scp)_scp.textContent=pendingDays.length;
+  const _scd=document.getElementById('sc-done');if(_scd)_scd.textContent=doneDays.length;
+  // Ciclo diário agrupado por disciplina (substitui a visão por dias)
+  const cicloEl=document.getElementById('ciclo-list');
+  if(cicloEl)cicloEl.innerHTML=buildCicloHTML();
   const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
