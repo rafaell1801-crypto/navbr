@@ -424,6 +424,16 @@ input[type=number]{-moz-appearance:textfield}
   <button class="timer-icon-btn tibtn-playpause" id="btn-playpause" onclick="timerPlayPause()" title="Iniciar / Pausar">▶</button>
   <button class="timer-icon-btn tibtn-save hidden" id="btn-save-time" onclick="timerStop()" title="Concluir e salvar">✓</button>
   <button class="timer-icon-btn tibtn-stop hidden" id="btn-cancel-time" onclick="timerCancel()" title="Cancelar sessão">✕</button>
+  <div style="display:flex;align-items:center;gap:14px;margin-left:auto;padding-left:12px;border-left:1px solid var(--border)">
+    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.2">
+      <span id="s-week-acertos" style="font-size:18px;font-weight:800;color:var(--success)">–</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">% Acertos</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;line-height:1.2">
+      <span id="s-ciclo-q-total" style="font-size:18px;font-weight:800;color:#f5a623">–</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">Questões/dia</span>
+    </div>
+  </div>
   <div class="sync-icons">
     <span class="s-ok hidden" id="sync-ok">✓</span>
     <span class="s-spin hidden" id="sync-spin">↺</span>
@@ -473,12 +483,6 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-q-sep{font-size:11px;color:var(--border)}
 </style>
 <div id="tab-ciclo">
-  <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
-    <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-week-done">–</div><div class="stat-lbl">Vistos</div></div>
-    <div class="stat" onclick="showTab('stats')" style="cursor:pointer"><div class="stat-val" id="s-week-acertos">–</div><div class="stat-lbl">% Acertos</div></div>
-    <div class="stat"><div class="stat-val" id="s-ciclo-q-total" style="color:#f5a623">–</div><div class="stat-lbl">Questões/dia</div></div>
-  </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
     <div class="prog-label" id="prog-label">0% concluído</div>
