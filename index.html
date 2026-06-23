@@ -435,18 +435,18 @@ input[type=number]{-moz-appearance:textfield}
 <style>
 .ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
 .ciclo-intro b{color:var(--text)}
-.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:12px;background:var(--surface);margin-bottom:6px;overflow:hidden}
-.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px 13px;cursor:pointer;user-select:none}
+.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);margin-bottom:4px;overflow:hidden}
+.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;cursor:pointer;user-select:none}
 .ciclo-head:hover .ciclo-nome{color:var(--accent)}
-.ciclo-head-main{display:flex;align-items:center;gap:9px;min-width:0}
-.ciclo-dot{width:12px;height:12px;border-radius:3px;background:var(--gc,#888);flex-shrink:0}
-.ciclo-nome{font-size:16px;font-weight:800;color:var(--text);line-height:1.2;transition:color .15s}
-.ciclo-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
-.ciclo-chevron{font-size:13px;color:var(--muted);flex-shrink:0;transition:transform .2s}
+.ciclo-head-main{display:flex;align-items:center;gap:8px;min-width:0}
+.ciclo-dot{width:10px;height:10px;border-radius:2px;background:var(--gc,#888);flex-shrink:0}
+.ciclo-nome{font-size:14px;font-weight:800;color:var(--text);line-height:1.2;transition:color .15s}
+.ciclo-sub{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3}
+.ciclo-chevron{font-size:11px;color:var(--muted);flex-shrink:0;transition:transform .2s}
 .ciclo-disc.open .ciclo-chevron{transform:rotate(90deg)}
-.ciclo-quota{flex-shrink:0;font-size:11px;background:var(--gc,#888);color:#fff;border-radius:99px;padding:5px 11px;white-space:nowrap;font-weight:600}
-.ciclo-quota b{font-size:15px;font-weight:800}
-.ciclo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:0 15px 11px;font-size:11px;color:var(--muted);font-weight:600}
+.ciclo-quota{flex-shrink:0;font-size:10px;background:var(--gc,#888);color:#fff;border-radius:99px;padding:4px 9px;white-space:nowrap;font-weight:600}
+.ciclo-quota b{font-size:13px;font-weight:800}
+.ciclo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:4px 12px 8px;font-size:11px;color:var(--muted);font-weight:600}
 .ciclo-cursos{display:flex;flex-wrap:wrap;gap:8px}
 .ciclo-curso-link{font-size:11px;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:99px;padding:2px 9px;font-weight:600}
 .ciclo-curso-link:hover{background:var(--surface2)}
@@ -464,10 +464,10 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-links-wrap .link-edit-all-row{position:absolute;right:14px;z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;box-shadow:0 4px 16px rgba(0,0,0,.4);min-width:260px}
 .ciclo-cell{position:relative;border-bottom:1px solid var(--border)}
 .ciclo-cell:last-child{border-bottom:none}
-.ciclo-q-block{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:5px 10px}
-.ciclo-q-field{display:flex;flex-direction:column;align-items:center;gap:1px}
-.ciclo-q-lbl{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-.ciclo-q-inp{width:36px;background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;font-size:13px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield;padding:1px 0}
+.ciclo-q-block{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px}
+.ciclo-q-field{display:flex;flex-direction:column;align-items:center;gap:0}
+.ciclo-q-lbl{font-size:8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.ciclo-q-inp{width:32px;background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;font-size:12px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield;padding:0}
 .ciclo-q-inp::-webkit-inner-spin-button,.ciclo-q-inp::-webkit-outer-spin-button{-webkit-appearance:none}
 .ciclo-q-inp::placeholder{color:var(--muted);font-weight:400}
 .ciclo-q-sep{font-size:11px;color:var(--border)}
@@ -2261,12 +2261,11 @@ function cicloGrupoOf(item){
 function cicloRowHTML(item){
   const done=isDone(item.id);
   const freq=topicFreq[item.id];
-  const freqPill=freq?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${freq}%</span>`;})():'';
   return`<div class="ciclo-cell">
     <div class="ciclo-compact-row">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="flex-shrink:0">${chkIcon()}</div>
       <span class="ciclo-topic-text${done?' ciclo-topic-done':''}">${item.topico}</span>
-      <div class="ciclo-links-wrap">${freqPill}${(()=>{
+      <div class="ciclo-links-wrap">${topicFreq[item.id]?`<span style="font-size:11px;font-weight:700;color:#fff;background:rgba(62,181,200,.3);border-radius:6px;padding:2px 7px;white-space:nowrap">${topicFreq[item.id]}%</span>`:''}${(()=>{
         if(item.port){
           // LP: só ícone de resumo
           const u=resumosState[item.id]||'';
