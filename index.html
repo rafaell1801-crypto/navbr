@@ -2468,7 +2468,11 @@ function render(){
   const _scd=document.getElementById('sc-done');if(_scd)_scd.textContent=doneDays.length;
   // Ciclo diário agrupado por disciplina (substitui a visão por dias)
   const cicloEl=document.getElementById('ciclo-list');
-  if(cicloEl)cicloEl.innerHTML=buildCicloHTML();
+  if(cicloEl){
+    const openKeys=new Set([...cicloEl.querySelectorAll('.ciclo-disc.open')].map(el=>el.id.replace('ciclo-g-','')));
+    cicloEl.innerHTML=buildCicloHTML();
+    openKeys.forEach(k=>{const el=document.getElementById('ciclo-g-'+k);if(el)el.classList.add('open');});
+  }
   const cqEl=document.getElementById('s-ciclo-q-total');
   if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
   const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
