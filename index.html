@@ -435,7 +435,7 @@ input[type=number]{-moz-appearance:textfield}
 <style>
 .ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
 .ciclo-intro b{color:var(--text)}
-.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:12px;background:var(--surface);margin-bottom:16px;overflow:hidden}
+.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:12px;background:var(--surface);margin-bottom:6px;overflow:hidden}
 .ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px 13px;cursor:pointer;user-select:none}
 .ciclo-head:hover .ciclo-nome{color:var(--accent)}
 .ciclo-head-main{display:flex;align-items:center;gap:9px;min-width:0}
@@ -2039,7 +2039,7 @@ let builtinIcons=(()=>{try{return JSON.parse(localStorage.getItem('nav_builtin_i
 const BUILTIN_DEFAULTS={resumo:'resumo.png',questoes:'questoes.png',drive:'drive.png',editar:'editar.png',atrasados:'atrasados.png',config:'config.png'};
 function editIconHTML(){
   if(builtinIcons['editar'])return `<img src="${builtinIcons['editar'].replace(/"/g,'&quot;')}" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block">`;
-  return `<img src="editar.png" alt="editar" style="width:16px;height:16px;object-fit:contain;display:block;filter:invert(1) opacity(.55)">`;
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(180,210,230,0.35)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8.5 15.5l2-0.5 5.5-5.5a1.414 1.414 0 0 0-2-2L8.5 13l-0.5 2z"/></svg>`;
 }
 const TIMER_ICON_DEFAULTS={play:'play.png',pausa:'pausa.png',refazer:'refazer.png',concluir:'',cancelar:''};
 const TIMER_ICON_INVERT={play:1,pausa:1,refazer:1}; // pngs pretos padrão precisam inverter
@@ -2266,7 +2266,20 @@ function cicloRowHTML(item){
     <div class="ciclo-compact-row">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="flex-shrink:0">${chkIcon()}</div>
       <span class="ciclo-topic-text${done?' ciclo-topic-done':''}">${item.topico}</span>
-      <div class="ciclo-links-wrap">${freqPill}</div>
+      <div class="ciclo-links-wrap">${freqPill}${(()=>{
+        if(item.port){
+          // LP: só ícone de resumo
+          const u=resumosState[item.id]||'';
+          const sid='res-input-'+item.id;const sv=u.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+          return u
+            ?`<a href="${sv}" target="_blank" rel="noopener" class="link-icon" title="Resumo">${iconImg('resumo',20)}</a>`
+            :`<button class="link-pill-add link-pill-add-res" onclick="toggleLinkInput('res',${item.id})" style="font-size:11px;padding:2px 7px">＋ resumo</button><div class="link-edit-row hidden" id="li-res-${item.id}"><input id="${sid}" value="${sv}" placeholder="cole o link..."><button class="link-confirm-btn" onclick="saveResumo(${item.id},document.getElementById('${sid}').value.trim())">✓</button><button class="link-cancel-btn" onclick="toggleLinkInput('res',${item.id})">✕</button></div>`;
+        }
+        // Demais: linha de ícones padrão (sem botão editar)
+        const full=renderLinksRow(item.id,item.disc,'c');
+        const m=full.match(/<div class="links-row-display">([\s\S]*?)<\/div>/);
+        return m?`<div class="links-row-display">${m[1]}</div>`:'';
+      })()}</div>
     </div>
   </div>`;
 }
@@ -3108,7 +3121,10 @@ function renderContent() {
             style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
           <span style="font-size:9px;color:var(--muted)">%</span>
         </div>
-        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${renderLinksRow(t.id,disc,'ct')}</div>
+        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+          <div class="ciclo-links-wrap">${renderLinksRow(t.id,disc,'ct')}</div>
+          <button class="link-edit-all" onclick="toggleEditAll('ct',${t.id})" title="Editar links">${editIconHTML()}</button>
+        </div>
         ${t.deleted
           ? `<button class="ct-btn ct-restore" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Restaurar">↩</button>`
           : `<button class="ct-btn ct-del" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Remover">✕</button>`
