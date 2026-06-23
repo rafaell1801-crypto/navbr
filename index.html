@@ -436,28 +436,36 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
 .ciclo-intro b{color:var(--text)}
 .ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:12px;background:var(--surface);margin-bottom:16px;overflow:hidden}
-.ciclo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 15px 9px}
-.ciclo-head-main{display:flex;align-items:flex-start;gap:9px;min-width:0}
-.ciclo-dot{width:12px;height:12px;border-radius:3px;background:var(--gc,#888);flex-shrink:0;margin-top:4px}
-.ciclo-nome{font-size:16px;font-weight:800;color:var(--text);line-height:1.2}
+.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px 13px;cursor:pointer;user-select:none}
+.ciclo-head:hover .ciclo-nome{color:var(--accent)}
+.ciclo-head-main{display:flex;align-items:center;gap:9px;min-width:0}
+.ciclo-dot{width:12px;height:12px;border-radius:3px;background:var(--gc,#888);flex-shrink:0}
+.ciclo-nome{font-size:16px;font-weight:800;color:var(--text);line-height:1.2;transition:color .15s}
 .ciclo-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
-.ciclo-quota{flex-shrink:0;font-size:11px;color:var(--text);background:var(--gc,#888);color:#fff;border-radius:99px;padding:5px 11px;white-space:nowrap;font-weight:600}
+.ciclo-chevron{font-size:13px;color:var(--muted);flex-shrink:0;transition:transform .2s}
+.ciclo-disc.open .ciclo-chevron{transform:rotate(90deg)}
+.ciclo-quota{flex-shrink:0;font-size:11px;background:var(--gc,#888);color:#fff;border-radius:99px;padding:5px 11px;white-space:nowrap;font-weight:600}
 .ciclo-quota b{font-size:15px;font-weight:800}
 .ciclo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:0 15px 11px;font-size:11px;color:var(--muted);font-weight:600}
 .ciclo-cursos{display:flex;flex-wrap:wrap;gap:8px}
 .ciclo-curso-link{font-size:11px;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:99px;padding:2px 9px;font-weight:600}
 .ciclo-curso-link:hover{background:var(--surface2)}
-.ciclo-rows{border-top:1px solid var(--border)}
-.ciclo-rows .bloco-row{border-bottom:1px solid var(--border)}
-.ciclo-rows .bloco-row:last-child{border-bottom:none}
+.ciclo-body{display:none}
+.ciclo-disc.open .ciclo-body{display:block}
+.ciclo-rows{border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ciclo-rows .ciclo-cell{border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.ciclo-rows .ciclo-cell:nth-child(2n){border-right:none}
+.ciclo-rows .ciclo-cell:nth-last-child(1):nth-child(odd),.ciclo-rows .ciclo-cell:nth-last-child(2){border-bottom:none}
+.ciclo-cell .bloco-row{height:100%}
+@media(max-width:600px){.ciclo-rows{grid-template-columns:1fr}.ciclo-rows .ciclo-cell{border-right:none}.ciclo-rows .ciclo-cell:last-child{border-bottom:none}}
 .ciclo-empty{padding:18px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
 </style>
 <div id="tab-ciclo">
   <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat"><div class="stat-val" id="s-week-total">–</div><div class="stat-lbl">Semana</div></div>
     <div class="stat"><div class="stat-val" style="color:var(--success)" id="s-week-done">–</div><div class="stat-lbl">Vistos</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--muted)" id="s-week-pend">–</div><div class="stat-lbl">Restam</div></div>
     <div class="stat" onclick="showTab('stats')" style="cursor:pointer"><div class="stat-val" id="s-week-acertos">–</div><div class="stat-lbl">% Acertos</div></div>
+    <div class="stat"><div class="stat-val" id="s-ciclo-q-total" style="color:#f5a623">–</div><div class="stat-lbl">Questões/dia</div></div>
   </div>
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
@@ -2200,6 +2208,23 @@ function compactDriveHTML(disc){
 }
 
 // ── CICLO DIÁRIO POR DISCIPLINA ────────────────────────────────────────────
+let cicloQState={};
+function cicloQLoad(){try{const s=localStorage.getItem('ciclo_q');if(s)cicloQState=JSON.parse(s);}catch{}}
+function cicloQSave(){try{localStorage.setItem('ciclo_q',JSON.stringify(cicloQState));}catch{}}
+function cicloQTotal(){return Object.values(cicloQState).reduce((a,b)=>a+(b||0),0);}
+function cicloQEdit(key,quota){
+  const cur=cicloQState[key]||0;
+  const v=prompt(`Questões feitas em "${CICLO_GRUPOS.find(g=>g.key===key)?.nome||key}" (meta: ${quota}):`,cur);
+  if(v===null)return;
+  const n=Math.max(0,parseInt(v)||0);
+  cicloQState[key]=n;
+  cicloQSave();
+  render();
+}
+function toggleCiclo(key){
+  const el=document.getElementById('ciclo-g-'+key);
+  if(el)el.classList.toggle('open');
+}
 const CICLO_GRUPOS=[
   {key:'lp',nome:'Língua Portuguesa',quota:20,cor:'#e8843a',cursos:['Língua Portuguesa']},
   {key:'rlm',nome:'Raciocínio Lógico-Matemático (RLM)',quota:8,cor:'#4d9de0',cursos:['Raciocínio Lógico e Matemático']},
@@ -2223,17 +2248,17 @@ function cicloRowHTML(item){
   const done=isDone(item.id);
   const freq=topicFreq[item.id];
   const freqPill=freq?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${freq}%</span>`;})():'';
-  return`<div class="bloco-row ${done?'done':''}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
+  return`<div class="ciclo-cell"><div class="bloco-row ${done?'done':''}" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
     <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="margin-top:2px;flex-shrink:0">${chkIcon()}</div>
     <div style="flex:1;min-width:0">
-      <div class="bloco-topic-name ${done?'done-text':''}">${item.topico}</div>
+      <div class="bloco-topic-name">${item.topico}</div>
       <div style="margin-top:7px">${renderLinksRow(item.id,item.disc,'c')}</div>
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px">
       ${freqPill}
       <button class="link-edit-all" onclick="toggleEditAll('c',${item.id})" title="Adicionar ou editar links">${editIconHTML()}</button>
     </div>
-  </div>`;
+  </div></div>`;
 }
 function buildCicloHTML(){
   const agenda=getEffectiveAgenda();
@@ -2254,14 +2279,14 @@ function buildCicloHTML(){
     const ids=new Set(items.map(i=>i.id));
     const {a,t}=getQuestoesTotals(id=>ids.has(id));
     const acpct=t>0?Math.round(a/t*100):null;
-    const cursoLinks=(g.cursos||[]).map(c=>DISC_LINKS[c]?`<a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}">${c} ↗</a>`:'').filter(Boolean).join('');
+    const cursoLinks=(g.cursos||[]).map(c=>DISC_LINKS[c]?`<a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}" onclick="event.stopPropagation()">${c} ↗</a>`:'').filter(Boolean).join('');
     const rows=total
       ? items.map(it=>cicloRowHTML(it)).join('')
       : (g.key==='inf'
-          ? `<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Adicione aqui quando tiver as aulas — me envie os tópicos e os links e eu cadastro.</div>`
+          ? `<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`
           : `<div class="ciclo-empty">Sem tópicos cadastrados.</div>`);
-    return`<div class="ciclo-disc" style="--gc:${g.cor}">
-      <div class="ciclo-head">
+    return`<div class="ciclo-disc" id="ciclo-g-${g.key}" style="--gc:${g.cor}">
+      <div class="ciclo-head" onclick="toggleCiclo('${g.key}')">
         <div class="ciclo-head-main">
           <span class="ciclo-dot"></span>
           <div>
@@ -2269,14 +2294,19 @@ function buildCicloHTML(){
             ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
           </div>
         </div>
-        <div class="ciclo-quota"><b>${g.quota}</b> questões/dia</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div class="ciclo-quota" onclick="event.stopPropagation();cicloQEdit('${g.key}',${g.quota})" title="Clique para registrar questões feitas" style="cursor:pointer">${(cicloQState[g.key]||0)>0?`<b>${cicloQState[g.key]||0}/${g.quota}</b> feitas`:`<b>${g.quota}</b> questões/dia`}</div>
+          <span class="ciclo-chevron">▶</span>
+        </div>
       </div>
-      <div class="ciclo-meta">
-        <span>${done}/${total} tópicos vistos</span>
-        ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
-        ${cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:''}
+      <div class="ciclo-body">
+        <div class="ciclo-meta">
+          <span>${done}/${total} tópicos vistos</span>
+          ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
+          ${cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:''}
+        </div>
+        <div class="ciclo-rows">${rows}</div>
       </div>
-      <div class="ciclo-rows">${rows}</div>
     </div>`;
   }).join('');
 }
@@ -2403,6 +2433,8 @@ function render(){
   // Ciclo diário agrupado por disciplina (substitui a visão por dias)
   const cicloEl=document.getElementById('ciclo-list');
   if(cicloEl)cicloEl.innerHTML=buildCicloHTML();
+  const cqEl=document.getElementById('s-ciclo-q-total');
+  if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
   const alertCount=getEffectiveAgenda().filter(i=>!i.port&&isDone(i.id)&&fsrsItemDiff(i.id)<=0).length;
   document.getElementById('rev-alert').classList.toggle('hidden',alertCount===0);
   updateDiscTimerTags();
@@ -4772,7 +4804,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
+cicloQLoad();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
