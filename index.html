@@ -73,7 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .stat{text-align:center}
 .stat-val{font-size:20px;font-weight:700;line-height:1}
 .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
-.prog-wrap{padding:8px 20px 6px;background:var(--bg);border-bottom:1px solid var(--border)}
+.prog-wrap{padding:5px 20px 4px;background:var(--bg);border-bottom:1px solid var(--border)}
 .prog-outer{height:8px;background:#1e3f5c;border-radius:99px;overflow:hidden}
 .prog-inner{height:100%;background:linear-gradient(90deg,#1d5fa8,#15803d);border-radius:99px}
 .prog-label{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
@@ -88,7 +88,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .late-body{padding:0 12px 8px;background:#1a1400}
 .late-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid #f59e0b}
 .late-item:last-child{border-bottom:none}
-.days-list{padding:12px 20px;display:flex;flex-direction:column;gap:14px}
+.days-list{padding:6px 20px 12px;display:flex;flex-direction:column;gap:14px}
 .day-group{border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;background:var(--surface)}
 .day-group.all-done{border-color:#86efac;background:#000}
 .day-group.is-today{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,95,168,.1)}
@@ -445,8 +445,8 @@ input[type=number]{-moz-appearance:textfield}
 <style>
 .ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
 .ciclo-intro b{color:var(--text)}
-.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);margin-bottom:4px;overflow:hidden}
-.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;cursor:pointer;user-select:none}
+.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);margin-bottom:2px;overflow:hidden}
+.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;cursor:pointer;user-select:none}
 .ciclo-head:hover .ciclo-nome{color:var(--accent)}
 .ciclo-head-main{display:flex;align-items:center;gap:8px;min-width:0}
 .ciclo-dot{width:10px;height:10px;border-radius:2px;background:var(--gc,#888);flex-shrink:0}
@@ -2230,8 +2230,9 @@ function cicloQSet(key,field,val){
   cicloQState[key][field]=Math.max(0,parseInt(val)||0);
   cicloQSave();
   _updateCicloQStat();
+  const g=CICLO_GRUPOS.find(x=>x.key===key);
   const s=cicloQState[key]||{};
-  const f=s.feitas||0,a=s.acertos||0;
+  const f=s.feitas||(g?g.quota:0),a=s.acertos||0;
   const pEl=document.getElementById('ciclo-pct-'+key);
   if(pEl){const pct=f>0?Math.round(a/f*100):null;pEl.textContent=pct!==null?pct+'%':'–';pEl.style.color=pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';}
 }
@@ -2320,12 +2321,12 @@ function buildCicloHTML(){
             ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
           </div>
         </div>
-${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||0,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
           <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
           <div class="ciclo-q-block">
             <div class="ciclo-q-field">
               <span class="ciclo-q-lbl">Feitas</span>
-              <input class="ciclo-q-inp" type="number" min="0" value="${f||''}" placeholder="${g.quota}" style="color:#7dd3fc" oninput="cicloQSet('${g.key}','feitas',this.value)">
+              <input class="ciclo-q-inp" type="number" min="0" value="${f||g.quota}" style="color:#7dd3fc" oninput="cicloQSet('${g.key}','feitas',this.value)">
             </div>
             <span class="ciclo-q-sep">|</span>
             <div class="ciclo-q-field">
