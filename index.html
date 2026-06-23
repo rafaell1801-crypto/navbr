@@ -452,13 +452,18 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-curso-link:hover{background:var(--surface2)}
 .ciclo-body{display:none}
 .ciclo-disc.open .ciclo-body{display:block}
-.ciclo-rows{border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:0}
-.ciclo-rows .ciclo-cell{border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
-.ciclo-rows .ciclo-cell:nth-child(2n){border-right:none}
-.ciclo-rows .ciclo-cell:nth-last-child(1):nth-child(odd),.ciclo-rows .ciclo-cell:nth-last-child(2){border-bottom:none}
-.ciclo-cell .bloco-row{height:100%}
-@media(max-width:600px){.ciclo-rows{grid-template-columns:1fr}.ciclo-rows .ciclo-cell{border-right:none}.ciclo-rows .ciclo-cell:last-child{border-bottom:none}}
+.ciclo-rows{border-top:1px solid var(--border)}
+.ciclo-cell{border-bottom:1px solid var(--border)}
+.ciclo-cell:last-child{border-bottom:none}
 .ciclo-empty{padding:18px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+.ciclo-compact-row{display:flex;align-items:center;gap:9px;padding:8px 14px;min-width:0}
+.ciclo-topic-text{flex:1;font-size:13px;font-weight:400;color:#e8f4f8;line-height:1.3;min-width:0}
+.ciclo-topic-done{opacity:.4}
+.ciclo-links-wrap{flex-shrink:0;display:flex;align-items:center;gap:5px}
+.ciclo-links-wrap .links-row-display{display:flex;align-items:center;gap:3px}
+.ciclo-links-wrap .link-edit-all-row{position:absolute;right:14px;z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;box-shadow:0 4px 16px rgba(0,0,0,.4);min-width:260px}
+.ciclo-cell{position:relative;border-bottom:1px solid var(--border)}
+.ciclo-cell:last-child{border-bottom:none}
 .ciclo-q-input-wrap{display:flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:4px 10px 4px 8px;cursor:default}
 .ciclo-q-inp{width:34px;background:transparent;border:none;outline:none;font-size:14px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield}
 .ciclo-q-inp::-webkit-inner-spin-button,.ciclo-q-inp::-webkit-outer-spin-button{-webkit-appearance:none}
@@ -484,9 +489,6 @@ input[type=number]{-moz-appearance:textfield}
   <div class="late-section hidden" id="late-section">
     <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
-  </div>
-  <div class="ciclo-intro">
-    <b>Ciclo diário de questões.</b> Faça todos os dias a cota de questões de cada disciplina. Abaixo de cada disciplina estão todos os tópicos das aulas com seus resumos e cadernos de questões.
   </div>
   <div class="days-list" id="ciclo-list"></div>
 </div>
@@ -2250,16 +2252,13 @@ function cicloRowHTML(item){
   const done=isDone(item.id);
   const freq=topicFreq[item.id];
   const freqPill=freq?(()=>{const blue=getTopicPrioritySet().has(item.id);return`<span style="font-size:12px;font-weight:700;color:#fff;background:${blue?'rgba(62,181,200,.45)':'rgba(251,191,36,.45)'};border-radius:99px;padding:2px 8px;white-space:nowrap">${freq}%</span>`;})():'';
-  return`<div class="ciclo-cell"><div class="bloco-row" style="flex-wrap:nowrap;align-items:flex-start;padding:10px 14px;gap:10px">
-    <div style="flex:1;min-width:0">
-      <div class="bloco-topic-name">${item.topico}</div>
-      <div style="margin-top:7px">${renderLinksRow(item.id,item.disc,'c')}</div>
+  return`<div class="ciclo-cell">
+    <div class="ciclo-compact-row">
+      <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="flex-shrink:0">${chkIcon()}</div>
+      <span class="ciclo-topic-text${done?' ciclo-topic-done':''}">${item.topico}</span>
+      <div class="ciclo-links-wrap">${freqPill}${renderLinksRow(item.id,item.disc,'c')}</div>
     </div>
-    <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:2px">
-      ${freqPill}
-      <button class="link-edit-all" onclick="toggleEditAll('c',${item.id})" title="Adicionar ou editar links">${editIconHTML()}</button>
-    </div>
-  </div></div>`;
+  </div>`;
 }
 function buildCicloHTML(){
   const agenda=getEffectiveAgenda();
