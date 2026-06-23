@@ -258,7 +258,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .content-disc-chevron.open{transform:rotate(180deg)}
 .content-disc-body{display:none;flex-direction:column}
 .content-disc-body.open{display:flex}
-.content-topic-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:.5px solid var(--border)}
+.content-topic-row{display:flex;align-items:center;gap:6px;padding:7px 14px;border-bottom:.5px solid var(--border);flex-wrap:nowrap}
 .content-topic-row:last-child{border-bottom:none}
 .content-topic-row.deleted{opacity:.4}
 .content-topic-input{flex:1;padding:4px 8px;border:1px solid transparent;border-radius:5px;font-size:12px;background:transparent;color:var(--text)}
@@ -464,10 +464,13 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-links-wrap .link-edit-all-row{position:absolute;right:14px;z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;box-shadow:0 4px 16px rgba(0,0,0,.4);min-width:260px}
 .ciclo-cell{position:relative;border-bottom:1px solid var(--border)}
 .ciclo-cell:last-child{border-bottom:none}
-.ciclo-q-input-wrap{display:flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:4px 10px 4px 8px;cursor:default}
-.ciclo-q-inp{width:34px;background:transparent;border:none;outline:none;font-size:14px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield}
+.ciclo-q-block{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:5px 10px}
+.ciclo-q-field{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ciclo-q-lbl{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.ciclo-q-inp{width:36px;background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;font-size:13px;font-weight:700;color:var(--text);text-align:center;font-family:inherit;-moz-appearance:textfield;padding:1px 0}
 .ciclo-q-inp::-webkit-inner-spin-button,.ciclo-q-inp::-webkit-outer-spin-button{-webkit-appearance:none}
-.ciclo-q-meta{font-size:12px;color:var(--muted);white-space:nowrap}
+.ciclo-q-inp::placeholder{color:var(--muted);font-weight:400}
+.ciclo-q-sep{font-size:11px;color:var(--border)}
 </style>
 <div id="tab-ciclo">
   <div class="stats-bar" style="grid-template-columns:repeat(4,1fr)">
@@ -2217,11 +2220,18 @@ function compactDriveHTML(disc){
 let cicloQState={};
 function cicloQLoad(){try{const s=localStorage.getItem('ciclo_q');if(s)cicloQState=JSON.parse(s);}catch{}}
 function cicloQSave(){try{localStorage.setItem('ciclo_q',JSON.stringify(cicloQState));}catch{}}
-function cicloQTotal(){return Object.values(cicloQState).reduce((a,b)=>a+(b||0),0);}
-function cicloQSet(key,val){
-  const n=Math.max(0,parseInt(val)||0);
-  if(n===0)delete cicloQState[key]; else cicloQState[key]=n;
+function cicloQTotal(){return Object.values(cicloQState).reduce((a,b)=>a+(typeof b==='object'?b.feitas||0:b||0),0);}
+function cicloQSet(key,field,val){
+  if(!cicloQState[key]||typeof cicloQState[key]!=='object')cicloQState[key]={feitas:0,acertos:0};
+  cicloQState[key][field]=Math.max(0,parseInt(val)||0);
   cicloQSave();
+  _updateCicloQStat();
+  const s=cicloQState[key]||{};
+  const f=s.feitas||0,a=s.acertos||0;
+  const pEl=document.getElementById('ciclo-pct-'+key);
+  if(pEl){const pct=f>0?Math.round(a/f*100):null;pEl.textContent=pct!==null?pct+'%':'–';pEl.style.color=pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';}
+}
+function _updateCicloQStat(){
   const cqEl=document.getElementById('s-ciclo-q-total');
   if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
 }
@@ -2256,7 +2266,7 @@ function cicloRowHTML(item){
     <div class="ciclo-compact-row">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="flex-shrink:0">${chkIcon()}</div>
       <span class="ciclo-topic-text${done?' ciclo-topic-done':''}">${item.topico}</span>
-      <div class="ciclo-links-wrap">${freqPill}${renderLinksRow(item.id,item.disc,'c')}</div>
+      <div class="ciclo-links-wrap">${freqPill}</div>
     </div>
   </div>`;
 }
@@ -2294,14 +2304,23 @@ function buildCicloHTML(){
             ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-          <div class="ciclo-quota"><b>${g.quota}</b> questões/dia</div>
-          <div class="ciclo-q-input-wrap" onclick="event.stopPropagation()" title="Questões feitas">
-            <input class="ciclo-q-inp" type="number" min="0" max="${g.quota}" value="${cicloQState[g.key]||''}" placeholder="0" oninput="cicloQSet('${g.key}',this.value)">
-            <span class="ciclo-q-meta">/${g.quota}</span>
+${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||0,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+          <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
+          <div class="ciclo-q-block">
+            <div class="ciclo-q-field">
+              <span class="ciclo-q-lbl">Feitas</span>
+              <input class="ciclo-q-inp" type="number" min="0" value="${f||''}" placeholder="${g.quota}" style="color:#7dd3fc" oninput="cicloQSet('${g.key}','feitas',this.value)">
+            </div>
+            <span class="ciclo-q-sep">|</span>
+            <div class="ciclo-q-field">
+              <span class="ciclo-q-lbl">Acertos</span>
+              <input class="ciclo-q-inp" type="number" min="0" value="${a||''}" placeholder="0" oninput="cicloQSet('${g.key}','acertos',this.value)">
+            </div>
+            <span class="ciclo-q-sep">|</span>
+            <span id="ciclo-pct-${g.key}" style="font-size:12px;font-weight:700;min-width:30px;color:${pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)'}">${pct!==null?pct+'%':'–'}</span>
           </div>
           <span class="ciclo-chevron">▶</span>
-        </div>
+        </div>`;})()}
       </div>
       <div class="ciclo-body">
         <div class="ciclo-meta">
@@ -3089,6 +3108,7 @@ function renderContent() {
             style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
           <span style="font-size:9px;color:var(--muted)">%</span>
         </div>
+        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">${renderLinksRow(t.id,disc,'ct')}</div>
         ${t.deleted
           ? `<button class="ct-btn ct-restore" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Restaurar">↩</button>`
           : `<button class="ct-btn ct-del" onclick="toggleDeleteTopic('${disc.replace(/'/g,"\'")}',${realIdx})" title="Remover">✕</button>`
