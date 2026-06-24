@@ -2337,7 +2337,6 @@ function expandProxDay(ds,headerEl){
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
             <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}');refreshProxDayHeader('${ds}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
             <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
-            <span class="ciclo-chevron">▶</span>
           </div>
         </div>
         <div class="ciclo-body"><div class="ciclo-rows">${items.length?items.map(it=>cicloRowHTML(it)).join(''):'<div class="ciclo-empty">Sem tópicos.</div>'}</div></div>
@@ -3270,7 +3269,7 @@ function renderContent() {
           <span style="font-size:9px;color:var(--muted)">%</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-          ${(()=>{const pct=cicloGrupoPct(disc,t.topico);if(pct===null)return'';const c=pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';return`<span style="font-size:11px;font-weight:700;color:${c};min-width:30px;text-align:right">${pct}%</span>`;})()}
+          ${(()=>{const q=questoesState[t.id]||{};const qa=q.a||0,qt=q.t||0;if(qt===0)return'';const pct=Math.round(qa/qt*100);const cor=pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';return`<span style="font-size:11px;font-weight:700;color:${cor};min-width:30px;text-align:right">${pct}%</span>`;})()}
           <div class="ciclo-links-wrap">${renderLinksRow(t.id,disc,'ct')}</div>
           <button class="link-edit-all" onclick="toggleEditAll('ct',${t.id})" title="Editar links">${editIconHTML()}</button>
         </div>
