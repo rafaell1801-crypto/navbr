@@ -498,12 +498,10 @@ input[type=number]{-moz-appearance:textfield}
     <div class="late-body hidden" id="late-body"></div>
   </div>
   <div class="subtabs" style="padding:6px 20px 0">
-    <button class="subtab active" id="cst-topicos" onclick="showCicloSub('topicos')">Tópicos</button>
-    <button class="subtab" id="cst-hoje" onclick="showCicloSub('hoje')">Fazer hoje</button>
+    <button class="subtab active" id="cst-topicos" onclick="showCicloSub('topicos')">Fazer hoje</button>
     <button class="subtab" id="cst-proximos" onclick="showCicloSub('proximos')">Próximos dias</button>
   </div>
   <div class="days-list" id="ciclo-list"></div>
-  <div class="days-list hidden" id="ciclo-hoje"></div>
   <div class="days-list hidden" id="ciclo-proximos"></div>
 </div>
 
@@ -2282,53 +2280,77 @@ function cicloDiarioToggle(dateStr,key){
 }
 function _dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _fmtDate(d){const wd=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];return wd[d.getDay()]+', '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
-function buildCicloDayCard(d,isToday){
+function buildCicloDayCard(d){
   const ds=_dateStr(d);
   const st=cicloDiarioState[ds]||{};
   const allDone=CICLO_GRUPOS.every(g=>st[g.key]);
   const doneCount=CICLO_GRUPOS.filter(g=>st[g.key]).length;
-  const label=isToday?'<span style="font-size:10px;font-weight:700;background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px">Hoje</span>':
-    allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px">✓</span>':'';
-  const rows=CICLO_GRUPOS.map(g=>{
+  // cada grupo: check de feito + badge quota (sem inputs feitas/acertos nos próximos dias)
+  const grupos=CICLO_GRUPOS.map(g=>{
     const done=!!st[g.key];
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border)">
-      <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}')" style="flex-shrink:0">${chkIcon()}</div>
-      <span style="flex:1;font-size:13px;${done?'opacity:.4':''}"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${g.cor};margin-right:6px;vertical-align:middle"></span>${g.nome}</span>
-      <span style="font-size:11px;color:var(--muted);flex-shrink:0">${g.quota} q</span>
+    return `<div class="ciclo-disc" style="--gc:${g.cor};margin-bottom:2px">
+      <div class="ciclo-head" onclick="toggleProxDay('${ds}','${g.key}',this)">
+        <div class="ciclo-head-main">
+          <span class="ciclo-dot"></span>
+          <div>
+            <div class="ciclo-nome">${g.nome}</div>
+            ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+          <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
+          <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
+          <span class="ciclo-chevron">▶</span>
+        </div>
+      </div>
+      <div class="ciclo-body" id="pd-body-${ds}-${g.key}">
+        <div class="ciclo-rows">${(()=>{
+          const agenda=getEffectiveAgenda();
+          const byG={lp:[],rlm:[],inf:[],leg:[],esp:[]};
+          agenda.forEach(it=>{const gk=cicloGrupoOf(it);(byG[gk]||byG.esp).push(it);});
+          const seen=new Map();
+          (byG[g.key]||[]).forEach(it=>{const key=(it.topico||'').trim();if(!seen.has(key)){seen.set(key,it);}else{const has=!!(resumosState[it.id]||cadernosState[it.id]);if(has&&!(resumosState[seen.get(key).id]||cadernosState[seen.get(key).id]))seen.set(key,it);}});
+          const items=[...seen.values()];
+          return items.length?items.map(it=>cicloRowHTML(it)).join(''):`<div class="ciclo-empty">Sem tópicos.</div>`;
+        })()}</div>
+      </div>
     </div>`;
   }).join('');
-  return `<div style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':isToday?'var(--accent)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:6px;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
-      <span style="font-size:13px;font-weight:700;color:var(--text)">${_fmtDate(d)}${label}</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length}</span>
+  return `<div style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border);background:var(--surface2);cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      <span style="font-size:13px;font-weight:700;color:var(--text)">${_fmtDate(d)}</span>
+      ${allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px">✓ Concluído</span>':''}
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length} matérias</span>
+      <span style="font-size:11px;color:var(--muted)">▾</span>
     </div>
-    ${rows}
+    <div class="hidden" style="padding:6px 8px">${grupos}</div>
   </div>`;
 }
+function toggleProxDay(ds,key,el){
+  const body=document.getElementById('pd-body-'+ds+'-'+key);
+  if(!body)return;
+  body.classList.toggle('hidden');
+  const chev=el.querySelector('.ciclo-chevron');if(chev)chev.style.transform=body.classList.contains('hidden')?'':'rotate(90deg)';
+}
 function renderCicloDiario(){
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const hojeFut=new Date(CICLO_FIM);
-  const hojeEl=document.getElementById('ciclo-hoje');
   const proxEl=document.getElementById('ciclo-proximos');
-  if(hojeEl)hojeEl.innerHTML=buildCicloDayCard(hoje,true);
-  if(proxEl){
-    const dias=[];
-    const d=new Date(hoje);d.setDate(d.getDate()+1);
-    while(d<=hojeFut){dias.push(new Date(d));d.setDate(d.getDate()+1);}
-    proxEl.innerHTML=dias.length
-      ?dias.map(dt=>buildCicloDayCard(dt,false)).join('')
-      :'<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Chegou ao fim do ciclo! 🎉</div>';
-  }
+  if(!proxEl)return;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const d=new Date(hoje);d.setDate(d.getDate()+1);
+  const dias=[];
+  while(d<=CICLO_FIM){dias.push(new Date(d));d.setDate(d.getDate()+1);}
+  proxEl.innerHTML=dias.length
+    ?dias.map(dt=>buildCicloDayCard(dt)).join('')
+    :'<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Chegou ao fim do ciclo! 🎉</div>';
 }
 let _cicloSubAtual='topicos';
 function showCicloSub(s){
   _cicloSubAtual=s;
-  ['topicos','hoje','proximos'].forEach(k=>{
-    const listId=k==='topicos'?'ciclo-list':'ciclo-'+k;
-    const el=document.getElementById(listId);if(el)el.classList.toggle('hidden',k!==s);
-    const btn=document.getElementById('cst-'+k);if(btn)btn.classList.toggle('active',k===s);
-  });
-  if(s==='hoje'||s==='proximos')renderCicloDiario();
+  const listEl=document.getElementById('ciclo-list');if(listEl)listEl.classList.toggle('hidden',s!=='topicos');
+  const proxEl=document.getElementById('ciclo-proximos');if(proxEl)proxEl.classList.toggle('hidden',s!=='proximos');
+  document.getElementById('cst-topicos')?.classList.toggle('active',s==='topicos');
+  document.getElementById('cst-proximos')?.classList.toggle('active',s==='proximos');
+  if(s==='proximos')renderCicloDiario();
 }
 const CICLO_GRUPOS=[
   {key:'lp',nome:'Língua Portuguesa',quota:20,cor:'#e8843a',cursos:['Língua Portuguesa']},
