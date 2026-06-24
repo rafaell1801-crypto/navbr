@@ -485,7 +485,6 @@ input[type=number]{-moz-appearance:textfield}
 <div id="tab-ciclo">
   <div class="prog-wrap">
     <div class="prog-outer"><div class="prog-inner" id="prog-bar" style="width:0%"></div></div>
-    <div class="prog-label" id="prog-label">0% concluído</div>
   </div>
   <div class="prog-wrap hidden" id="day-prog-wrap" style="padding-top:4px;border-top:none">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
@@ -2261,6 +2260,12 @@ function cicloQSet(key,field,val){
 function _updateCicloQStat(){
   const cqEl=document.getElementById('s-ciclo-q-total');
   if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
+  // atualiza % Acertos na barra do timer
+  let totA=0,totF=0;
+  CICLO_GRUPOS.forEach(g=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};totF+=s.feitas||g.quota;totA+=s.acertos||0;});
+  const acEl=document.getElementById('s-week-acertos');
+  if(acEl){const pct=totF>0&&totA>0?Math.round(totA/totF*100):null;acEl.textContent=pct!==null?pct+'%':'–';acEl.style.color=pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';}
+  renderQuestoesStatsCard();
 }
 function toggleCiclo(key){
   const el=document.getElementById('ciclo-g-'+key);
@@ -2280,59 +2285,76 @@ function cicloDiarioToggle(dateStr,key){
 }
 function _dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _fmtDate(d){const wd=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];return wd[d.getDay()]+', '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
-function buildCicloDayCard(d){
+// cache dos tópicos por grupo (calculado uma só vez)
+let _cicloTopicosCache=null;
+function getCicloTopicosCache(){
+  if(_cicloTopicosCache)return _cicloTopicosCache;
+  const agenda=getEffectiveAgenda();
+  const byG={lp:[],rlm:[],inf:[],leg:[],esp:[]};
+  agenda.forEach(it=>{const gk=cicloGrupoOf(it);(byG[gk]||byG.esp).push(it);});
+  _cicloTopicosCache={};
+  CICLO_GRUPOS.forEach(g=>{
+    const seen=new Map();
+    (byG[g.key]||[]).forEach(it=>{
+      const k=(it.topico||'').trim();
+      if(!seen.has(k)){seen.set(k,it);}
+      else{if((resumosState[it.id]||cadernosState[it.id])&&!(resumosState[seen.get(k).id]||cadernosState[seen.get(k).id]))seen.set(k,it);}
+    });
+    _cicloTopicosCache[g.key]=[...seen.values()];
+  });
+  return _cicloTopicosCache;
+}
+function buildProxDayHeader(d){
   const ds=_dateStr(d);
   const st=cicloDiarioState[ds]||{};
   const allDone=CICLO_GRUPOS.every(g=>st[g.key]);
   const doneCount=CICLO_GRUPOS.filter(g=>st[g.key]).length;
-  // cada grupo: check de feito + badge quota (sem inputs feitas/acertos nos próximos dias)
-  const grupos=CICLO_GRUPOS.map(g=>{
-    const done=!!st[g.key];
-    return `<div class="ciclo-disc" style="--gc:${g.cor};margin-bottom:2px">
-      <div class="ciclo-head" onclick="toggleProxDay('${ds}','${g.key}',this)">
-        <div class="ciclo-head-main">
-          <span class="ciclo-dot"></span>
-          <div>
-            <div class="ciclo-nome">${g.nome}</div>
-            ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
-          <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
-          <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
-          <span class="ciclo-chevron">▶</span>
-        </div>
-      </div>
-      <div class="ciclo-body" id="pd-body-${ds}-${g.key}">
-        <div class="ciclo-rows">${(()=>{
-          const agenda=getEffectiveAgenda();
-          const byG={lp:[],rlm:[],inf:[],leg:[],esp:[]};
-          agenda.forEach(it=>{const gk=cicloGrupoOf(it);(byG[gk]||byG.esp).push(it);});
-          const seen=new Map();
-          (byG[g.key]||[]).forEach(it=>{const key=(it.topico||'').trim();if(!seen.has(key)){seen.set(key,it);}else{const has=!!(resumosState[it.id]||cadernosState[it.id]);if(has&&!(resumosState[seen.get(key).id]||cadernosState[seen.get(key).id]))seen.set(key,it);}});
-          const items=[...seen.values()];
-          return items.length?items.map(it=>cicloRowHTML(it)).join(''):`<div class="ciclo-empty">Sem tópicos.</div>`;
-        })()}</div>
-      </div>
-    </div>`;
-  }).join('');
-  return `<div style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:8px;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border);background:var(--surface2);cursor:pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+  return `<div class="prox-day-card" id="pdc-${ds}" style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:6px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--surface2);cursor:pointer" onclick="expandProxDay('${ds}',this)">
       <span style="font-size:13px;font-weight:700;color:var(--text)">${_fmtDate(d)}</span>
-      ${allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px">✓ Concluído</span>':''}
-      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length} matérias</span>
-      <span style="font-size:11px;color:var(--muted)">▾</span>
+      ${allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px">✓</span>':''}
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length} ▾</span>
     </div>
-    <div class="hidden" style="padding:6px 8px">${grupos}</div>
+    <div class="hidden prox-day-body" id="pdb-${ds}" style="padding:4px 6px"></div>
   </div>`;
 }
-function toggleProxDay(ds,key,el){
-  const body=document.getElementById('pd-body-'+ds+'-'+key);
+function expandProxDay(ds,headerEl){
+  const body=document.getElementById('pdb-'+ds);
   if(!body)return;
-  body.classList.toggle('hidden');
-  const chev=el.querySelector('.ciclo-chevron');if(chev)chev.style.transform=body.classList.contains('hidden')?'':'rotate(90deg)';
+  const opening=body.classList.toggle('hidden');// toggle returns true if now hidden
+  if(!opening&&!body.dataset.loaded){
+    // lazy render: só agora gera os grupos
+    body.dataset.loaded='1';
+    const st=cicloDiarioState[ds]||{};
+    const cache=getCicloTopicosCache();
+    body.innerHTML=CICLO_GRUPOS.map(g=>{
+      const done=!!st[g.key];
+      const items=cache[g.key]||[];
+      return `<div class="ciclo-disc open" style="--gc:${g.cor};margin-bottom:2px">
+        <div class="ciclo-head" onclick="this.parentElement.classList.toggle('open')">
+          <div class="ciclo-head-main"><span class="ciclo-dot"></span><div><div class="ciclo-nome">${g.nome}</div></div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+            <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}');refreshProxDayHeader('${ds}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
+            <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
+            <span class="ciclo-chevron">▶</span>
+          </div>
+        </div>
+        <div class="ciclo-body"><div class="ciclo-rows">${items.length?items.map(it=>cicloRowHTML(it)).join(''):'<div class="ciclo-empty">Sem tópicos.</div>'}</div></div>
+      </div>`;
+    }).join('');
+  }
+}
+function refreshProxDayHeader(ds){
+  const card=document.getElementById('pdc-'+ds);if(!card)return;
+  const st=cicloDiarioState[ds]||{};
+  const allDone=CICLO_GRUPOS.every(g=>st[g.key]);
+  const doneCount=CICLO_GRUPOS.filter(g=>st[g.key]).length;
+  card.style.borderLeftColor=allDone?'var(--success)':'var(--border)';
+  const hdr=card.querySelector('[onclick*="expandProxDay"]');
+  if(hdr){const m=hdr.querySelector('span:last-child');if(m)m.textContent=`${doneCount}/${CICLO_GRUPOS.length} ▾`;}
 }
 function renderCicloDiario(){
+  _cicloTopicosCache=null; // invalidar cache ao re-renderizar
   const proxEl=document.getElementById('ciclo-proximos');
   if(!proxEl)return;
   const hoje=new Date();hoje.setHours(0,0,0,0);
@@ -2340,7 +2362,7 @@ function renderCicloDiario(){
   const dias=[];
   while(d<=CICLO_FIM){dias.push(new Date(d));d.setDate(d.getDate()+1);}
   proxEl.innerHTML=dias.length
-    ?dias.map(dt=>buildCicloDayCard(dt)).join('')
+    ?dias.map(dt=>buildProxDayHeader(dt)).join('')
     :'<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Chegou ao fim do ciclo! 🎉</div>';
 }
 let _cicloSubAtual='topicos';
@@ -2370,6 +2392,15 @@ function cicloGrupoOf(item){
   if(ESP_DISCS.has(d))return 'esp';
   if(LEG_DISCS.has(d))return 'leg';
   return 'esp';
+}
+function cicloGrupoPct(discName, topicoText){
+  const gk=cicloGrupoOf({disc:discName,topico:topicoText||''});
+  const g=CICLO_GRUPOS.find(x=>x.key===gk);
+  if(!g)return null;
+  const s=typeof cicloQState[gk]==='object'?cicloQState[gk]:{feitas:0,acertos:0};
+  const f=s.feitas||g.quota,a=s.acertos||0;
+  if(f===0||a===0)return null;
+  return Math.round(a/f*100);
 }
 function cicloRowHTML(item){
   const done=isDone(item.id);
@@ -2537,16 +2568,17 @@ function render(){
     const weekIds=new Set(weekItems.map(i=>i.id));
     const {a:wA,t:wT}=getQuestoesTotals(id=>weekIds.has(id));
     const {pct:allPct,t:allT}=getQuestoesTotals();
-    const wPct=wT>0?Math.round(wA/wT*100):(allT>0?allPct:null);
+    // % Acertos do timer: usa cicloQState (dados do Ciclo) em vez de questoesState
+    const {totA:cA,totF:cF}=(()=>{let totA=0,totF=0;CICLO_GRUPOS.forEach(g=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};totF+=s.feitas||g.quota;totA+=s.acertos||0;});return{totA,totF};})();
+    const wPct=cF>0&&cA>0?Math.round(cA/cF*100):(wT>0?Math.round(wA/wT*100):(allT>0?allPct:null));
     const el=n=>document.getElementById(n);
     if(el('s-week-total'))el('s-week-total').textContent=weekItems.length;
     if(el('s-week-done')){el('s-week-done').textContent=weekDone;}
     if(el('s-week-pend'))el('s-week-pend').textContent=weekPend;
-    if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct:'–';
+    if(el('s-week-acertos'))el('s-week-acertos').textContent=wPct!==null?wPct+'%':'–';
     const ac=el('s-week-acertos');if(ac)ac.style.color=wPct===null?'':wPct>=70?'var(--success)':wPct>=50?'var(--warn)':'var(--danger)';
   })()}catch(e){console.warn('week stats:',e);}
   document.getElementById('prog-bar').style.width=pct+'%';
-  document.getElementById('prog-label').textContent=pct+'% concluído';
   const todayItems=getEffectiveAgenda().filter(i=>i.data===TODAY);
   const todayDone=todayItems.filter(i=>isDone(i.id)).length;
   const todayTotal=todayItems.length;
@@ -3237,7 +3269,8 @@ function renderContent() {
             style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
           <span style="font-size:9px;color:var(--muted)">%</span>
         </div>
-        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          ${(()=>{const pct=cicloGrupoPct(disc,t.topico);if(pct===null)return'';const c=pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';return`<span style="font-size:11px;font-weight:700;color:${c};min-width:30px;text-align:right">${pct}%</span>`;})()}
           <div class="ciclo-links-wrap">${renderLinksRow(t.id,disc,'ct')}</div>
           <button class="link-edit-all" onclick="toggleEditAll('ct',${t.id})" title="Editar links">${editIconHTML()}</button>
         </div>
