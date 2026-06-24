@@ -445,7 +445,8 @@ input[type=number]{-moz-appearance:textfield}
 <style>
 .ciclo-intro{font-size:12px;line-height:1.5;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:4px 0 14px}
 .ciclo-intro b{color:var(--text)}
-.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);margin-bottom:2px;overflow:hidden}
+.ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);overflow:hidden}
+#ciclo-list{gap:5px;padding-top:8px;padding-bottom:8px}
 .ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;cursor:pointer;user-select:none}
 .ciclo-head:hover .ciclo-nome{color:var(--accent)}
 .ciclo-head-main{display:flex;align-items:center;gap:8px;min-width:0}
@@ -2457,7 +2458,6 @@ function buildCicloHTML(){
           <span class="ciclo-dot"></span>
           <div>
             <div class="ciclo-nome">${g.nome}</div>
-            ${g.sub?`<div class="ciclo-sub">${g.sub}</div>`:''}
           </div>
         </div>
 ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
