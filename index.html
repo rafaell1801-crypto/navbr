@@ -89,6 +89,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .late-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid #f59e0b}
 .late-item:last-child{border-bottom:none}
 .days-list{padding:6px 20px 12px;display:flex;flex-direction:column;gap:14px}
+#ciclo-proximos{gap:4px}
 .day-group{border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;background:var(--surface)}
 .day-group.all-done{border-color:#86efac;background:#000}
 .day-group.is-today{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,95,168,.1)}
@@ -416,7 +417,7 @@ input[type=number]{-moz-appearance:textfield}
   </svg>
   <div>
     <div class="timer-display" id="timer-display">1:20:00</div>
-    <div class="timer-label" id="timer-label">Temporizador · 1h20</div>
+    <div class="timer-label" id="timer-label">Temporizador</div>
   </div>
   <select class="timer-disc-select" id="timer-disc">
     <option value="">— Selecione a disciplina —</option>
@@ -427,7 +428,7 @@ input[type=number]{-moz-appearance:textfield}
   <div style="display:flex;align-items:center;gap:14px;margin-left:auto;padding-left:12px;border-left:1px solid var(--border)">
     <div style="display:flex;flex-direction:column;align-items:center;line-height:1.2">
       <span id="s-week-acertos" style="font-size:18px;font-weight:800;color:var(--success)">–</span>
-      <span style="font-size:10px;color:var(--muted);font-weight:600">% Acertos</span>
+      <span style="font-size:10px;color:var(--muted);font-weight:600">Acertos</span>
     </div>
     <div style="display:flex;flex-direction:column;align-items:center;line-height:1.2">
       <span id="s-ciclo-q-total" style="font-size:18px;font-weight:800;color:#f5a623">–</span>
@@ -2305,44 +2306,42 @@ function getCicloTopicosCache(){
   });
   return _cicloTopicosCache;
 }
+function _buildProxDayBody(ds){
+  const st=cicloDiarioState[ds]||{};
+  const cache=getCicloTopicosCache();
+  return CICLO_GRUPOS.map(g=>{
+    const done=!!st[g.key];
+    const items=cache[g.key]||[];
+    return `<div class="ciclo-disc open" style="--gc:${g.cor};margin-bottom:2px">
+      <div class="ciclo-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="ciclo-head-main"><span class="ciclo-dot"></span><div><div class="ciclo-nome">${g.nome}</div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+          <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}');refreshProxDayHeader('${ds}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
+          <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
+        </div>
+      </div>
+      <div class="ciclo-body"><div class="ciclo-rows">${items.length?items.map(it=>cicloRowHTML(it)).join(''):'<div class="ciclo-empty">Sem tópicos.</div>'}</div></div>
+    </div>`;
+  }).join('');
+}
 function buildProxDayHeader(d){
   const ds=_dateStr(d);
   const st=cicloDiarioState[ds]||{};
   const allDone=CICLO_GRUPOS.every(g=>st[g.key]);
   const doneCount=CICLO_GRUPOS.filter(g=>st[g.key]).length;
-  return `<div class="prox-day-card" id="pdc-${ds}" style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:6px;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--surface2);cursor:pointer" onclick="expandProxDay('${ds}',this)">
+  const body=_buildProxDayBody(ds);
+  return `<div class="prox-day-card" id="pdc-${ds}" style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:3px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--surface2);cursor:pointer" onclick="toggleProxDay('${ds}')">
       <span style="font-size:13px;font-weight:700;color:var(--text)">${_fmtDate(d)}</span>
       ${allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px">✓</span>':''}
       <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length} ▾</span>
     </div>
-    <div class="hidden prox-day-body" id="pdb-${ds}" style="padding:4px 6px"></div>
+    <div class="prox-day-body" id="pdb-${ds}" style="padding:4px 6px">${body}</div>
   </div>`;
 }
-function expandProxDay(ds,headerEl){
+function toggleProxDay(ds){
   const body=document.getElementById('pdb-'+ds);
-  if(!body)return;
-  const opening=body.classList.toggle('hidden');// toggle returns true if now hidden
-  if(!opening&&!body.dataset.loaded){
-    // lazy render: só agora gera os grupos
-    body.dataset.loaded='1';
-    const st=cicloDiarioState[ds]||{};
-    const cache=getCicloTopicosCache();
-    body.innerHTML=CICLO_GRUPOS.map(g=>{
-      const done=!!st[g.key];
-      const items=cache[g.key]||[];
-      return `<div class="ciclo-disc open" style="--gc:${g.cor};margin-bottom:2px">
-        <div class="ciclo-head" onclick="this.parentElement.classList.toggle('open')">
-          <div class="ciclo-head-main"><span class="ciclo-dot"></span><div><div class="ciclo-nome">${g.nome}</div></div></div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
-            <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}');refreshProxDayHeader('${ds}')" style="flex-shrink:0;margin:0">${chkIcon()}</div>
-            <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
-          </div>
-        </div>
-        <div class="ciclo-body"><div class="ciclo-rows">${items.length?items.map(it=>cicloRowHTML(it)).join(''):'<div class="ciclo-empty">Sem tópicos.</div>'}</div></div>
-      </div>`;
-    }).join('');
-  }
+  if(body)body.classList.toggle('hidden');
 }
 function refreshProxDayHeader(ds){
   const card=document.getElementById('pdc-'+ds);if(!card)return;
@@ -2872,7 +2871,7 @@ function updateTimerUI(){
   disp.className='timer-display'+(timerSt.running?' running':rem===0?' finished':'');
   const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
   const blockLbl=bm>0?`${bh}h${String(bm).padStart(2,'0')}`:bh+'h';
-  document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':`Temporizador · ${blockLbl}`;
+  document.getElementById('timer-label').textContent=timerSt.running?'Estudando: '+(timerSt.currentDisc||'—'):rem===0?'✓ Sessão concluída!':'Temporizador';
   if(timerSt.running){
     document.title='NAV Brasil | Plano de Estudos';
     const total=getBlockSecs();
