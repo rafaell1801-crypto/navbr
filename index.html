@@ -2200,6 +2200,7 @@ async function saveAllLinksForItem(ctx,itemId,disc){
   toggleEditAll(ctx,itemId);
   render();
   if(!document.getElementById('tab-rev').classList.contains('hidden'))renderRev();
+  if(!document.getElementById('tab-content')?.classList.contains('hidden'))renderContent();
 }
 
 function compactQuestoesHTML(itemId){
