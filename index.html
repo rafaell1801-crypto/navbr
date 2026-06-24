@@ -901,6 +901,7 @@ function cadernoInputHTML(itemId, timeLabel) {
   return inputEl + saveBtn + timeEl + openBtn;
 }
 
+let DISC_CADERNOS={};
 let DISC_LINKS={"Língua Portuguesa": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383548/aulas", "Raciocínio Lógico e Matemático": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384114/aulas", "Noções de Direito Administrativo": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383399/aulas", "Noções de Direito Constitucional": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383414/aulas", "Noções de Ética e Integridade": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383560/aulas", "Administração": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384352/aulas", "Gestão de Suprimentos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383401/aulas", "Orçamento Público e Análise Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383411/aulas", "Teoria Econômica Aplicada": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384586/aulas", "Licitações e Contratos": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/383576/aulas", "Matemática Financeira": "https://www.estrategiaconcursos.com.br/app/dashboard/cursos/384115/aulas"};
 const MOTIVACOES={
 "0": {"frase": "\"Não são as circunstâncias que formam o homem, mas o homem que forma as circunstâncias.\" – Karl Marx", "mensagem": "Hoje é o dia 1. Não da sua vida, mas da decisão de não deixar mais o tempo trabalhar contra você. Cada bloco que você marcar hoje é uma declaração silenciosa: eu estou no controle. Abra o primeiro tópico e comece — o resto vem sozinho."},
@@ -1071,6 +1072,21 @@ async function saveDiscCourseLink(disc,url){
   const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
   try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
   await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
+}
+async function loadDiscCadernos(){
+  try{const s=localStorage.getItem('nav_disc_cadernos');if(s)Object.assign(DISC_CADERNOS,JSON.parse(s));}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__disc_cadernos__');
+    if(d&&d.length>0&&d[0].topics){Object.assign(DISC_CADERNOS,d[0].topics);try{localStorage.setItem('nav_disc_cadernos',JSON.stringify(DISC_CADERNOS));}catch{}}
+  }catch{}
+  render();
+}
+async function saveDiscCadernoLink(disc,url){
+  DISC_CADERNOS[disc]=url;
+  const obj={};for(const k in DISC_CADERNOS)obj[k]=DISC_CADERNOS[k];
+  try{localStorage.setItem('nav_disc_cadernos',JSON.stringify(obj));}catch{}
+  await sbUpsert('conteudo',{disc:'__disc_cadernos__',topics:obj});
+  render();
 }
 
 // Configurações do app (data de início, duração do timer, blocos) — sincronizadas via Supabase
@@ -2381,7 +2397,7 @@ function buildCicloHTML(){
       if(!seen.has(key)){seen.set(key,it);}
       else if(has){const cur=seen.get(key);if(!(resumosState[cur.id]||cadernosState[cur.id]))seen.set(key,it);}
     });
-    const items=[...seen.values()].sort((a,b)=>(a.disc===b.disc?0:(a.disc<b.disc?-1:1)));
+    const items=[...seen.values()].sort((a,b)=>{const fa=topicFreq[a.id]||0,fb=topicFreq[b.id]||0;if(fb!==fa)return fb-fa;return a.disc===b.disc?0:(a.disc<b.disc?-1:1);});
     const total=items.length;
     const done=items.filter(i=>isDone(i.id)).length;
     const ids=new Set(items.map(i=>i.id));
@@ -2401,7 +2417,8 @@ function buildCicloHTML(){
             <div class="ciclo-nome">${g.nome}</div>
           </div>
         </div>
-${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=(g.cursos||[]).map(c=>DISC_CADERNOS[c]).find(Boolean)||DISC_CADERNOS[g.nome]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+          ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:#0f2a10;color:#4ccc7a;text-decoration:none;border:1px solid #2a6a30;white-space:nowrap;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#1a4a20'" onmouseout="this.style.background='#0f2a10'">📝 Questões</a>`:''}
           <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
           <div class="ciclo-q-block">
             <div class="ciclo-q-field">
@@ -3042,7 +3059,7 @@ async function timerFinish(){
   timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();render();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
-async function syncAll(){await loadAll();await loadCadernos();await loadResumos();}
+async function syncAll(){await loadAll();await loadCadernos();await loadResumos();await loadDiscCadernos();}
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden){
     if(timerSt.running)timerTick();
@@ -3078,7 +3095,17 @@ function saveTopicFreq(){
   _tfSyncTimer=setTimeout(async function(){
     try{await sbUpsert('conteudo',{disc:'__topic_freq__',topics:topicFreq});showSync('ok','✓ Frequência salva');}catch{}
   },2000);
+  if(_tfRenderTimer)clearTimeout(_tfRenderTimer);
+  _tfRenderTimer=setTimeout(function(){
+    render();
+    if(!document.getElementById('tab-content')?.classList.contains('hidden')){
+      const openBodies=new Set([...document.querySelectorAll('.content-disc-body.open')].map(el=>el.id.replace('cdb-','')));
+      renderContent();
+      openBodies.forEach(di=>{const b=document.getElementById('cdb-'+di);const ch=document.getElementById('chev-'+di);if(b){b.classList.add('open');if(ch)ch.classList.add('open');}});
+    }
+  },600);
 }
+let _tfRenderTimer=null;
 let _tfSyncTimer=null;
 
 async function loadTopicFreq(){
@@ -3189,7 +3216,8 @@ function renderContent() {
     const topics = getDiscTopics(disc);
     const c = CORES[disc] || '#888';
     const active = topics.filter(t => !t.deleted).length;
-    const filtered = q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : topics;
+    const filtered = (q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : [...topics])
+      .sort((a,b)=>(topicFreq[b.id]||0)-(topicFreq[a.id]||0));
     if (q && filtered.length === 0) return '';
     const isCustomDisc = !baseDiscs.includes(disc);
     const rows = filtered.map((t, ti) => {
@@ -3234,6 +3262,12 @@ function renderContent() {
           <input type="url" id="dlnk-${di}" data-original="${curLink}" oninput="markDiscLinkModified(${di})" value="${curLink}" placeholder="cole o link do curso..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s">
           <button id="dlnk-btn-${di}" class="content-add-btn" style="padding:4px 10px;font-size:11px;opacity:.5;cursor:default" onclick="saveDiscLinkInput('${disc.replace(/'/g,"\\'")}','dlnk-${di}')">Salvar</button>
           <span id="dlnk-status-${di}" style="font-size:10px;color:var(--muted);min-width:60px"></span>
+        </div>
+        <div class="dlnk-row" style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1a10">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">📝 Caderno de questões:</span>
+          <input type="url" id="dcad-${di}" value="${(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do caderno geral..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
+          <button class="content-add-btn" style="padding:4px 10px;font-size:11px" onclick="(async()=>{const u=document.getElementById('dcad-${di}').value.trim();await saveDiscCadernoLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('dcad-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('dcad-${di}'))document.getElementById('dcad-${di}').style.borderColor='';},1500);})()">Salvar</button>
+          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="caderno-link-btn" style="white-space:nowrap">Abrir ↗</a>`:'<span style="min-width:60px"></span>'}
         </div>
         ${rows}
         <div class="content-add-row">
@@ -4933,7 +4967,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
