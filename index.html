@@ -2418,7 +2418,9 @@ function buildCicloHTML(){
           </div>
         </div>
 ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=(g.cursos||[]).map(c=>DISC_CADERNOS[c]).find(Boolean)||DISC_CADERNOS[g.nome]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
-          ${cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:#0f2a10;color:#4ccc7a;text-decoration:none;border:1px solid #2a6a30;white-space:nowrap;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#1a4a20'" onmouseout="this.style.background='#0f2a10'">📝 Questões</a>`:''}
+          ${cadUrl
+            ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#0f2a10;border:1.5px solid #2a6a30;text-decoration:none;flex-shrink:0;font-size:15px;transition:background .15s" onmouseover="this.style.background='#1a4a20'" onmouseout="this.style.background='#0f2a10'">🔑</a>`
+            :`<span title="Caderno não cadastrado — adicione na aba Tópicos" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:transparent;border:1.5px solid #2a3a4a;flex-shrink:0;font-size:15px;opacity:.35;cursor:default">🔑</span>`}
           <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
           <div class="ciclo-q-block">
             <div class="ciclo-q-field">
