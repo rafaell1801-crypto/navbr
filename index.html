@@ -2878,7 +2878,8 @@ function getActiveDiscs(){
   const base=[...new Set(AGENDA.map(i=>i.disc))];
   const deleted=customTopics?Object.keys(customTopics).filter(d=>customTopics[d]===null):[];
   const custom=customTopics?Object.keys(customTopics).filter(d=>!base.includes(d)&&customTopics[d]!==null&&d!=='__colors__'):[];
-  return [...base.filter(d=>!deleted.includes(d)),...custom].sort((a,b)=>a.localeCompare(b,'pt'));
+  const infActive=!deleted.includes(INF)&&!base.includes(INF)&&!custom.includes(INF)?[INF]:[];
+  return [...base.filter(d=>!deleted.includes(d)),...custom,...infActive].sort((a,b)=>a.localeCompare(b,'pt'));
 }
 function populateDiscSelect(){
   const sel=document.getElementById('timer-disc');
@@ -3235,7 +3236,9 @@ function renderContent() {
   // oculta discs excluídas (null) da lista
   const baseDiscs = allBase.filter(d => !customTopics || customTopics[d] !== null);
   const customDiscs = customTopics ? Object.keys(customTopics).filter(d => !allBase.includes(d) && customTopics[d] !== null && !d.startsWith('__')) : [];
-  const discNames = [...baseDiscs, ...customDiscs];
+  // Informática é sempre incluída (exceto se explicitamente removida via customTopics)
+  const infVisible = !(customTopics && customTopics[INF] === null) && !baseDiscs.includes(INF) && !customDiscs.includes(INF);
+  const discNames = [...baseDiscs, ...customDiscs, ...(infVisible ? [INF] : [])];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
   list.innerHTML = discNames.map((disc, di) => {
