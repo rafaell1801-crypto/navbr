@@ -253,11 +253,30 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .content-disc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
 .content-disc-header.open{border-bottom:1px solid var(--border)}
 .content-disc-title{font-size:13px;font-weight:700;flex:1}
+.content-disc-title-link{font-size:13px;font-weight:700;flex:1;color:#c8e6f0;text-decoration:none;transition:color .15s}
+.content-disc-title-link:hover{color:var(--accent)}
 .content-disc-meta{font-size:11px;color:var(--muted)}
 .content-disc-chevron{font-size:12px;color:var(--muted);transition:transform .2s}
 .content-disc-chevron.open{transform:rotate(180deg)}
 .content-disc-body{display:none;flex-direction:column}
 .content-disc-body.open{display:flex}
+/* Conhecimentos Específicos — bloco pai */
+.esp-parent-block{background:#09101e;border:1px solid #2a1f6e;border-radius:var(--radius);overflow:hidden;margin-bottom:0}
+.esp-parent-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid #2a1f6e;background:#0d1230}
+.esp-parent-title{font-size:13px;font-weight:700;flex:1;color:#b8a4f0}
+.esp-parent-chevron{font-size:12px;color:#8b6be8;transition:transform .2s}
+.esp-parent-chevron.open{transform:rotate(180deg)}
+.esp-parent-body{display:none;padding:10px 14px;gap:6px}
+.esp-parent-body.open{display:flex!important;flex-wrap:wrap;flex-direction:row}
+/* Pills das matérias dentro de CE */
+.esp-pill-block{display:flex;flex-direction:column;overflow:hidden;border-radius:8px}
+.esp-pill{display:inline-flex;align-items:center;padding:6px 12px;border-radius:20px;background:rgba(139,107,232,.12);cursor:pointer;transition:background .15s;user-select:none}
+.esp-pill:hover{background:rgba(139,107,232,.25)}
+.esp-pill-name{font-size:12px;font-weight:600;color:#c8b8f0;text-decoration:none;transition:color .15s}
+.esp-pill-name:hover{color:#fff}
+.esp-pill-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;margin-right:6px}
+.esp-pill-topics{display:none;flex-direction:column;background:#070d1a;border-top:1px solid #2a1f6e;padding:0}
+.esp-pill-topics.open{display:flex}
 .content-topic-row{display:flex;align-items:center;gap:6px;padding:7px 14px;border-bottom:.5px solid var(--border);flex-wrap:nowrap}
 .content-topic-row:last-child{border-bottom:none}
 .content-topic-row.deleted{opacity:.4}
@@ -3242,15 +3261,17 @@ function renderContent() {
   const discNames = [...baseDiscs, ...customDiscs, ...(infVisible ? [INF] : [])];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
-  list.innerHTML = discNames.map((disc, di) => {
+  const ESP_CURSOS = new Set((CICLO_GRUPOS.find(g=>g.key==='esp')?.cursos) || []);
+  const espDiscs = discNames.filter(d => ESP_CURSOS.has(d));
+  const regularDiscs = discNames.filter(d => !ESP_CURSOS.has(d));
+
+  function buildDiscBlock(disc, di) {
     const topics = getDiscTopics(disc);
     const c = CORES[disc] || '#888';
-    const active = topics.filter(t => !t.deleted).length;
     const filtered = (q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : [...topics])
       .sort((a,b)=>(topicFreq[b.id]||0)-(topicFreq[a.id]||0));
     if (q && filtered.length === 0) return '';
-    const isCustomDisc = !baseDiscs.includes(disc);
-    const rows = filtered.map((t, ti) => {
+    const rows = filtered.map((t) => {
       const realIdx = topics.indexOf(t);
       const done = !t.deleted && isDone(t.id);
       const freqVal=topicFreq[t.id]||'';
@@ -3279,10 +3300,13 @@ function renderContent() {
       </div>`;
     }).join('');
     const curLink=(DISC_LINKS[disc]||'').replace(/"/g,'&quot;');
+    const nameHtml = curLink
+      ? `<a class="content-disc-title-link" href="${curLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${disc}</a>`
+      : `<span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>`;
     return `<div class="content-disc-block">
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
-        <span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>
+        ${nameHtml}
         <button onclick="event.stopPropagation();_discMenu('${disc.replace(/'/g,"\\'")}',this)" title="Opções da disciplina" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
@@ -3307,7 +3331,42 @@ function renderContent() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  }
+
+  const regularHtml = regularDiscs.map((disc, i) => buildDiscBlock(disc, i)).join('');
+
+  let espHtml = '';
+  if (!q || 'conhecimentos específicos'.includes(q) || espDiscs.some(d => d.toLowerCase().includes(q))) {
+    const pills = espDiscs.map(disc => {
+      const c = CORES[disc] || '#8b6be8';
+      const url = DISC_LINKS[disc] || '';
+      const escapedDisc = disc.replace(/"/g,'&quot;').replace(/'/g,"\\'");
+      if (url) {
+        return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="esp-pill" title="${disc.replace(/"/g,'&quot;')}">
+          <span class="esp-pill-dot" style="background:${c}"></span>
+          <span class="esp-pill-name">${disc}</span>
+        </a>`;
+      }
+      return `<div class="esp-pill">
+        <span class="esp-pill-dot" style="background:${c}"></span>
+        <span class="esp-pill-name">${disc}</span>
+      </div>`;
+    }).join('');
+    if (pills) {
+      espHtml = `<div class="esp-parent-block">
+        <div class="esp-parent-header" onclick="toggleEspBlock()">
+          <span style="width:12px;height:12px;border-radius:3px;background:#8b6be8;display:inline-block;flex-shrink:0"></span>
+          <span class="esp-parent-title">Conhecimentos Específicos</span>
+          <span class="esp-parent-chevron" id="chev-esp">▾</span>
+        </div>
+        <div class="esp-parent-body content-disc-body" id="cdb-esp">
+          ${pills}
+        </div>
+      </div>`;
+    }
+  }
+
+  list.innerHTML = regularHtml + espHtml;
   populateBulkDiscSelect();
 }
 
@@ -3423,6 +3482,14 @@ function toggleDiscBlock(di) {
   if (!body) return;
   const open = body.classList.toggle('open');
   chev.classList.toggle('open', open);
+}
+
+function toggleEspBlock() {
+  const body = document.getElementById('cdb-esp');
+  const chev = document.getElementById('chev-esp');
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open', open);
 }
 
 function ensureCustom(disc) {
