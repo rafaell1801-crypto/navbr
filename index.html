@@ -497,7 +497,14 @@ input[type=number]{-moz-appearance:textfield}
     <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
+  <div class="subtabs" style="padding:6px 20px 0">
+    <button class="subtab active" id="cst-topicos" onclick="showCicloSub('topicos')">Tópicos</button>
+    <button class="subtab" id="cst-hoje" onclick="showCicloSub('hoje')">Fazer hoje</button>
+    <button class="subtab" id="cst-proximos" onclick="showCicloSub('proximos')">Próximos dias</button>
+  </div>
   <div class="days-list" id="ciclo-list"></div>
+  <div class="days-list hidden" id="ciclo-hoje"></div>
+  <div class="days-list hidden" id="ciclo-proximos"></div>
 </div>
 
 <!-- TAB REVISÕES -->
@@ -1185,11 +1192,28 @@ function getQuestoesTotals(filterFn){
 }
 function renderQuestoesStatsCard(){
   const el=document.getElementById('q-stats-content');if(!el)return;
-  const tot=getQuestoesTotals();
-  const header=tot.t>0
-    ? `<div onclick="document.getElementById('q-stats-detail').classList.toggle('hidden');this.querySelector('.q-stats-chev').textContent=document.getElementById('q-stats-detail').classList.contains('hidden')?'▾':'▴';" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border)"><span style="font-size:24px;font-weight:700;color:#fff">${tot.pct}%</span><span style="font-size:12px;color:var(--muted)">${tot.a}/${tot.t} acertos</span><span class="q-stats-chev" style="margin-left:auto;color:var(--muted)">▾</span></div>`
-    : `<div style="padding:10px 4px;font-size:12px;color:var(--muted)">Sem dados ainda. Adicione acertos nos tópicos do Ciclo ou Revisões.</div>`;
-  el.innerHTML=`${header}<div id="q-stats-detail" class="hidden" style="padding-top:8px">${tot.t>0?buildQuestoesDrillHTML():''}</div>`;
+  // Usa cicloQState (feitas/acertos por grupo) em vez de questoesState por tópico
+  let totF=0,totA=0;
+  const gruposComDados=CICLO_GRUPOS.map(g=>{
+    const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};
+    const f=s.feitas||g.quota,a=s.acertos||0;
+    totF+=f;totA+=a;
+    return {...g,f,a,pct:f>0?Math.round(a/f*100):0};
+  });
+  const pctGlobal=totF>0?Math.round(totA/totF*100):null;
+  if(pctGlobal===null){el.innerHTML=`<div style="padding:10px 4px;font-size:12px;color:var(--muted)">Registre acertos no Ciclo para ver as estatísticas.</div>`;return;}
+  const header=`<div onclick="document.getElementById('q-stats-detail').classList.toggle('hidden');this.querySelector('.q-stats-chev').textContent=document.getElementById('q-stats-detail').classList.contains('hidden')?'▾':'▴';" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border)"><span style="font-size:24px;font-weight:700;color:#fff">${pctGlobal}%</span><span style="font-size:12px;color:var(--muted)">${totA}/${totF} acertos</span><span class="q-stats-chev" style="margin-left:auto;color:var(--muted)">▾</span></div>`;
+  const rows=gruposComDados.map(g=>{
+    const c=g.cor;
+    const pctColor=g.pct>=70?'var(--success)':g.pct>=50?'var(--warn)':'var(--danger)';
+    return `<div class="q-disc-row" style="cursor:default">
+      <span style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="flex:1;font-size:12px;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.nome}</span>
+      <strong style="color:${pctColor};font-size:13px">${g.pct}%</strong>
+      <span style="color:var(--muted);font-size:11px">${g.a}/${g.f}</span>
+    </div>`;
+  }).join('');
+  el.innerHTML=`${header}<div id="q-stats-detail" class="hidden" style="padding-top:8px">${rows}</div>`;
 }
 
 function renderQuestoesBanner(){
@@ -2243,6 +2267,68 @@ function _updateCicloQStat(){
 function toggleCiclo(key){
   const el=document.getElementById('ciclo-g-'+key);
   if(el)el.classList.toggle('open');
+}
+
+// ── CICLO DIÁRIO — subtabs Hoje / Próximos ─────────────────────────────────
+let cicloDiarioState={};  // {'2026-06-23': {lp:true, rlm:false, ...}}
+const CICLO_FIM=new Date(2026,7,2); // 02/08/2026
+function cicloDiarioLoad(){try{const s=localStorage.getItem('ciclo_diario');if(s)cicloDiarioState=JSON.parse(s);}catch{}}
+function cicloDiarioSave(){try{localStorage.setItem('ciclo_diario',JSON.stringify(cicloDiarioState));}catch{}}
+function cicloDiarioToggle(dateStr,key){
+  if(!cicloDiarioState[dateStr])cicloDiarioState[dateStr]={};
+  cicloDiarioState[dateStr][key]=!cicloDiarioState[dateStr][key];
+  cicloDiarioSave();
+  renderCicloDiario();
+}
+function _dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _fmtDate(d){const wd=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];return wd[d.getDay()]+', '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
+function buildCicloDayCard(d,isToday){
+  const ds=_dateStr(d);
+  const st=cicloDiarioState[ds]||{};
+  const allDone=CICLO_GRUPOS.every(g=>st[g.key]);
+  const doneCount=CICLO_GRUPOS.filter(g=>st[g.key]).length;
+  const label=isToday?'<span style="font-size:10px;font-weight:700;background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px">Hoje</span>':
+    allDone?'<span style="font-size:10px;font-weight:700;background:var(--success);color:#fff;border-radius:99px;padding:1px 7px;margin-left:6px">✓</span>':'';
+  const rows=CICLO_GRUPOS.map(g=>{
+    const done=!!st[g.key];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border)">
+      <div class="check-btn ${done?'checked':''}" onclick="cicloDiarioToggle('${ds}','${g.key}')" style="flex-shrink:0">${chkIcon()}</div>
+      <span style="flex:1;font-size:13px;${done?'opacity:.4':''}"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${g.cor};margin-right:6px;vertical-align:middle"></span>${g.nome}</span>
+      <span style="font-size:11px;color:var(--muted);flex-shrink:0">${g.quota} q</span>
+    </div>`;
+  }).join('');
+  return `<div style="border:1px solid var(--border);border-left:3px solid ${allDone?'var(--success)':isToday?'var(--accent)':'var(--border)'};border-radius:10px;background:var(--surface);margin-bottom:6px;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <span style="font-size:13px;font-weight:700;color:var(--text)">${_fmtDate(d)}${label}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">${doneCount}/${CICLO_GRUPOS.length}</span>
+    </div>
+    ${rows}
+  </div>`;
+}
+function renderCicloDiario(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const hojeFut=new Date(CICLO_FIM);
+  const hojeEl=document.getElementById('ciclo-hoje');
+  const proxEl=document.getElementById('ciclo-proximos');
+  if(hojeEl)hojeEl.innerHTML=buildCicloDayCard(hoje,true);
+  if(proxEl){
+    const dias=[];
+    const d=new Date(hoje);d.setDate(d.getDate()+1);
+    while(d<=hojeFut){dias.push(new Date(d));d.setDate(d.getDate()+1);}
+    proxEl.innerHTML=dias.length
+      ?dias.map(dt=>buildCicloDayCard(dt,false)).join('')
+      :'<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Chegou ao fim do ciclo! 🎉</div>';
+  }
+}
+let _cicloSubAtual='topicos';
+function showCicloSub(s){
+  _cicloSubAtual=s;
+  ['topicos','hoje','proximos'].forEach(k=>{
+    const listId=k==='topicos'?'ciclo-list':'ciclo-'+k;
+    const el=document.getElementById(listId);if(el)el.classList.toggle('hidden',k!==s);
+    const btn=document.getElementById('cst-'+k);if(btn)btn.classList.toggle('active',k===s);
+  });
+  if(s==='hoje'||s==='proximos')renderCicloDiario();
 }
 const CICLO_GRUPOS=[
   {key:'lp',nome:'Língua Portuguesa',quota:20,cor:'#e8843a',cursos:['Língua Portuguesa']},
@@ -4852,7 +4938,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
+cicloQLoad();cicloDiarioLoad();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
