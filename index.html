@@ -497,9 +497,10 @@ input[type=number]{-moz-appearance:textfield}
     <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
     <div class="late-body hidden" id="late-body"></div>
   </div>
-  <div class="subtabs" style="padding:6px 20px 0">
+  <div class="subtabs" style="padding:6px 20px 0;display:flex;align-items:center">
     <button class="subtab active" id="cst-topicos" onclick="showCicloSub('topicos')">Fazer hoje</button>
     <button class="subtab" id="cst-proximos" onclick="showCicloSub('proximos')">Próximos dias</button>
+    <span style="margin-left:auto;font-size:18px;font-weight:700;color:#2dd4a0;opacity:.25;padding-right:4px;line-height:1">✓</span>
   </div>
   <div class="days-list" id="ciclo-list"></div>
   <div class="days-list hidden" id="ciclo-proximos"></div>
