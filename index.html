@@ -1185,11 +1185,11 @@ function getQuestoesTotals(filterFn){
 }
 function renderQuestoesStatsCard(){
   const el=document.getElementById('q-stats-content');if(!el)return;
-  // Usa cicloQState (feitas/acertos por grupo) em vez de questoesState por tópico
+  // Usa histórico acumulado + hoje
   let totF=0,totA=0;
+  const agg=cicloQAggregateTotals();
   const gruposComDados=CICLO_GRUPOS.map(g=>{
-    const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};
-    const f=s.feitas||g.quota,a=s.acertos||0;
+    const f=agg[g.key].feitas||g.quota,a=agg[g.key].acertos||0;
     totF+=f;totA+=a;
     return {...g,f,a,pct:f>0?Math.round(a/f*100):0};
   });
@@ -2239,8 +2239,28 @@ function compactDriveHTML(disc){
 
 // ── CICLO DIÁRIO POR DISCIPLINA ────────────────────────────────────────────
 let cicloQState={};
+let cicloQHistory={};  // {'2026-06-23': {lp:{feitas,acertos}, ...}}
 function cicloQLoad(){try{const s=localStorage.getItem('ciclo_q');if(s)cicloQState=JSON.parse(s);}catch{}}
 function cicloQSave(){try{localStorage.setItem('ciclo_q',JSON.stringify(cicloQState));}catch{}}
+function cicloQHistoryLoad(){try{const s=localStorage.getItem('ciclo_q_hist');if(s)cicloQHistory=JSON.parse(s);}catch{}}
+function cicloQHistorySave(){try{localStorage.setItem('ciclo_q_hist',JSON.stringify(cicloQHistory));}catch{}}
+function cicloQAggregateTotals(){
+  const result={};
+  CICLO_GRUPOS.forEach(g=>{result[g.key]={feitas:0,acertos:0};});
+  Object.values(cicloQHistory).forEach(day=>{
+    CICLO_GRUPOS.forEach(g=>{
+      const s=typeof day[g.key]==='object'?day[g.key]:{feitas:0,acertos:0};
+      result[g.key].feitas+=s.feitas||0;
+      result[g.key].acertos+=s.acertos||0;
+    });
+  });
+  CICLO_GRUPOS.forEach(g=>{
+    const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};
+    result[g.key].feitas+=s.feitas||0;
+    result[g.key].acertos+=s.acertos||0;
+  });
+  return result;
+}
 function cicloQTotal(){return Object.values(cicloQState).reduce((a,b)=>a+(typeof b==='object'?b.feitas||0:b||0),0);}
 function cicloQSet(key,field,val){
   if(!cicloQState[key]||typeof cicloQState[key]!=='object')cicloQState[key]={feitas:0,acertos:0};
@@ -2258,7 +2278,8 @@ function _updateCicloQStat(){
   if(cqEl){const tot=cicloQTotal(),meta=70;cqEl.textContent=tot>0?`${tot}/70`:'70';cqEl.style.color=tot>=meta?'var(--success)':tot>0?'#f5a623':'var(--muted)';}
   // atualiza % Acertos na barra do timer
   let totA=0,totF=0;
-  CICLO_GRUPOS.forEach(g=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};totF+=s.feitas||g.quota;totA+=s.acertos||0;});
+  const _agg=cicloQAggregateTotals();
+  CICLO_GRUPOS.forEach(g=>{totF+=_agg[g.key].feitas||g.quota;totA+=_agg[g.key].acertos||0;});
   const acEl=document.getElementById('s-week-acertos');
   if(acEl){const pct=totF>0&&totA>0?Math.round(totA/totF*100):null;acEl.textContent=pct!==null?pct+'%':'–';acEl.style.color=pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';}
   renderQuestoesStatsCard();
@@ -2280,6 +2301,11 @@ function cicloQDailyReset(){
   const key=_cicloDateKey();
   const last=localStorage.getItem('ciclo_q_date');
   if(last!==key){
+    // arquivar dia anterior no histórico antes de zerar
+    if(last&&Object.keys(cicloQState).length>0){
+      cicloQHistory[last]=JSON.parse(JSON.stringify(cicloQState));
+      cicloQHistorySave();
+    }
     cicloQState={};
     cicloQSave();
     localStorage.setItem('ciclo_q_date',key);
@@ -2478,7 +2504,7 @@ function render(){
     const {a:wA,t:wT}=getQuestoesTotals(id=>weekIds.has(id));
     const {pct:allPct,t:allT}=getQuestoesTotals();
     // % Acertos do timer: usa cicloQState (dados do Ciclo) em vez de questoesState
-    const {totA:cA,totF:cF}=(()=>{let totA=0,totF=0;CICLO_GRUPOS.forEach(g=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:0,acertos:0};totF+=s.feitas||g.quota;totA+=s.acertos||0;});return{totA,totF};})();
+    const {totA:cA,totF:cF}=(()=>{const agg=cicloQAggregateTotals();let totA=0,totF=0;CICLO_GRUPOS.forEach(g=>{totF+=agg[g.key].feitas||g.quota;totA+=agg[g.key].acertos||0;});return{totA,totF};})();
     const wPct=cF>0&&cA>0?Math.round(cA/cF*100):(wT>0?Math.round(wA/wT*100):(allT>0?allPct:null));
     const el=n=>document.getElementById(n);
     if(el('s-week-total'))el('s-week-total').textContent=weekItems.length;
@@ -4902,7 +4928,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
