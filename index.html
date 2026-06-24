@@ -770,7 +770,7 @@ const RLM='Raciocínio Lógico e Matemático',ADM='Administração',NDA='Noçõe
 const NDC='Noções de Direito Constitucional',ORC='Orçamento Público e Análise Financeira';
 const NEI='Noções de Ética e Integridade',TEA='Teoria Econômica Aplicada';
 const GES='Gestão de Suprimentos',MAT='Matemática Financeira';
-const LP='Língua Portuguesa';
+const LP='Língua Portuguesa',INF='Informática';
 const raw=[
 // NAV Brasil — 35 dias
 [0,B1,NDC,'Constituição da República Federativa do Brasil de 1988'],[0,B2,RLM,'Estruturas Lógicas I'],[0,B3,ADM,'Funções administrativas: planejamento, organização, direção e controle (PODC)'],[0,B4,ORC,'O orçamento público no Brasil. Plano plurianual. Diretrizes orçamentárias. Orçamento anual. Outros planos e programas'],
@@ -816,7 +816,7 @@ const ps=a.length;
 for(let d=0;d<35;d++)a.push({id:ps+d,data:dates[d],dia_idx:d,bloco:BP,disc:LP,topico:'Aprofundamento',grupo:5,port:true});
 return a;
 })()
-const CORES={"Raciocínio Lógico e Matemático": "#4d9de0", "Noções de Direito Administrativo": "#e8703a", "Noções de Direito Constitucional": "#4caf7d", "Noções de Ética e Integridade": "#b06ee8", "Administração": "#3ab5e8", "Gestão de Suprimentos": "#e8a23a", "Orçamento Público e Análise Financeira": "#3ab5c8", "Teoria Econômica Aplicada": "#8b6be8", "Matemática Financeira": "#4ccc7a", "Língua Portuguesa": "#e8843a"};
+const CORES={"Raciocínio Lógico e Matemático": "#4d9de0", "Noções de Direito Administrativo": "#e8703a", "Noções de Direito Constitucional": "#4caf7d", "Noções de Ética e Integridade": "#b06ee8", "Administração": "#3ab5e8", "Gestão de Suprimentos": "#e8a23a", "Orçamento Público e Análise Financeira": "#3ab5c8", "Teoria Econômica Aplicada": "#8b6be8", "Matemática Financeira": "#4ccc7a", "Língua Portuguesa": "#e8843a", "Informática": "#3ab5c8"};
 // ── Cadernos de questões ──────────────────────────────────────────────────────
 let cadernosState = {};
 let resumosState = {};
@@ -948,6 +948,27 @@ const MOTIVACOES={
 "41": {"frase": "\"Quem tem um porquê suporta qualquer como.\" – Friedrich Nietzsche", "mensagem": "Lembre hoje do porquê você quer ser aprovado na NAV Brasil. Não a resposta genérica — a verdadeira, a que te move por dentro. Deixe ela te conduzir pelos blocos de hoje."},
 "42": {"frase": "\"Grandes realizações não são feitas por impulso, mas por uma soma de pequenas conquistas.\" – Vincent van Gogh", "mensagem": "Dez dias. Você está um terço do caminho. Cada tópico marcado é uma conquista real — não virtual, não futura. Real, agora, hoje. Continue somando."},
 "43": {"frase": "\"O futuro pertence àqueles que acreditam na beleza de seus sonhos.\" – Eleanor Roosevelt", "mensagem": "A procrastinação rouba sonhos devagar, sem você perceber. Você percebeu. E decidiu não deixar. Cada dia que você abre esse plano é um ato de fé em quem você está se tornando."}};
+const INF_TOPICOS=[
+  {id:175,disc:INF,topico:'Internet: conceitos e características gerais',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:176,disc:INF,topico:'Navegação com Microsoft Edge: interface, perfis corporativos, favoritos, coleções, formatos de imagem, downloads e uploads',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:177,disc:INF,topico:'Mecanismos de busca',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:178,disc:INF,topico:'Microsoft Outlook: e-mails, organização de pastas, calendário e boas práticas de segurança',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:179,disc:INF,topico:'Segurança Digital: autenticação multifator (MFA) e senhas seguras',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:180,disc:INF,topico:'Golpes virtuais e phishing',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:181,disc:INF,topico:'Noções de antivírus',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:182,disc:INF,topico:'Microsoft Excel: planilhas, fórmulas básicas, gráficos e colaboração na nuvem',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:183,disc:INF,topico:'Microsoft Word: documentos, formatação, tabelas e edição colaborativa (Word 365)',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:184,disc:INF,topico:'Microsoft PowerPoint: apresentações, imagens, formas e edição colaborativa online',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:185,disc:INF,topico:'Microsoft Teams: chat, reuniões, arquivos e documentos colaborativos',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:186,disc:INF,topico:'Microsoft Copilot: noções de IA generativa no M365, auxílio em textos/e-mails/planilhas/apresentações e boas práticas',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:187,disc:INF,topico:'Microsoft 365: conceitos gerais, nuvem, colaboração em tempo real e integração entre apps',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:188,disc:INF,topico:'Microsoft OneDrive e SharePoint: armazenamento, sincronização, compartilhamento e edição online',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:189,disc:INF,topico:'Sistema Operacional e Windows 10: área de trabalho, janelas, ícones, atalhos, arquivos e Lixeira',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:190,disc:INF,topico:'Windows 11',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:191,disc:INF,topico:'Hardware: CPU, RAM, cache, armazenamento (HD/SSD), dispositivos de E/S, conectores e portas',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:192,disc:INF,topico:'Software: conceitos básicos',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+  {id:193,disc:INF,topico:'Noções de Inteligência Artificial: conceitos, exemplos, aprendizado de máquina, uso no trabalho, ética e impactos',inf:true,grupo:6,port:false,bloco:'',data:'',dia_idx:-1},
+];
 const TOTAL_MAIN=140, TOTAL_IDS=175, TOTAL_DIAS=35;
 const BLOCOS_DIA=4, BLOCK_SECS=4800;
 function getBlockSecs(){try{const v=parseInt(localStorage.getItem('nav_timer_secs'));return v>0?v:BLOCK_SECS;}catch{return BLOCK_SECS;}}
@@ -2335,7 +2356,7 @@ function cicloQDailyReset(){
 const CICLO_GRUPOS=[
   {key:'lp',nome:'Língua Portuguesa',quota:20,cor:'#e8843a',cursos:['Língua Portuguesa']},
   {key:'rlm',nome:'Raciocínio Lógico-Matemático (RLM)',quota:8,cor:'#4d9de0',cursos:['Raciocínio Lógico e Matemático']},
-  {key:'inf',nome:'Informática',quota:5,cor:'#3ab5c8',cursos:[]},
+  {key:'inf',nome:'Informática',quota:5,cor:'#3ab5c8',cursos:['Informática']},
   {key:'leg',nome:'Legislação',quota:7,cor:'#4caf7d',sub:'Noções de Direito Constitucional, Direito Administrativo e Noções de Ética',cursos:['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']},
   {key:'esp',nome:'Conhecimentos específicos',quota:30,cor:'#8b6be8',sub:'Administração, Teoria Econômica, Orçamento Público, Licitações/Contratos e Suprimentos, Matemática Financeira',cursos:['Administração','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira','Gestão de Suprimentos','Licitações e Contratos','Matemática Financeira']},
 ];
@@ -2386,7 +2407,7 @@ function cicloRowHTML(item){
 }
 function buildCicloHTML(){
   const agenda=getEffectiveAgenda();
-  const byG={lp:[],rlm:[],inf:[],leg:[],esp:[]};
+  const byG={lp:[],rlm:[],inf:[...INF_TOPICOS],leg:[],esp:[]};
   agenda.forEach(it=>{const g=cicloGrupoOf(it);(byG[g]||byG.esp).push(it);});
   return CICLO_GRUPOS.map(g=>{
     // dedup por texto do tópico, preferindo o id que já tem link cadastrado
@@ -2418,11 +2439,11 @@ function buildCicloHTML(){
           </div>
         </div>
 ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=(g.cursos||[]).map(c=>DISC_CADERNOS[c]).find(Boolean)||DISC_CADERNOS[g.nome]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;flex-shrink:0">
+          <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-shrink:0">
           ${cadUrl
-            ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#0f2a10;border:1.5px solid #2a6a30;text-decoration:none;flex-shrink:0;font-size:15px;transition:background .15s" onmouseover="this.style.background='#1a4a20'" onmouseout="this.style.background='#0f2a10'">🔑</a>`
-            :`<span title="Caderno não cadastrado — adicione na aba Tópicos" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:transparent;border:1.5px solid #2a3a4a;flex-shrink:0;font-size:15px;opacity:.35;cursor:default">🔑</span>`}
-          <div class="ciclo-quota" style="cursor:default"><b>${g.quota}</b> q/dia</div>
+            ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1">🔑</a>`
+            :`<span title="Caderno não cadastrado — adicione na aba Tópicos" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.3;cursor:default">🔑</span>`}
+          <div class="ciclo-quota" style="cursor:default;min-width:60px"><b>${g.quota}</b> q/dia</div>
           </div>
           <div class="ciclo-q-block">
             <div class="ciclo-q-field">
@@ -3125,6 +3146,7 @@ function getDiscTopics(disc) {
   if (customTopics && customTopics[disc] !== undefined) {
     return Array.isArray(customTopics[disc]) ? customTopics[disc] : []; // null = deleted
   }
+  if (disc === INF) return INF_TOPICOS.map(i => ({id: i.id, topico: i.topico, deleted: false}));
   return AGENDA.filter(i => i.disc === disc && !i.port).map(i => ({id: i.id, topico: i.topico, deleted: false}));
 }
 
