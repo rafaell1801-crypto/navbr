@@ -5981,7 +5981,8 @@ function orgDiscChange(id,field,val){
     d[field]=val;
     renderOrgPrioridade();
   } else {
-    d[field]=val;
+    d[field]=field==='sqN'||field==='simN'?parseInt(val)||1:val;
+    if(field==='sqN'||field==='simN')renderOrgDiscs(); // re-renderiza pra mostrar novo valor
   }
   _scheduleOrgSave();
 }
@@ -6110,12 +6111,16 @@ function renderOrgDiscs(){
                 <div style="border-left:2px solid #c4b5fd;padding-left:8px;margin-bottom:10px">
                   <div style="font-size:9px;color:#c4b5fd;font-weight:700;letter-spacing:.5px;margin-bottom:5px">FINAL/DISC. · tpd=${_discTpd(d)||'global'}</div>
                   <div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">
-                    ${[..._FINAL_FMT,...(d.fmtFinalCustom||[])].map(f=>{
-                      const sel=fmtFinal.includes(f);
-                      if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?'<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},\'sqN\',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×':''}</span>`;
-                      if(f==='Simulado'){const simN=parseInt(d.simN)||1;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?'<input type="number" min="1" max="9" value="${simN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},\'simN\',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×':''}` + '</span>';}
-                      return chip(f,'Final',sel);
-                    }).join('')}
+                    ${(()=>{
+                      const qInpStyle='width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield';
+                      const spanStyle=(sel)=>`display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none`;
+                      return[..._FINAL_FMT,...(d.fmtFinalCustom||[])].map(f=>{
+                        const sel=fmtFinal.includes(f);
+                        if(f==='SQ') return`<span style="${spanStyle(sel)}" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="${qInpStyle}">×`:''}</span>`;
+                        if(f==='Simulado'){const simN2=parseInt(d.simN)||1;return`<span style="${spanStyle(sel)}" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?`<input type="number" min="1" max="9" value="${simN2}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'simN',this.value)" style="${qInpStyle}">×`:''}</span>`;}
+                        return chip(f,'Final',sel);
+                      }).join('');
+                    })()}
                     <input onkeydown="if(event.key==='Enter'&&this.value.trim()){orgAddCustomFmt(${d.id},'Final',this.value.trim());this.value='';}" placeholder="+ formato" style="width:70px;background:transparent;border:none;border-bottom:1px dashed rgba(196,181,253,.4);color:#c4b5fd;font-size:10px;font-family:inherit;outline:none;padding:1px 3px">
                   </div>
                 </div>
