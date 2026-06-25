@@ -6022,98 +6022,162 @@ function renderOrgDiscs(){
   renderOrgPrioridade();
 }
 
-function _orgPriScoreDiscs(discs,grupo){
-  const numStyle='width:40px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
-  const gDiscs=discs.filter(d=>(d.grupo||'basicos')===grupo);
-  const totalQGrupo=gDiscs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
-  const scored=gDiscs.map(d=>{
-    const q=parseInt(d.q)||0;const p=parseInt(d.p)||0;const a=Math.max(1,d.aulas||1);
-    const density=q/a;const score=Math.round(density*p*100)/100;
-    return{d,q,p,a:d.aulas||0,density,score};
-  }).sort((a,b)=>b.score-a.score||b.density-a.density||b.q-a.q||(a.d.nome||'').localeCompare(b.d.nome||''));
-  return{scored,totalQGrupo,numStyle};
-}
 function renderOrgPrioridade(){
   const el=document.getElementById('org-prioridade-wrap');if(!el)return;
   const t=orgTrilhaAtual;
   const discs=(t&&t.disciplinas)||[];
   if(!discs.length){el.innerHTML='';return;}
 
-  const grCols='20px 1fr 40px 40px 46px 46px 70px';
-  const grHead=`<div style="display:grid;grid-template-columns:${grCols};gap:4px;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:2px">
-    <div></div>
-    <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Disciplina</div>
-    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q</div>
-    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
-    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:right">Q/aula</div>
-    <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
-    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grupo</div>
-  </div>`;
-
-  const makeRows=(scored,numStyle)=>scored.map(({d,q,p,a,density,score},rank)=>{
-    const hasData=q>0&&p>0;
-    const densStr=a>0&&q>0?(q/Math.max(1,a)).toFixed(2):'—';
-    const grpVal=d.grupo||'basicos';
-    return`<div style="display:grid;grid-template-columns:${grCols};gap:4px;align-items:center;padding:6px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank+1}</div>
-      <div style="min-width:0">
-        <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)||'(sem nome)'}</div>
-        <div style="font-size:10px;color:var(--muted)">${a} aulas</div>
-      </div>
-      <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${numStyle}"></div>
-      <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${numStyle}"></div>
-      <div style="text-align:right;font-size:11px;color:var(--muted)">${densStr}</div>
-      <div style="text-align:right;font-size:13px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'}">${hasData?score.toFixed(2):'—'}</div>
-      <div style="text-align:center">
-        <select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px 3px;outline:none">
-          <option value="basicos" ${grpVal==='basicos'?'selected':''}>Básicos</option>
-          <option value="especificos" ${grpVal==='especificos'?'selected':''}>Específicos</option>
-        </select>
-      </div>
-    </div>`;
-  }).join('');
-
-  const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
-  const {scored:sb,totalQGrupo:tqb,numStyle}=_orgPriScoreDiscs(discs,'basicos');
-  const {scored:se,totalQGrupo:tqe}=_orgPriScoreDiscs(discs,'especificos');
   const priCfg=t.priCfg||{};
   const qTotalB=parseInt(priCfg.qTotalB)||0;
   const qTotalE=parseInt(priCfg.qTotalE)||0;
   const pesoB=parseInt(priCfg.pesoB)||1;
   const pesoE=parseInt(priCfg.pesoE)||2;
-  const qnStyle='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
+  const ns='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
+  const cols='20px 1fr 38px 38px 44px 44px 38px 90px';
 
-  const grpBlock=(titulo,cor,scored,tqg,grKey,qTotal,pesoGrp)=>{
-    const qRestante=qTotal-tqg;
-    const statusQ=qTotal>0?(tqg===qTotal?`<span style="color:rgba(45,212,160,.6);font-size:10px">✓ ${tqg}/${qTotal}</span>`:`<span style="color:${qRestante>0?'var(--warn)':'var(--danger)'};font-size:10px">${tqg}/${qTotal} (${qRestante>0?'faltam '+qRestante:Math.abs(qRestante)+' a mais'})</span>`):'';
+  // Q efetiva: se disciplina tem subgrupo, usa Q do subgrupo ÷ aulas do subgrupo × aulas próprias
+  function qEfetiva(d,allDiscs){
+    const sg=d.subgrupo&&d.subgrupo.trim();
+    if(!sg)return parseInt(d.q)||0;
+    const qSg=parseInt((priCfg.subgrupos&&priCfg.subgrupos[sg]&&priCfg.subgrupos[sg].q)||0);
+    if(!qSg)return 0;
+    const sgDiscs=allDiscs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===(d.grupo||'basicos'));
+    const totalAulas=sgDiscs.reduce((a,x)=>a+Math.max(1,x.aulas||1),0);
+    return Math.round(qSg*Math.max(1,d.aulas||1)/totalAulas*100)/100;
+  }
+
+  function makeGroupRows(gDiscs){
+    // separar individuais e por subgrupo
+    const sgs={};
+    gDiscs.forEach(d=>{
+      const sg=(d.subgrupo||'').trim();
+      if(sg){if(!sgs[sg])sgs[sg]=[];sgs[sg].push(d);}
+    });
+    const individuais=gDiscs.filter(d=>!(d.subgrupo||'').trim());
+    let rank=0;
+    let html='';
+
+    // individuais scored
+    const indScored=individuais.map(d=>{
+      const q=parseInt(d.q)||0;const p=parseInt(d.p)||1;const a=Math.max(1,d.aulas||1);
+      return{d,q,p,a,score:Math.round(q/a*p*100)/100};
+    }).sort((a,b)=>b.score-a.score||(a.d.nome||'').localeCompare(b.d.nome||''));
+
+    indScored.forEach(({d,q,p,a,score})=>{
+      rank++;
+      const hasData=q>0&&p>0;
+      const grpVal=d.grupo||'basicos';
+      html+=`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:5px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank}</div>
+        <div style="min-width:0">
+          <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
+          <div style="font-size:9px;color:var(--muted)">${a} aulas</div>
+        </div>
+        <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${ns}"></div>
+        <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${ns}"></div>
+        <div style="text-align:right;font-size:11px;color:var(--muted)">${q&&a?(q/a).toFixed(2):'—'}</div>
+        <div style="text-align:right;font-size:12px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'}">${hasData?score.toFixed(2):'—'}</div>
+        <div></div>
+        <div><select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px;outline:none">
+          <option value="basicos" ${grpVal==='basicos'?'selected':''}>Básicos</option>
+          <option value="especificos" ${grpVal==='especificos'?'selected':''}>Específicos</option>
+        </select></div>
+      </div>`;
+    });
+
+    // subgrupos
+    Object.entries(sgs).forEach(([sg,sgDiscs])=>{
+      const qSg=parseInt((priCfg.subgrupos&&priCfg.subgrupos[sg]&&priCfg.subgrupos[sg].q)||0);
+      const totalAulasSg=sgDiscs.reduce((a,d)=>a+Math.max(1,d.aulas||1),0);
+      rank++;
+      html+=`<div style="margin:4px 0 2px;background:rgba(196,181,253,.05);border:1px solid rgba(196,181,253,.2);border-radius:7px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(196,181,253,.08);border-bottom:1px solid rgba(196,181,253,.15)">
+          <span style="font-size:9px;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:.4px">Subgrupo: ${_esc(sg)}</span>
+          <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+            <span style="font-size:9px;color:var(--muted)">Q total compartilhado:</span>
+            <input type="number" min="0" value="${qSg||''}" placeholder="—" oninput="orgPriSubChange('${sg.replace(/'/g,"\\'")}','q',this.value)" style="${ns}">
+          </div>
+        </div>
+        ${sgDiscs.map((d,si)=>{
+          const qEf=qSg?Math.round(qSg*Math.max(1,d.aulas||1)/totalAulasSg*10)/10:0;
+          const p=parseInt(d.p)||1;
+          const a=Math.max(1,d.aulas||1);
+          const score=qEf&&p?Math.round(qEf/a*p*100)/100:0;
+          const grpVal=d.grupo||'basicos';
+          return`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:4px 10px;border-bottom:.5px solid rgba(196,181,253,.1)">
+            <div style="font-size:10px;color:rgba(196,181,253,.5);text-align:center">${rank}.${si+1}</div>
+            <div style="min-width:0">
+              <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
+              <div style="font-size:9px;color:var(--muted)">${a} aulas · Q estimado: ${qEf||'—'}</div>
+            </div>
+            <div style="text-align:center;font-size:10px;color:rgba(196,181,253,.6)">${qEf||'—'}</div>
+            <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${ns}"></div>
+            <div style="text-align:right;font-size:11px;color:var(--muted)">${qEf&&a?(qEf/a).toFixed(2):'—'}</div>
+            <div style="text-align:right;font-size:12px;font-weight:700;color:${score?'var(--accent)':'var(--muted)'}">${score?score.toFixed(2):'—'}</div>
+            <div></div>
+            <div style="display:flex;gap:3px;align-items:center">
+              <select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px;outline:none">
+                <option value="basicos" ${grpVal==='basicos'?'selected':''}>Bás.</option>
+                <option value="especificos" ${grpVal==='especificos'?'selected':''}>Esp.</option>
+              </select>
+              <button onclick="orgPriRemSubgrupo(${d.id})" title="Remover do subgrupo" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">×</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+    return html;
+  }
+
+  function grpBlock(titulo,cor,grupo,qTotal,pesoGrp,grKey){
+    const gDiscs=discs.filter(d=>(d.grupo||'basicos')===grupo);
+    const tqg=gDiscs.reduce((a,d)=>{
+      if((d.subgrupo||'').trim())return a; // subgrupo conta pelo total do subgrupo
+      return a+(parseInt(d.q)||0);
+    },0);
+    // somar Q dos subgrupos únicos
+    const uniqueSgs=[...new Set(gDiscs.map(d=>(d.subgrupo||'').trim()).filter(Boolean))];
+    const tqSgs=uniqueSgs.reduce((a,sg)=>a+parseInt((priCfg.subgrupos&&priCfg.subgrupos[sg]&&priCfg.subgrupos[sg].q)||0),0);
+    const totalGrp=tqg+tqSgs;
+    const diff=qTotal?qTotal-totalGrp:null;
+    const statusQ=qTotal?(totalGrp===qTotal?`<span style="color:rgba(45,212,160,.6);font-size:10px">✓ ${totalGrp}/${qTotal}</span>`:`<span style="color:${diff>0?'var(--warn)':'var(--danger)'};font-size:10px">${totalGrp}/${qTotal} (${diff>0?'faltam '+diff:Math.abs(diff)+' a mais'})</span>`):'';
     return`<div style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:2px solid ${cor}25;margin-bottom:6px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:2px solid ${cor}25;margin-bottom:6px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px">${titulo}</span>
-        <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+        <div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap">
           <span style="font-size:10px;color:var(--muted)">Total Q:</span>
-          <input type="number" min="0" value="${qTotal||''}" placeholder="—" oninput="orgPriCfgChange('qTotal${grKey}',this.value)" style="${qnStyle}">
+          <input type="number" min="0" value="${qTotal||''}" placeholder="—" oninput="orgPriCfgChange('qTotal${grKey}',this.value)" style="${ns}">
           ${statusQ}
-          <span style="font-size:10px;color:var(--muted);margin-left:6px">Peso padrão:</span>
-          <input type="number" min="1" max="5" value="${pesoGrp}" oninput="orgPriCfgChange('peso${grKey}',this.value)" style="${qnStyle}">
-          <button onclick="orgPriAplicarPeso('${grKey}',${pesoGrp})" title="Aplicar peso a todas do grupo" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Aplicar</button>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">Peso:</span>
+          <input type="number" min="1" max="5" value="${pesoGrp}" oninput="orgPriCfgChange('peso${grKey}',this.value)" style="${ns}">
+          <button onclick="orgPriAplicarPeso('${grKey}',${pesoGrp})" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Aplicar</button>
+          <button onclick="orgPriAddSubgrupo('${grupo}')" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px dashed rgba(196,181,253,.4);background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit">+ Subgrupo</button>
         </div>
       </div>
-      ${scored.length?makeRows(scored,numStyle):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
+      ${gDiscs.length?makeGroupRows(gDiscs):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
     </div>`;
-  };
+  }
 
+  const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
   el.innerHTML=`<div style="margin-top:8px">
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px;padding:8px 0">
       Ranking de prioridade
       <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">— preencha Q prova e Peso</span>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px">
-      ${grHead}
-      ${grpBlock('Conhecimentos Básicos','#7dd3fc',sb,tqb,'B',qTotalB,pesoB)}
-      ${grpBlock('Conhecimentos Específicos','#c4b5fd',se,tqe,'E',qTotalE,pesoE)}
-      <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.7">
-        <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Peso amplifica a importância.
-        ${totalQ>0?` · Total: <b style="color:var(--text)">${totalQ} questões</b>`:''}
+      <div style="display:grid;grid-template-columns:${cols};gap:4px;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:4px">
+        <div></div><div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase">Disciplina</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:right">Q/aula</div>
+        <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
+        <div></div><div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grupo</div>
+      </div>
+      ${grpBlock('Conhecimentos Básicos','#7dd3fc','basicos',qTotalB,pesoB,'B')}
+      ${grpBlock('Conhecimentos Específicos','#c4b5fd','especificos',qTotalE,pesoE,'E')}
+      <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">
+        <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Em subgrupos, Q é estimado proporcionalmente por aulas.
       </div>
     </div>
   </div>`;
@@ -6184,6 +6248,35 @@ function _countUsoPadrao(p){
     JSON.stringify(d.fmtAula||[])==JSON.stringify(p.fmtAula||[])&&
     JSON.stringify(d.fmtFinal||[])==JSON.stringify(p.fmtFinal||[])
   ).length;
+}
+function orgPriAddSubgrupo(grupo){
+  const nome=prompt('Nome do subgrupo (ex: Noções de Direito):');if(!nome||!nome.trim())return;
+  // pede quais disciplinas do grupo entram no subgrupo
+  const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.filter(d=>(d.grupo||'basicos')===grupo&&!(d.subgrupo||'').trim())||[];
+  if(!discs.length){alert('Todas as disciplinas deste grupo já estão em subgrupos.');return;}
+  const lista=discs.map((d,i)=>`${i+1}. ${d.nome}`).join('\n');
+  const sel=prompt(`Quais disciplinas entram em "${nome.trim()}"?\nDigite os números separados por vírgula:\n${lista}`);
+  if(!sel)return;
+  const indices=sel.split(',').map(s=>parseInt(s.trim())-1).filter(i=>i>=0&&i<discs.length);
+  if(!indices.length)return;
+  indices.forEach(i=>{discs[i].subgrupo=nome.trim();});
+  if(!orgTrilhaAtual.priCfg)orgTrilhaAtual.priCfg={};
+  if(!orgTrilhaAtual.priCfg.subgrupos)orgTrilhaAtual.priCfg.subgrupos={};
+  if(!orgTrilhaAtual.priCfg.subgrupos[nome.trim()])orgTrilhaAtual.priCfg.subgrupos[nome.trim()]={q:0};
+  renderOrgPrioridade();_scheduleOrgSave();
+}
+function orgPriSubChange(sg,field,val){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.priCfg)orgTrilhaAtual.priCfg={};
+  if(!orgTrilhaAtual.priCfg.subgrupos)orgTrilhaAtual.priCfg.subgrupos={};
+  if(!orgTrilhaAtual.priCfg.subgrupos[sg])orgTrilhaAtual.priCfg.subgrupos[sg]={};
+  orgTrilhaAtual.priCfg.subgrupos[sg][field]=parseInt(val)||0;
+  renderOrgPrioridade();_scheduleOrgSave();
+}
+function orgPriRemSubgrupo(discId){
+  if(!orgTrilhaAtual)return;
+  const d=orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  d.subgrupo='';renderOrgPrioridade();_scheduleOrgSave();
 }
 function orgPriCfgChange(key,val){
   if(!orgTrilhaAtual)return;
