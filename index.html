@@ -5425,13 +5425,14 @@ function orgExcluirTrilha(){
 
 function orgShowSub(sub){
   orgSubAtual=sub;
-  ['aulas','planejamento','monitores','config'].forEach(s=>{
+  ['aulas','planejamento','semanal','monitores','config'].forEach(s=>{
     const el=document.getElementById('org-sub-'+s);if(el)el.classList.toggle('hidden',s!==sub);
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
   });
   if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();}
   else if(sub==='planejamento')renderOrgPlanejamento();
+  else if(sub==='semanal')renderOrgSemanal();
   else if(sub==='config'){const el=document.getElementById('org-cfg-nome');if(el&&orgTrilhaAtual)el.value=orgTrilhaAtual.nome||'';}
 }
 function orgCfgNomeChange(val){
@@ -5439,6 +5440,140 @@ function orgCfgNomeChange(val){
   orgTrilhaAtual.nome=val;
   document.getElementById('org-detalhe-nome').textContent=val;
   _scheduleOrgSave();
+}
+
+// ── ABA SEMANAL ──────────────────────────────────────────────────────────────
+let _orgSemSel=0; // índice da semana selecionada
+
+function renderOrgSemanal(){
+  const el=document.getElementById('org-sem-content');if(!el)return;
+  const t=orgTrilhaAtual;if(!t)return;
+  const semanas=(t.plano&&t.plano.semanas)||[];
+  const discs=t.disciplinas||[];
+  if(!semanas.length){
+    el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Configure as datas na aba Planejamento primeiro.</div>';
+    return;
+  }
+  if(_orgSemSel>=semanas.length)_orgSemSel=0;
+  const sem=semanas[_orgSemSel];
+  const agenda=sem.agenda||[];
+  // total planejado para a semana
+  const totalPlan=(sem.dist||[]).reduce((a,v)=>a+v,0);
+  // contagem atual por discId
+  const contagem={};
+  agenda.forEach(id=>{contagem[id]=(contagem[id]||0)+1;});
+  const totalAgenda=agenda.length;
+
+  // selector de semanas
+  const semOpts=semanas.map((s,i)=>`<option value="${i}" ${i===_orgSemSel?'selected':''}>S${i+1} — ${_orgFmtData(s.data)} (${(s.dist||[]).reduce((a,v)=>a+v,0)} tarefas)</option>`).join('');
+
+  // tabela de comparação (lado direito)
+  const linhasComp=discs.map((d,di)=>{
+    const plan=(sem.dist&&sem.dist[di]!==undefined?sem.dist[di]:0);
+    const atual=contagem[d.id]||0;
+    const diff=plan-atual;
+    const diffColor=diff===0?'var(--success)':diff>0?'var(--warn)':'var(--danger)';
+    const diffStr=diff===0?'✓':diff>0?`-${diff}`:`+${Math.abs(diff)}`;
+    if(plan===0&&atual===0)return'';
+    return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
+      <td style="padding:5px 8px;font-size:11px;color:${d.link?'var(--accent)':'var(--text)'};white-space:nowrap">
+        ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)}</a>`:_esc(d.nome)}
+      </td>
+      <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--muted)">${plan}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${atual}</td>
+      <td style="padding:5px 6px;text-align:center;font-size:12px;font-weight:700;color:${diffColor}">${diffStr}</td>
+    </tr>`;
+  }).join('');
+
+  // lista de agenda (lado esquerdo)
+  const agendaItems=agenda.map((discId,idx)=>{
+    const disc=discs.find(d=>d.id==discId);
+    return`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(30,63,92,.3)">
+      <span style="font-size:10px;color:var(--muted);min-width:20px;text-align:right">${idx+1}</span>
+      <select onchange="orgSemSetDisc(${idx},this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+        <option value="">—</option>
+        ${discs.map(d=>`<option value="${d.id}" ${d.id==discId?'selected':''}>${_esc(d.nome)}</option>`).join('')}
+      </select>
+      <button onclick="orgSemRemove(${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.opacity='1';this.style.color='var(--danger)'" onmouseout="this.style.opacity='.5';this.style.color='var(--muted)'">×</button>
+    </div>`;
+  }).join('');
+
+  const diffTotal=totalPlan-totalAgenda;
+  const diffTotColor=diffTotal===0?'var(--success)':diffTotal>0?'var(--warn)':'var(--danger)';
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <select onchange="_orgSemSel=parseInt(this.value);renderOrgSemanal()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:inherit;padding:6px 10px;outline:none">${semOpts}</select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
+      <!-- Agenda -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">Disciplinas da semana</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;color:${diffTotColor}">${totalAgenda}/${totalPlan}</span>
+            <button onclick="orgSemAdd()" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Add</button>
+          </div>
+        </div>
+        <div style="padding:6px 10px;max-height:420px;overflow-y:auto">
+          ${agendaItems||'<div style="font-size:11px;color:var(--muted);padding:16px 0;text-align:center">Clique em "+ Add" para adicionar disciplinas.</div>'}
+        </div>
+        ${diffTotal!==0?`<div style="padding:6px 12px;font-size:11px;font-weight:700;color:${diffTotColor};border-top:1px solid var(--border);text-align:right">${diffTotal>0?`Faltam ${diffTotal} tarefas`:`${Math.abs(diffTotal)} tarefas a mais`}</div>`:''}
+      </div>
+      <!-- Comparação -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">Comparativo</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:rgba(0,0,0,.1)">
+              <th style="padding:5px 8px;font-size:10px;color:var(--muted);font-weight:600;text-align:left">Disciplina</th>
+              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Plan.</th>
+              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Atual</th>
+              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Dif.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhasComp||`<tr><td colspan="4" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Nenhuma tarefa planejada para esta semana.</td></tr>`}
+            <tr style="border-top:2px solid var(--border)">
+              <td style="padding:5px 8px;font-size:11px;font-weight:700;color:var(--accent)">Total</td>
+              <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--accent)">${totalPlan}</td>
+              <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${totalAgenda}</td>
+              <td style="padding:5px 6px;text-align:center;font-size:12px;font-weight:700;color:${diffTotColor}">${diffTotal===0?'✓':diffTotal>0?`-${diffTotal}`:`+${Math.abs(diffTotal)}`}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function orgSemAdd(){
+  if(!orgTrilhaAtual)return;
+  const sem=orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
+  if(!sem)return;
+  if(!sem.agenda)sem.agenda=[];
+  // sugere a disciplina com mais diferença positiva
+  const discs=orgTrilhaAtual.disciplinas||[];
+  const contagem={};sem.agenda.forEach(id=>{contagem[id]=(contagem[id]||0)+1;});
+  const melhor=discs.reduce((best,d,di)=>{
+    const diff=(sem.dist&&sem.dist[di]||0)-(contagem[d.id]||0);
+    return diff>best.diff?{id:d.id,diff}:best;
+  },{id:discs[0]&&discs[0].id||'',diff:-999});
+  sem.agenda.push(melhor.id||'');
+  _scheduleOrgSave();renderOrgSemanal();
+}
+function orgSemRemove(idx){
+  const sem=orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
+  if(!sem||!sem.agenda)return;
+  sem.agenda.splice(idx,1);
+  _scheduleOrgSave();renderOrgSemanal();
+}
+function orgSemSetDisc(idx,discId){
+  const sem=orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
+  if(!sem||!sem.agenda)return;
+  sem.agenda[idx]=discId?parseInt(discId)||discId:'';
+  _scheduleOrgSave();renderOrgSemanal();
 }
 
 function renderOrgLista(){
@@ -6622,6 +6757,7 @@ function deleteMonCargo(id){
       <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
+        <button id="org-sub-btn-semanal" onclick="orgShowSub('semanal')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Semanal</button>
         <button id="org-sub-btn-config" onclick="orgShowSub('config')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Configurações</button>
         <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
@@ -6658,6 +6794,10 @@ function deleteMonCargo(id){
       </div>
       <!-- Monitores (movido para dentro da aba Disciplinas) -->
       <div id="org-sub-monitores" class="hidden"></div>
+      <!-- Semanal -->
+      <div id="org-sub-semanal" class="hidden">
+        <div id="org-sem-content"></div>
+      </div>
       <!-- Configurações -->
       <div id="org-sub-config" class="hidden">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
