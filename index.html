@@ -5430,9 +5430,8 @@ function orgShowSub(sub){
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
   });
-  if(sub==='aulas')renderOrgDiscs();
+  if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();}
   else if(sub==='planejamento')renderOrgPlanejamento();
-  else if(sub==='monitores')renderOrgMonitores();
 }
 
 function renderOrgLista(){
@@ -5795,30 +5794,31 @@ function _orgFmtDataBR(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`
 function _orgAgeDays(iso){if(!iso)return null;const diff=new Date()-new Date(iso+'T00:00:00');return Math.floor(diff/86400000);}
 function _orgAgeColor(days){if(days===null)return'var(--muted)';if(days<=3)return'var(--success)';if(days<=7)return'var(--warn)';return'var(--danger)';}
 
+let _orgMonOpenCards=new Set();
+
 function renderOrgMonitores(){
   const el=document.getElementById('org-monitores-list');if(!el)return;
   const monitores=orgTrilhaAtual&&orgTrilhaAtual.monitores||[];
   const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas||[];
-  if(!monitores.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">Nenhum monitor. Clique em "+ Monitor" para adicionar.</div>';
-    return;
-  }
+  if(!monitores.length){el.innerHTML='';return;}
   const discOpts=discs.map(d=>`<option value="${d.id}">${_esc(d.nome||'(sem nome)')}</option>`).join('');
   const inp=(val,ph,field,id,col)=>`<input value="${_esc(val||'')}" placeholder="${ph}" oninput="orgMonitorChange(${id},'${field}',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:${col||'var(--text)'};font-size:11px;font-family:inherit;outline:none;padding:2px 0">`;
 
-  el.innerHTML=monitores.map(m=>{
-    const discNome=discs.find(d=>d.id==m.disc)?.nome||'';
+  el.innerHTML=`<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Monitores</div>`+monitores.map(m=>{
+    const disc=discs.find(d=>d.id==m.disc);
+    const discNome=disc?disc.nome:'—';
+    const isOpen=_orgMonOpenCards.has(m.id);
     const docs=m.docs||[];
-    const docsHTML=docs.length?docs.map((doc,di)=>{
+    const docsHTML=docs.map((doc,di)=>{
       const age=_orgAgeDays(doc.ultimaMod);
       const ageStr=age===null?'—':`${age}d atrás`;
       const ageCol=_orgAgeColor(age);
-      return`<div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;padding:7px 10px;border-bottom:1px solid rgba(30,63,92,.4);background:${di%2?'transparent':'rgba(0,0,0,.1)'}">
+      return`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:7px 12px;border-top:1px solid rgba(30,63,92,.4)">
         <div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Doc ${di+1}</span>
-            ${doc.link?`<a href="${_esc(doc.link)}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none">↗ abrir</a>`:''}
-            <button onclick="orgDelDoc(${m.id},${di})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1" title="Remover doc">×</button>
+            <span style="font-size:10px;font-weight:700;color:var(--muted)">Doc ${di+1}</span>
+            ${doc.link?`<a href="${_esc(doc.link)}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none">↗</a>`:''}
+            <button onclick="orgDelDoc(${m.id},${di})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1">×</button>
           </div>
           <input value="${_esc(doc.nome||'')}" placeholder="Nome do documento" oninput="orgDocChange(${m.id},${di},'nome',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0;margin-bottom:5px">
           <input value="${_esc(doc.link||'')}" placeholder="Link do documento" oninput="orgDocChange(${m.id},${di},'link',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--accent);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
@@ -5831,35 +5831,48 @@ function renderOrgMonitores(){
           <input type="number" min="0" value="${doc.ultimaTarefa||''}" placeholder="nº" onchange="orgDocChange(${m.id},${di},'ultimaTarefa',this.value)" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--success);font-size:11px;font-weight:700;font-family:inherit;text-align:center;padding:2px 4px;outline:none">
         </div>
       </div>`;
-    }).join(''):'<div style="font-size:11px;color:var(--muted);padding:8px 10px;text-align:center">Nenhum documento. Clique em "+ Doc" para adicionar.</div>';
+    }).join('');
 
-    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
-      <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
-        <select onchange="orgMonitorChange(${m.id},'disc',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;padding:4px 8px;outline:none;max-width:160px">
-          <option value="">-- Disciplina --</option>
-          ${discOpts}
-        </select>
-        <button onclick="orgDelMonitor(${m.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0">×</button>
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">
+      <div onclick="orgToggleMonCard(${m.id})" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
+        <span style="font-size:13px;color:var(--muted);transition:transform .2s;display:inline-block;transform:rotate(${isOpen?90:0}deg)">›</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text);flex:1">${_esc(discNome)}</span>
+        <span style="font-size:11px;color:var(--muted)">${_esc(m.nome||'sem monitor')}</span>
+        <button onclick="event.stopPropagation();orgDelMonitor(${m.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.color='var(--danger)';this.style.opacity='1'" onmouseout="this.style.color='var(--muted)';this.style.opacity='.5'">×</button>
       </div>
-      <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;border-bottom:1px solid var(--border)">
-        <label style="font-size:10px;color:var(--muted)">Nome ${inp(m.nome,'Nome do monitor','nome',m.id,'var(--text)')}</label>
-        <label style="font-size:10px;color:var(--muted)">Email ${inp(m.email,'email@...','email',m.id,'var(--accent)')}</label>
-      </div>
-      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
-        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:6px">Pasta Drive ${inp(m.driveLink,'Link da pasta Drive','driveLink',m.id,'var(--accent)')}</label>
-      </div>
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:rgba(0,0,0,.15)">
-          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Documentos</span>
-          <button onclick="orgAddDoc(${m.id})" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Doc</button>
+      ${isOpen?`<div style="border-top:1px solid var(--border)">
+        <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Disciplina</div>
+            <select onchange="orgMonitorChange(${m.id},'disc',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit;padding:4px 6px;outline:none">
+              <option value="">—</option>${discOpts}
+            </select>
+          </div>
+          <label style="font-size:10px;color:var(--muted)">Nome<br>${inp(m.nome,'Nome do monitor','nome',m.id,'var(--text)')}</label>
         </div>
-        ${docsHTML}
-      </div>
+        <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-bottom:1px solid var(--border)">
+          <label style="font-size:10px;color:var(--muted)">Docs ${inp(m.docsLink,'Link do Docs','docsLink',m.id,'var(--accent)')}</label>
+          <label style="font-size:10px;color:var(--muted)">Drive ${inp(m.driveLink,'Link da pasta','driveLink',m.id,'var(--accent)')}</label>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(0,0,0,.1)">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Documentos</span>
+            <button onclick="orgAddDoc(${m.id})" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Doc</button>
+          </div>
+          ${docsHTML||'<div style="font-size:11px;color:var(--muted);padding:8px 12px">Nenhum documento.</div>'}
+        </div>
+      </div>`:''}
     </div>`;
   }).join('');
 
   const sels=el.querySelectorAll('select');
   monitores.forEach((m,i)=>{if(sels[i])sels[i].value=m.disc||'';});
+}
+
+function orgToggleMonCard(id){
+  if(_orgMonOpenCards.has(id))_orgMonOpenCards.delete(id);
+  else _orgMonOpenCards.add(id);
+  renderOrgMonitores();
 }
 
 function orgAddDoc(monId){
@@ -6451,17 +6464,23 @@ function deleteMonCargo(id){
       </div>
       <!-- Sub-abas da trilha -->
       <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
-        <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Aulas</button>
+        <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
         <button id="org-sub-btn-monitores" onclick="orgShowSub('monitores')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Monitores</button>
       </div>
-      <!-- Aulas -->
+      <!-- Disciplinas (Aulas + Monitores combinados) -->
       <div id="org-sub-aulas">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <span style="font-size:12px;color:var(--muted)">Disciplinas e aulas do pacote</span>
-          <button onclick="orgAddDisc()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Disciplina</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="orgAddMonitor()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--muted);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Monitor</button>
+            <button onclick="orgAddDisc()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Disciplina</button>
+          </div>
         </div>
         <div id="org-disc-list"></div>
+        <div style="margin-top:16px">
+          <div id="org-monitores-list"></div>
+        </div>
       </div>
       <!-- Planejamento -->
       <div id="org-sub-planejamento" class="hidden">
@@ -6495,14 +6514,8 @@ function deleteMonCargo(id){
         <div id="org-plan-tabela" style="overflow-x:auto"></div>
         <div id="org-plan-acumulado" style="overflow-x:auto;margin-top:16px"></div>
       </div>
-      <!-- Monitores -->
-      <div id="org-sub-monitores" class="hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span style="font-size:12px;color:var(--muted)">Monitores por disciplina</span>
-          <button onclick="orgAddMonitor()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Monitor</button>
-        </div>
-        <div id="org-monitores-list"></div>
-      </div>
+      <!-- Monitores (movido para dentro da aba Disciplinas) -->
+      <div id="org-sub-monitores" class="hidden"></div>
     </div>
   </div>
 </div>
