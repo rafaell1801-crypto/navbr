@@ -6019,65 +6019,82 @@ function renderOrgDiscs(){
   renderOrgPrioridade();
 }
 
-function renderOrgPrioridade(){
-  const el=document.getElementById('org-prioridade-wrap');if(!el)return;
-  const discs=(orgTrilhaAtual&&orgTrilhaAtual.disciplinas)||[];
-  if(!discs.length){el.innerHTML='';return;}
-
-  // fórmula: score = (Q / aulas) × peso
-  // quanto mais questões por aula, mais eficiente é estudar essa disciplina
-  const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
-
-  const scored=discs.map(d=>{
-    const q=parseInt(d.q)||0;
-    const p=parseInt(d.p)||0;
-    const a=Math.max(1,d.aulas||1); // evita divisão por zero
-    const density=q/a;              // questões por aula
-    const score=Math.round(density*p*100)/100;
+function _orgPriScoreDiscs(discs,grupo){
+  const numStyle='width:40px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
+  const gDiscs=discs.filter(d=>(d.grupo||'basicos')===grupo);
+  const totalQGrupo=gDiscs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
+  const scored=gDiscs.map(d=>{
+    const q=parseInt(d.q)||0;const p=parseInt(d.p)||0;const a=Math.max(1,d.aulas||1);
+    const density=q/a;const score=Math.round(density*p*100)/100;
     return{d,q,p,a:d.aulas||0,density,score};
   }).sort((a,b)=>b.score-a.score||b.density-a.density||b.q-a.q||(a.d.nome||'').localeCompare(b.d.nome||''));
+  return{scored,totalQGrupo,numStyle};
+}
+function renderOrgPrioridade(){
+  const el=document.getElementById('org-prioridade-wrap');if(!el)return;
+  const t=orgTrilhaAtual;
+  const discs=(t&&t.disciplinas)||[];
+  if(!discs.length){el.innerHTML='';return;}
 
-  const numStyle='width:44px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
+  const grCols='20px 1fr 40px 40px 46px 46px 70px';
+  const grHead=`<div style="display:grid;grid-template-columns:${grCols};gap:4px;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:2px">
+    <div></div>
+    <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Disciplina</div>
+    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q</div>
+    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
+    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:right">Q/aula</div>
+    <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
+    <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grupo</div>
+  </div>`;
 
-  const rows=scored.map(({d,q,p,a,density,score},rank)=>{
+  const makeRows=(scored,numStyle)=>scored.map(({d,q,p,a,density,score},rank)=>{
     const hasData=q>0&&p>0;
     const densStr=a>0&&q>0?(q/Math.max(1,a)).toFixed(2):'—';
-    return`<div style="display:grid;grid-template-columns:24px 1fr 44px 44px 50px 50px;gap:6px;align-items:center;padding:7px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
+    const grpVal=d.grupo||'basicos';
+    return`<div style="display:grid;grid-template-columns:${grCols};gap:4px;align-items:center;padding:6px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank+1}</div>
       <div style="min-width:0">
         <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)||'(sem nome)'}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:1px">${a} aulas</div>
+        <div style="font-size:10px;color:var(--muted)">${a} aulas</div>
       </div>
-      <div style="text-align:center">
-        <input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${numStyle}">
-      </div>
-      <div style="text-align:center">
-        <input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${numStyle}">
-      </div>
+      <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${numStyle}"></div>
+      <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${numStyle}"></div>
       <div style="text-align:right;font-size:11px;color:var(--muted)">${densStr}</div>
       <div style="text-align:right;font-size:13px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'}">${hasData?score.toFixed(2):'—'}</div>
+      <div style="text-align:center">
+        <select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px 3px;outline:none">
+          <option value="basicos" ${grpVal==='basicos'?'selected':''}>Básicos</option>
+          <option value="especificos" ${grpVal==='especificos'?'selected':''}>Específicos</option>
+        </select>
+      </div>
     </div>`;
   }).join('');
 
-  el.innerHTML=`<div>
+  const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
+  const {scored:sb,totalQGrupo:tqb,numStyle}=_orgPriScoreDiscs(discs,'basicos');
+  const {scored:se,totalQGrupo:tqe}=_orgPriScoreDiscs(discs,'especificos');
+
+  const grpBlock=(titulo,cor,scored,tqg)=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:2px solid ${cor}30;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px">${titulo}</span>
+        ${tqg>0?`<span style="font-size:10px;color:var(--muted)">${tqg} questões</span>`:''}
+      </div>
+      ${scored.length?makeRows(scored,numStyle):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
+    </div>`;
+
+  el.innerHTML=`<div style="margin-top:8px">
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px;padding:8px 0">
       Ranking de prioridade
       <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">— preencha Q prova e Peso</span>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px">
-      <div style="display:grid;grid-template-columns:24px 1fr 44px 44px 50px 50px;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:2px">
-        <div></div>
-        <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Disciplina</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q prova</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:right">Q/aula</div>
-        <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
-      </div>
-      ${rows}
-      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.7">
-        <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b><br>
-        Mais questões por aula = maior prioridade. Peso amplifica a importância.
-        ${totalQ>0?`<br>Total de questões na prova: <b style="color:var(--text)">${totalQ}</b>`:''}
+      ${grHead}
+      ${grpBlock('Conhecimentos Básicos','#7dd3fc',sb,tqb)}
+      ${grpBlock('Conhecimentos Específicos','#c4b5fd',se,tqe)}
+      <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.7">
+        <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Peso amplifica a importância.
+        ${totalQ>0?` · Total: <b style="color:var(--text)">${totalQ} questões</b>`:''}
       </div>
     </div>
   </div>`;
