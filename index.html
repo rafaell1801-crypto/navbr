@@ -5469,7 +5469,7 @@ function orgShowSub(sub){
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
   });
-  if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();}
+  if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();renderOrgPrioridade();}
   else if(sub==='planejamento')renderOrgPlanejamento();
   else if(sub==='semanal')renderOrgSemanal();
 }
@@ -5510,7 +5510,7 @@ function renderOrgSemanal(){
     const plan=(sem.dist&&sem.dist[di]!==undefined?sem.dist[di]:0);
     const atual=contagem[d.id]||0;
     const diff=plan-atual;
-    const diffColor=diff===0?'var(--success)':diff>0?'var(--warn)':'var(--danger)';
+    const diffColor=diff===0?'rgba(45,212,160,.55)':diff>0?'var(--warn)':'var(--danger)';
     const diffStr=diff===0?'✓':diff>0?`-${diff}`:`+${Math.abs(diff)}`;
     if(plan===0&&atual===0)return'';
     return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
@@ -5542,8 +5542,30 @@ function renderOrgSemanal(){
     </div>`;
   }).join('');
 
+  // sync tasks length with agenda (backward compat)
+  if(!sem.tasks)sem.tasks=[];
+  while(sem.tasks.length<agenda.length)sem.tasks.push({comando:''});
+
   const diffTotal=totalPlan-totalAgenda;
-  const diffTotColor=diffTotal===0?'var(--success)':diffTotal>0?'var(--warn)':'var(--danger)';
+  const diffTotColor=diffTotal===0?'rgba(45,212,160,.55)':diffTotal>0?'var(--warn)':'var(--danger)';
+
+  // tabela de tarefas
+  const trilhaCod=String(_orgSemSel).padStart(2,'0');
+  const tarefaRows=agenda.map((discId,idx)=>{
+    const disc=discs.find(d=>d.id==discId);
+    const tarefaNum=_orgCalcTarefa(_orgSemSel,idx);
+    const ordemNum=_orgCalcOrdem(_orgSemSel,idx,discId);
+    const cmd=((sem.tasks[idx]&&sem.tasks[idx].comando)||'').replace(/"/g,'&quot;');
+    return`<tr style="border-top:1px solid rgba(30,63,92,.3)">
+      <td style="padding:5px 8px;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap">${trilhaCod}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${tarefaNum}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px;color:var(--muted)">${ordemNum}</td>
+      <td style="padding:5px 8px;font-size:11px;color:${disc&&disc.link?'var(--accent)':'var(--text)'};white-space:nowrap">${disc?_esc(disc.nome):'—'}</td>
+      <td style="padding:3px 8px;min-width:200px">
+        <input value="${cmd}" onchange="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Comando da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
+      </td>
+    </tr>`;
+  }).join('');
 
   el.innerHTML=`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
@@ -5579,12 +5601,37 @@ function renderOrgSemanal(){
           <tbody>
             ${linhasComp||`<tr><td colspan="5" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Nenhuma tarefa planejada para esta semana.</td></tr>`}
             <tr style="border-top:2px solid var(--border)">
-              <td style="padding:4px 8px;font-size:11px;font-weight:700;color:var(--accent)">Total</td>
-              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--accent)">${totalPlan}</td>
-              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${totalAgenda}</td>
-              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:${diffTotColor}">${diffTotal===0?'✓':diffTotal>0?`-${diffTotal}`:`+${Math.abs(diffTotal)}`}</td>
+              <td style="padding:8px 8px 4px;font-size:11px;font-weight:700;color:var(--accent)">Total</td>
+              <td style="padding:8px 5px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--accent)">${totalPlan}</td>
+              <td style="padding:8px 5px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${totalAgenda}</td>
+              <td style="padding:8px 5px 4px;text-align:center;font-size:13px;font-weight:700;color:${diffTotColor}">${diffTotal===0?'✓':diffTotal>0?`-${diffTotal}`:`+${Math.abs(diffTotal)}`}</td>
               <td></td>
             </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+        <span style="font-size:11px;font-weight:700;color:var(--text)">Tabela de tarefas</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;color:var(--muted)">Tarefa base:</span>
+          <input type="number" min="1" value="${orgTrilhaAtual.tarefaBase||1}" onchange="orgSetTarefaBase(this.value)" style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="border-collapse:collapse;width:100%;font-size:11px">
+          <thead>
+            <tr style="background:rgba(0,0,0,.1)">
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Trilha</th>
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Tarefa</th>
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Ordem</th>
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:left;white-space:nowrap">Disciplina</th>
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:left">Comando</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tarefaRows||`<tr><td colspan="5" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Adicione disciplinas à semana para gerar as tarefas.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -5596,13 +5643,14 @@ function _orgGetSem(){
 }
 function orgSemAddDisc(discId){
   const sem=_orgGetSem();if(!sem)return;
-  if(!sem.agenda)sem.agenda=[];
+  if(!sem.agenda)sem.agenda=[];if(!sem.tasks)sem.tasks=[];
   sem.agenda.push(parseInt(discId)||discId);
+  sem.tasks.push({comando:''});
   _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemAdd(){
   const sem=_orgGetSem();if(!sem)return;
-  if(!sem.agenda)sem.agenda=[];
+  if(!sem.agenda)sem.agenda=[];if(!sem.tasks)sem.tasks=[];
   const discs=orgTrilhaAtual.disciplinas||[];
   const contagem={};sem.agenda.forEach(id=>{contagem[id]=(contagem[id]||0)+1;});
   const melhor=discs.reduce((best,d,di)=>{
@@ -5610,11 +5658,13 @@ function orgSemAdd(){
     return diff>best.diff?{id:d.id,diff}:best;
   },{id:discs[0]&&discs[0].id||'',diff:-999});
   sem.agenda.push(melhor.id||'');
+  sem.tasks.push({comando:''});
   _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemRemove(idx){
   const sem=_orgGetSem();if(!sem||!sem.agenda)return;
   sem.agenda.splice(idx,1);
+  if(sem.tasks)sem.tasks.splice(idx,1);
   _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemSetDisc(idx,discId){
@@ -5626,7 +5676,49 @@ function orgSemMove(idx,dir){
   const sem=_orgGetSem();if(!sem||!sem.agenda)return;
   const j=idx+dir;if(j<0||j>=sem.agenda.length)return;
   [sem.agenda[idx],sem.agenda[j]]=[sem.agenda[j],sem.agenda[idx]];
+  if(sem.tasks&&sem.tasks[idx]!==undefined&&sem.tasks[j]!==undefined)
+    [sem.tasks[idx],sem.tasks[j]]=[sem.tasks[j],sem.tasks[idx]];
   _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSetTarefaComando(wi,idx,val){
+  const semanas=(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
+  const sem=semanas[wi];if(!sem)return;
+  if(!sem.tasks)sem.tasks=[];
+  while(sem.tasks.length<=idx)sem.tasks.push({comando:''});
+  sem.tasks[idx].comando=val;
+  _scheduleOrgSave();
+}
+function orgSetTarefaBase(val){
+  if(!orgTrilhaAtual)return;
+  orgTrilhaAtual.tarefaBase=Math.max(1,parseInt(val)||1);
+  _scheduleOrgSave();renderOrgSemanal();
+}
+function _orgCalcTarefa(targetWi,targetIdx){
+  const semanas=(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
+  const base=(orgTrilhaAtual&&orgTrilhaAtual.tarefaBase)||1;
+  let count=base;
+  for(let wi=0;wi<semanas.length;wi++){
+    const ag=semanas[wi].agenda||[];
+    for(let idx=0;idx<ag.length;idx++){
+      if(wi===targetWi&&idx===targetIdx)return count;
+      count++;
+    }
+  }
+  return count;
+}
+function _orgCalcOrdem(targetWi,targetIdx,discId){
+  const semanas=(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
+  let count=1;
+  for(let wi=0;wi<semanas.length;wi++){
+    const ag=semanas[wi].agenda||[];
+    for(let idx=0;idx<ag.length;idx++){
+      if(ag[idx]==discId){
+        if(wi===targetWi&&idx===targetIdx)return count;
+        count++;
+      }
+    }
+  }
+  return count;
 }
 
 function renderOrgLista(){
@@ -5727,7 +5819,7 @@ function renderOrgDiscs(){
             <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas por aula">/aula</th>
             <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas finais">/final</th>
             <th style="text-align:center;padding:8px 4px;color:var(--accent);font-weight:600;width:54px">Total</th>
-            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Link</th>
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Formato</th>
             <th style="width:24px"></th>
           </tr>
         </thead>
@@ -5737,7 +5829,8 @@ function renderOrgDiscs(){
             const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
             const fmtAula=d.fmtAula||[];const fmtFinal=d.fmtFinal||[];
             const isEditing=_orgDiscEditFmt.has(d.id);
-            const chip=(f,grupo,sel)=>`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(62,181,200,.15)':'transparent'};color:${sel?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;
+            const _CC={Aula:{on:'#7dd3fc',bg:'rgba(125,211,252,.15)',bd:'rgba(125,211,252,.5)'},Final:{on:'#c4b5fd',bg:'rgba(196,181,253,.15)',bd:'rgba(196,181,253,.5)'}};
+            const chip=(f,grupo,sel)=>{const c=_CC[grupo]||_CC.Aula;return`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${sel?c.bd:'var(--border)'};background:${sel?c.bg:'transparent'};color:${sel?c.on:'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;};
             const padroesFmtHTML=orgPadroes.filter(p=>p.fmtAula||p.fmtFinal).map(p=>`<span onclick="orgAplicarPadraoFmt(${p.id},${d.id})" style="padding:1px 8px;border-radius:99px;border:1px solid rgba(196,181,253,.4);background:rgba(139,107,232,.1);color:#c4b5fd;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Aplicar: ${_esc(p.fmtAula.join('+'))} / ${_esc(p.fmtFinal.join('+'))}">${_esc(p.nome)}</span>`).join('');
             const intervalos=d.intervalos||[];
             const sqN=parseInt(d.sqN)||1;
@@ -5748,24 +5841,25 @@ function renderOrgDiscs(){
                 <span style="font-size:9px;color:var(--muted);white-space:nowrap">a cada</span>
                 <input type="number" min="1" max="99" value="${iv.a||3}" onchange="orgSetDiscIvA(${d.id},${ii},this.value)" style="width:32px;padding:1px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:var(--surface);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
                 <span style="font-size:9px;color:var(--muted);white-space:nowrap">aulas:</span>
-                ${_AULA_FMT.map(f=>`<span onclick="orgToggleDiscIvFmt(${d.id},${ii},'${f}')" style="padding:1px 6px;border-radius:99px;border:1px solid ${ivFmts.includes(f)?'var(--accent)':'var(--border)'};background:${ivFmts.includes(f)?'rgba(62,181,200,.15)':'transparent'};color:${ivFmts.includes(f)?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none">${f}</span>`).join('')}
+                ${_AULA_FMT.map(f=>`<span onclick="orgToggleDiscIvFmt(${d.id},${ii},'${f}')" style="padding:1px 6px;border-radius:99px;border:1px solid ${ivFmts.includes(f)?'rgba(245,166,35,.5)':'var(--border)'};background:${ivFmts.includes(f)?'rgba(245,166,35,.12)':'transparent'};color:${ivFmts.includes(f)?'#f5a623':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none">${f}</span>`).join('')}
                 <button onclick="orgDelDiscIv(${d.id},${ii})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0">×</button>
               </div>`;
             }).join('');
             const finalChipsHTML=_FINAL_FMT.map(f=>{
               const sel=fmtFinal.includes(f);
-              if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(62,181,200,.15)':'transparent'};color:${sel?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--accent);font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
+              if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
               return chip(f,'Final',sel);
             }).join('');
             const fmtContent=isEditing?`
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
-                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">POR AULA (TPA=${fmtAula.length||'global'})</div>
+                <div style="font-size:9px;color:#7dd3fc;font-weight:700;text-transform:uppercase;margin-bottom:4px">Por aula (tpa=${fmtAula.length||'global'})</div>
                 <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
+                <div style="font-size:9px;color:#f5a623;font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:2px">A cada X aulas</div>
                 <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px;align-items:center">
                   ${ivRowHTML}
-                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ a cada X aulas</button>
+                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed rgba(245,166,35,.4);background:transparent;color:#f5a623;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ a cada X aulas</button>
                 </div>
-                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:8px">FINAL/DISC. (TPD=${_discTpd(d)||'global'})</div>
+                <div style="font-size:9px;color:#c4b5fd;font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:6px">Final/disc. (tpd=${_discTpd(d)||'global'})</div>
                 <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${finalChipsHTML}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">
                   <button onclick="orgSalvarPadraoFmt(${d.id})" title="Salvar padrão" style="width:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--border);background:transparent;color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1">✓</button>
@@ -5777,11 +5871,21 @@ function renderOrgDiscs(){
                 ${intervalos.length?intervalos.map(iv=>`<span style="font-size:10px;color:rgba(245,166,35,.7);white-space:nowrap">/${iv.a}a:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
                 ${fmtFinal.length?`<span style="color:var(--muted);font-size:10px">·</span>${fmtFinal.map(f=>f==='SQ'?`<span style="padding:1px 6px;border-radius:99px;border:1px solid var(--accent);background:rgba(62,181,200,.15);color:var(--accent);font-size:10px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`:chip(f,'Final',true)).join('')}`:''}
               </div>`;
+            const fmtResumo=[
+              ...fmtAula.map(f=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(125,211,252,.4);color:#7dd3fc;font-size:9px;font-weight:600">${f}</span>`),
+              ...intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`),
+              ...fmtFinal.map(f=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.4);color:#c4b5fd;font-size:9px;font-weight:600">${f==='SQ'&&sqN>1?sqN+'×SQ':f}</span>`)
+            ].join('');
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
                 <div style="display:flex;align-items:center;gap:6px">
-                  <input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">
-                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:${isEditing?'var(--accent)':'var(--muted)'};line-height:1">${isEditing?'✕':'✎'}</button>
+                  ${d.link
+                    ?`<a href="${_esc(d.link)}" target="_blank" style="flex:1;color:var(--text);font-size:12px;font-weight:600;text-decoration:none" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${_esc(d.nome)||'(sem nome)'}</a>`
+                    :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">`
+                  }
+                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:0;opacity:${isEditing?'1':'.4'};transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.4'}'">
+                    ${isEditing?`<span style="font-size:13px;color:var(--accent);line-height:1">✕</span>`:`<img src="editar.png" style="width:13px;height:13px;display:block">`}
+                  </button>
                 </div>
                 ${fmtContent}
               </td>
@@ -5793,7 +5897,9 @@ function renderOrgDiscs(){
                 <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtFinal.length?'var(--accent)':'var(--muted)'}">${tpd}</div>
               </td>
               <td id="org-tot-${d.id}" style="padding:4px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${tot}</td>
-              <td style="padding:6px 10px"><input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none"></td>
+              <td style="padding:6px 10px">
+                ${fmtResumo?`<div style="display:flex;flex-wrap:wrap;gap:2px">${fmtResumo}</div>`:`<input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none">`}
+              </td>
               <td style="padding:4px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
             </tr>`;
           }).join('')}
@@ -5801,7 +5907,6 @@ function renderOrgDiscs(){
       </table>
     </div>
     <div id="org-tot-footer" style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · <b style="color:var(--accent)">${totalTarefas}</b> tarefas totais</div>
-    <div id="org-prioridade-wrap" style="margin-top:16px"></div>
   `;
   renderOrgPrioridade();
 }
@@ -6072,25 +6177,9 @@ function _renderOrgTabela(){
 
   const linkIcon=(href,icon,label)=>href?`<a href="${_esc(href)}" target="_blank" title="${label}" style="font-size:16px;text-decoration:none;line-height:1">${icon}</a>`:'';
 
-  const _FORMATOS=[
-    {k:'T+Q',d:'Teoria + Questões'},{k:'T',d:'Teoria'},{k:'R+Q',d:'Revisão + Questões'},
-    {k:'R',d:'Revisão'},{k:'SQ',d:'Simulado de Questões'},{k:'Passo',d:'Passo a passo'},
-    {k:'Aula',d:'Aula gravada'},{k:'Simulado',d:'Simulado'},{k:'Bizu',d:'Final: Bizu'},
-    {k:'nSQ',d:'n Simulados de Questões'}
-  ];
-  const formatosHTML=`<details style="margin-bottom:8px">
-    <summary style="font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
-      <span>▸</span> Formatos de tarefas
-    </summary>
-    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
-      ${_FORMATOS.map(f=>`<span title="${f.d}" style="padding:2px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:default">${f.k}</span>`).join('')}
-    </div>
-  </details>`;
-
   // tabela de distribuição
   if(tabelaEl){
     tabelaEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Distribuição semanal</div>
-    ${formatosHTML}
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
     <table style="border-collapse:collapse;width:100%">
       <thead>
@@ -6881,6 +6970,7 @@ function deleteMonCargo(id){
           </div>
         </div>
         <div id="org-disc-list"></div>
+        <div id="org-prioridade-wrap" style="margin-top:16px"></div>
         <div style="margin-top:16px">
           <div id="org-monitores-list"></div>
         </div>
