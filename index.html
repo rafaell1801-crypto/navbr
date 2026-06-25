@@ -5956,23 +5956,33 @@ function renderOrgDiscs(){
   const _dPriCfg=orgTrilhaAtual.priCfg||{};
   const _dQB=parseInt(_dPriCfg.qTotalB)||0;const _dQE=parseInt(_dPriCfg.qTotalE)||0;
   const _dTwQ=Math.max(1,_dQB+2*_dQE);
-  const _PESO_GRP={basicos:1,especificos:2,discursiva:1};
+  // mesmo score do ranking (fórmula do edital)
+  const _GRP_ORDER={discursiva:0,especificos:1,basicos:2};
+  const _qTotB=parseInt(_dPriCfg.qTotalB)||0;
+  const _qTotE=parseInt(_dPriCfg.qTotalE)||0;
+  const _qTotD=parseInt(_dPriCfg.qTotalD)||0;
+  function _dValPerQ(g,qt){if(g==='discursiva')return 1;if(g==='especificos')return 20/Math.max(1,3*qt);return 10/Math.max(1,3*qt);}
   function _dScore(d){
-    const g=d.grupo||'basicos';
-    const a=Math.max(1,d.aulas||1);
-    const p=_PESO_GRP[g]||1;
+    const g=d.grupo||'basicos';const a=Math.max(1,d.aulas||1);
+    const qt=g==='especificos'?_qTotE:g==='discursiva'?_qTotD:_qTotB;
     const sg=(d.subgrupo||'').trim();
     if(sg){
       const qSg=parseInt((_dPriCfg.subgrupos&&_dPriCfg.subgrupos[sg]&&_dPriCfg.subgrupos[sg].q)||0);
       if(!qSg)return 0;
       const sgDiscs=discs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===g);
       const ta=sgDiscs.reduce((s,x)=>s+Math.max(1,x.aulas||1),0);
-      return(qSg*a/ta)/a*p;
+      return(qSg*a/ta)/a*_dValPerQ(g,qt);
     }
-    const q=parseInt(d.q)||0;
-    return q/a*p;
+    return(parseInt(d.q)||0)/a*_dValPerQ(g,qt);
   }
-  const sortedDiscs=[...discs].sort((a,b)=>_dScore(b)-_dScore(a)||((a.nome||'').localeCompare(b.nome||'')));
+  const sortedDiscs=[...discs].sort((a,b)=>{
+    const sa=_dScore(a),sb=_dScore(b);
+    if(Math.abs(sa-sb)>0.0001)return sb-sa;
+    const ga=_GRP_ORDER[a.grupo||'basicos']??2;
+    const gb=_GRP_ORDER[b.grupo||'basicos']??2;
+    if(ga!==gb)return ga-gb;
+    return(b.aulas||0)-(a.aulas||0);
+  });
   const inp=(style,val,type,oninput,attrs='')=>`<input type="${type}" value="${val}" oninput="${oninput}" ${attrs} style="${style}">`;
   el.innerHTML=`
     <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Padrão global: <b style="color:var(--text)">${gTpa}/aula + ${gTpd}/disc.</b> — sobrescreva por disciplina se necessário.</div>
@@ -5996,8 +6006,8 @@ function renderOrgDiscs(){
             const fmtAula=d.fmtAula||[];const fmtFinal=d.fmtFinal||[];
             const isEditing=_orgDiscEditFmt.has(d.id);
             const _CC={Aula:{on:'#7dd3fc',bg:'rgba(125,211,252,.15)',bd:'rgba(125,211,252,.5)'},Final:{on:'#c4b5fd',bg:'rgba(196,181,253,.15)',bd:'rgba(196,181,253,.5)'}};
-            const chip=(f,grupo,sel)=>{const c=_CC[grupo]||_CC.Aula;return`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${sel?c.bd:'var(--border)'};background:${sel?c.bg:'transparent'};color:${sel?c.on:'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;};
-            const padroesFmtHTML=orgPadroes.filter(p=>p.fmtAula||p.fmtFinal).map(p=>`<span onclick="orgAplicarPadraoFmt(${p.id},${d.id})" style="padding:1px 8px;border-radius:99px;border:1px solid rgba(196,181,253,.4);background:rgba(139,107,232,.1);color:#c4b5fd;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Aplicar: ${_esc(p.fmtAula.join('+'))} / ${_esc(p.fmtFinal.join('+'))}">${_esc(p.nome)}</span>`).join('');
+            const chip=(f,grupo,sel)=>{const c=_CC[grupo]||_CC.Aula;return`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:5px;border:1px solid ${sel?c.bd:'var(--border)'};background:${sel?c.bg:'transparent'};color:${sel?c.on:'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;};
+            const padroesFmtHTML=orgPadroes.filter(p=>p.fmtAula||p.fmtFinal).map(p=>`<span onclick="orgAplicarPadraoFmt(${p.id},${d.id})" style="padding:1px 8px;border-radius:5px;border:1px solid rgba(196,181,253,.4);background:rgba(139,107,232,.1);color:#c4b5fd;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Aplicar: ${_esc(p.fmtAula.join('+'))} / ${_esc(p.fmtFinal.join('+'))}">${_esc(p.nome)}</span>`).join('');
             const intervalos=d.intervalos||[];
             const sqN=parseInt(d.sqN)||1;
             const sqSel=fmtFinal.includes('SQ');
@@ -6013,8 +6023,8 @@ function renderOrgDiscs(){
             }).join('');
             const finalChipsHTML=_FINAL_FMT.map(f=>{
               const sel=fmtFinal.includes(f);
-              if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
-              if(f==='Simulado'){const simN=parseInt(d.simN)||1;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?`<input type="number" min="1" max="9" value="${simN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'simN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;}
+              if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
+              if(f==='Simulado'){const simN=parseInt(d.simN)||1;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:5px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?`<input type="number" min="1" max="9" value="${simN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'simN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;}
               return chip(f,'Final',sel);
             }).join('');
             const _bmkSvg=`<svg width="13" height="13" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="45" stroke-linecap="round" stroke-linejoin="round"><path d="M96 48h320a16 16 0 0 1 16 16v392L256 376 80 456V64a16 16 0 0 1 16-16z"/></svg>`;
@@ -6027,7 +6037,7 @@ function renderOrgDiscs(){
                 ${intervalos.length||true?`<div style="border-left:2px solid #f5a623;padding-left:8px;margin-bottom:8px">
                   <div style="font-size:9px;color:#f5a623;font-weight:700;letter-spacing:.5px;margin-bottom:5px">A CADA X AULAS</div>
                   ${ivRowHTML}
-                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed rgba(245,166,35,.5);background:transparent;color:#f5a623;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">+ a cada X</button>
+                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:5px;border:1px dashed rgba(245,166,35,.5);background:transparent;color:#f5a623;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">+ a cada X</button>
                 </div>`:''}
                 <div style="border-left:2px solid #c4b5fd;padding-left:8px;margin-bottom:10px">
                   <div style="font-size:9px;color:#c4b5fd;font-weight:700;letter-spacing:.5px;margin-bottom:5px">FINAL/DISC. · tpd=${_discTpd(d)||'global'}</div>
@@ -6042,18 +6052,18 @@ function renderOrgDiscs(){
               </div>`
             :`<div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">
                 ${fmtAula.length?fmtAula.map(f=>chip(f,'Aula',true)).join(''):''}
-                ${intervalos.length?intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
+                ${intervalos.length?intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
                 ${fmtFinal.length?fmtFinal.map(f=>{
-                  if(f==='SQ')return`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`;
-                  if(f==='Simulado')return`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${(parseInt(d.simN)||1)>1?(parseInt(d.simN))+'×':''}Sim</span>`;
+                  if(f==='SQ')return`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`;
+                  if(f==='Simulado')return`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${(parseInt(d.simN)||1)>1?(parseInt(d.simN))+'×':''}Sim</span>`;
                   return chip(f,'Final',true);
                 }).join(''):''}
                 ${!fmtAula.length&&!fmtFinal.length?'<span style="font-size:10px;color:rgba(127,179,200,.4)">—</span>':''}
               </div>`;
             const fmtResumo=[
-              ...fmtAula.map(f=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(125,211,252,.4);color:#7dd3fc;font-size:9px;font-weight:600">${f}</span>`),
-              ...intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`),
-              ...fmtFinal.map(f=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.4);color:#c4b5fd;font-size:9px;font-weight:600">${f==='SQ'&&sqN>1?sqN+'×SQ':f}</span>`)
+              ...fmtAula.map(f=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(125,211,252,.4);color:#7dd3fc;font-size:9px;font-weight:600">${f}</span>`),
+              ...intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`),
+              ...fmtFinal.map(f=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(196,181,253,.4);color:#c4b5fd;font-size:9px;font-weight:600">${f==='SQ'&&sqN>1?sqN+'×SQ':f}</span>`)
             ].join('');
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
@@ -6070,13 +6080,11 @@ function renderOrgDiscs(){
                 <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtFinal.length?'#c4b5fd':'var(--muted)'}">${tpd}</div>
               </td>
               <td id="org-tot-${d.id}" style="padding:4px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${tot}</td>
-              <td style="padding:4px 8px;vertical-align:top">
-                <div style="display:flex;align-items:flex-start;gap:4px">
-                  <div style="flex:1">${fmtContent}</div>
-                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'1':'.65'};transition:opacity .15s;flex-shrink:0;filter:brightness(10)" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.65'}'">
-                    ${isEditing?`<span style="font-size:13px;color:#fff;line-height:1">✕</span>`:`<img src="editar.png" style="width:12px;height:12px;display:block">`}
-                  </button>
-                </div>
+              <td style="padding:4px 8px;vertical-align:top">${fmtContent}</td>
+              <td style="padding:4px;text-align:right;vertical-align:middle;width:28px">
+                <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:4px;opacity:${isEditing?'1':'.7'};transition:opacity .15s;filter:brightness(10);display:flex;align-items:center;justify-content:center;margin-left:auto" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.7'}'">
+                  ${isEditing?`<span style="font-size:13px;color:#fff;line-height:1">✕</span>`:`<img src="editar.png" style="width:13px;height:13px;display:block">`}
+                </button>
               </td>
             </tr>`;
           }).join('')}
@@ -6104,15 +6112,34 @@ function renderOrgPrioridade(){
   const qTotalB=parseInt(priCfg.qTotalB)||0;
   const qTotalE=parseInt(priCfg.qTotalE)||0;
   const qTotalD=parseInt(priCfg.qTotalD)||0;
-  // peso fixo por grupo — sem edição individual
-  const _PESO={basicos:1,especificos:2,discursiva:1};
-  // pontos reais da prova por questão (normalização pelo edital)
-  const _pontsObj=10;
-  const _twQ=Math.max(1,qTotalB*1+qTotalE*2);
-  function _valPerQ(grupo){
-    if(grupo==='discursiva')return 1;
-    if(grupo==='especificos')return 2*_pontsObj/_twQ;
-    return _pontsObj/_twQ;
+
+  // Fórmula do edital:
+  // Nota Final = Nota_Obj + Nota_Disc (0-20)
+  // Nota_Obj = (Nota_B×1 + Nota_E×2) / 3  (0-10)
+  // → valor por questão Básico  = 10 / (3 × Q_total_B)  pontos na Nota Final
+  // → valor por questão Esp.    = 20 / (3 × Q_total_E)  pontos na Nota Final
+  // → Discursiva: pontos/aulas diretamente na Nota Final
+  function _valPerQ(grupo,qTotal){
+    if(grupo==='discursiva')return 1; // pontos diretos na Nota Final
+    if(grupo==='especificos')return 20/Math.max(1,3*qTotal);
+    return 10/Math.max(1,3*qTotal);
+  }
+  // score de uma disciplina = Q_estim/aula × valor_por_questão
+  function _priScore(d){
+    const g=d.grupo||'basicos';
+    const a=Math.max(1,d.aulas||1);
+    const sg=(d.subgrupo||'').trim();
+    let q=parseInt(d.q)||0;
+    if(sg){
+      const qSg=parseInt((priCfg.subgrupos&&priCfg.subgrupos[sg]&&priCfg.subgrupos[sg].q)||0);
+      if(qSg){
+        const sgDiscs=discs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===g);
+        const ta=sgDiscs.reduce((s,x)=>s+Math.max(1,x.aulas||1),0);
+        q=Math.round(qSg*a/ta*100)/100;
+      }
+    }
+    const qTotal=g==='especificos'?qTotalE:g==='discursiva'?qTotalD:qTotalB;
+    return q/a*_valPerQ(g,qTotal);
   }
   const ns='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
   const cols='20px 1fr 38px 44px 54px 32px';
@@ -6139,13 +6166,14 @@ function renderOrgPrioridade(){
     let rank=0;
     let html='';
 
-    // individuais scored — peso automático pelo grupo
+    // individuais scored — score baseado na fórmula do edital
     const indScored=individuais.map(d=>{
-      const q=parseInt(d.q)||0;const p=_PESO[d.grupo||'basicos']||1;const a=Math.max(1,d.aulas||1);
-      return{d,q,p,a,score:Math.round(q/a*_valPerQ(d.grupo||'basicos')*100)/100};
+      const q=parseInt(d.q)||0;const a=Math.max(1,d.aulas||1);
+      const score=Math.round(_priScore(d)*1000)/1000;
+      return{d,q,a,score};
     }).sort((a,b)=>b.score-a.score||(a.d.nome||'').localeCompare(b.d.nome||''));
 
-    indScored.forEach(({d,q,p,a,score})=>{
+    indScored.forEach(({d,q,a,score})=>{
       rank++;
       const hasData=q>0;
       const grpVal=d.grupo||'basicos';
