@@ -5439,23 +5439,54 @@ function _orgMigrateV2(){
 }
 
 async function loadOrgTrilhas(){
-  try{const s=localStorage.getItem('nav_org_trilhas');if(s)orgTrilhas=JSON.parse(s);}catch{}
+  let localData=null;
+  let sbData=null;
+  // 1. carregar localStorage
+  try{const s=localStorage.getItem('nav_org_trilhas');if(s)localData=JSON.parse(s);}catch{}
+  // 2. carregar Supabase — SEMPRE tem prioridade sobre localStorage
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__org_trilhas__');
-    if(d&&d[0]&&d[0].topics&&Array.isArray(d[0].topics)){
-      orgTrilhas=d[0].topics;
-      try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
+    if(d&&d[0]&&d[0].topics&&Array.isArray(d[0].topics)&&d[0].topics.length){
+      sbData=d[0].topics;
     }
   }catch{}
-  if(!orgTrilhas.length){orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));await _saveOrgTrilhas();}
-  else{_orgMigrateV2();}
+  // 3. escolher fonte: Supabase > localStorage > seed
+  // Critério de "mais completo": mais disciplinas OU mais campos preenchidos
+  function _riqueza(ts){
+    if(!ts||!ts.length)return 0;
+    return ts.reduce((s,t)=>{
+      s+=t.disciplinas?t.disciplinas.length:0;
+      s+=t.plano&&t.plano.inicio?10:0;
+      s+=t.plano&&t.plano.semanas&&t.plano.semanas.length?t.plano.semanas.length*2:0;
+      s+=t.disciplinas?t.disciplinas.filter(d=>d.fmtAula&&d.fmtAula.length).length*3:0;
+      s+=t.disciplinas?t.disciplinas.filter(d=>d.q).length*2:0;
+      return s;
+    },0);
+  }
+  const sbRiq=_riqueza(sbData);
+  const lcRiq=_riqueza(localData);
+  if(sbData&&sbRiq>=lcRiq){
+    orgTrilhas=sbData;
+    try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
+  } else if(localData&&localData.length){
+    orgTrilhas=localData;
+    // sincronizar para Supabase se local for mais rico
+    if(lcRiq>sbRiq)await sbUpsert('conteudo',{disc:'__org_trilhas__',topics:orgTrilhas});
+  }
+  if(!orgTrilhas.length){
+    orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));
+    await _saveOrgTrilhas();
+  } else {
+    _orgMigrateV2();
+  }
   _renderTrabSubtabs();
-  // abrir primeira trilha se já estiver na aba trabalho
   const orgEl=document.getElementById('trab-sub-organizador');
   if(orgEl&&!orgEl.classList.contains('hidden')&&orgTrilhas.length){orgAbrirTrilha(orgTrilhas[0].id);}
 }
 async function _saveOrgTrilhas(){
+  // salvar em ambos sempre
   try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
+  try{localStorage.setItem('nav_org_trilhas_bkp',JSON.stringify({ts:Date.now(),data:orgTrilhas}));}catch{}
   await sbUpsert('conteudo',{disc:'__org_trilhas__',topics:orgTrilhas});
 }
 function _scheduleOrgSave(){
@@ -5547,6 +5578,39 @@ function orgShowSub(sub){
   else if(sub==='semanal')renderOrgSemanal();
   else if(sub==='config'){const el=document.getElementById('org-cfg-nome');if(el&&orgTrilhaAtual)el.value=orgTrilhaAtual.nome||'';}
 }
+function orgExportarBackup(){
+  const data={v:2,ts:new Date().toISOString(),trilhas:orgTrilhas};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`trilhas-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+  const st=document.getElementById('org-backup-status');
+  if(st)st.textContent='✓ Backup exportado em '+new Date().toLocaleTimeString('pt-BR');
+}
+function orgImportarBackup(ev){
+  const file=ev.target.files&&ev.target.files[0];if(!file)return;
+  const st=document.getElementById('org-backup-status');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const trilhas=data.trilhas||data; // suporta array direto ou {v,ts,trilhas}
+      if(!Array.isArray(trilhas)||!trilhas.length)throw new Error('Formato inválido');
+      if(!confirm(`Importar ${trilhas.length} trilha(s) e sobrescrever os dados atuais?`))return;
+      orgTrilhas=trilhas;
+      await _saveOrgTrilhas();
+      _renderTrabSubtabs();
+      if(orgTrilhas.length)showTrabalhoSubtab(String(orgTrilhas[0].id));
+      if(st)st.textContent='✓ '+trilhas.length+' trilha(s) importada(s) com sucesso!';
+      if(st)st.style.color='var(--success)';
+    }catch(err){
+      if(st){st.textContent='✗ Erro ao importar: '+err.message;st.style.color='var(--danger)';}
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value=''; // reset input
+}
 function orgCfgNomeChange(val){
   if(!orgTrilhaAtual)return;
   orgTrilhaAtual.nome=val;
@@ -5584,9 +5648,8 @@ function renderOrgSemanal(){
     const plan=(sem.dist&&sem.dist[di]!==undefined?sem.dist[di]:0);
     const atual=contagem[d.id]||0;
     const diff=plan-atual;
-    const diffColor=diff===0?'rgba(45,212,160,.55)':diff>0?'var(--warn)':'var(--danger)';
-    const diffStr=diff===0?'✓':diff>0?`-${diff}`:`+${Math.abs(diff)}`;
-    if(plan===0&&atual===0)return'';
+    const diffColor=diff===0&&plan>0?'rgba(45,212,160,.55)':diff>0?'var(--warn)':atual>0?'var(--danger)':'var(--muted)';
+    const diffStr=plan===0&&atual===0?'—':diff===0?'✓':diff>0?`-${diff}`:`+${Math.abs(diff)}`;
     return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
       <td style="padding:4px 8px;font-size:11px;color:${d.link?'var(--accent)':'var(--text)'}">
         ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)}</a>`:_esc(d.nome)}
@@ -5595,7 +5658,7 @@ function renderOrgSemanal(){
       <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${atual}</td>
       <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:${diffColor}">${diffStr}</td>
       <td style="padding:4px 5px;text-align:center">
-        <button onclick="orgSemAddDisc(${d.id})" title="Adicionar ${_esc(d.nome)}" style="width:22px;height:22px;border-radius:50%;border:1px solid ${diff>0?'var(--accent)':'var(--border)'};background:${diff>0?'rgba(62,181,200,.12)':'transparent'};color:${diff>0?'var(--accent)':'var(--muted)'};cursor:pointer;font-size:14px;font-weight:700;line-height:1;padding:0;font-family:inherit;display:inline-flex;align-items:center;justify-content:center">+</button>
+        <button onclick="orgSemAddDisc(${d.id})" title="Adicionar ${_esc(d.nome)}" style="width:22px;height:22px;border-radius:50%;border:1px solid ${diff>0||plan===0?'var(--accent)':'var(--border)'};background:${diff>0||plan===0?'rgba(62,181,200,.12)':'transparent'};color:${diff>0||plan===0?'var(--accent)':'var(--muted)'};cursor:pointer;font-size:14px;font-weight:700;line-height:1;padding:0;font-family:inherit;display:inline-flex;align-items:center;justify-content:center">+</button>
       </td>
     </tr>`;
   }).join('');
@@ -5650,7 +5713,7 @@ function renderOrgSemanal(){
           <span style="font-size:11px;font-weight:700;color:${diffTotColor}">${totalAgenda}/${totalPlan}</span>
         </div>
         <div style="padding:4px 8px;max-height:440px;overflow-y:auto">
-          ${agendaItems||'<div style="font-size:11px;color:var(--muted);padding:16px 0;text-align:center">Use os botões + no Comparativo para adicionar.</div>'}
+          ${agendaItems||'<div style="font-size:11px;color:var(--muted);padding:16px 0;text-align:center">Clique em <b style="color:var(--accent)">+</b> ao lado de cada disciplina no Comparativo →</div>'}
         </div>
         ${diffTotal!==0?`<div style="padding:5px 12px;font-size:11px;font-weight:700;color:${diffTotColor};border-top:1px solid var(--border);text-align:right">${diffTotal>0?`Faltam ${diffTotal}`:`${Math.abs(diffTotal)} a mais`}</div>`:''}
       </div>
@@ -6353,20 +6416,51 @@ function _countUsoPadrao(p){
     JSON.stringify(d.fmtFinal||[])==JSON.stringify(p.fmtFinal||[])
   ).length;
 }
+let _orgSubgrupoModal=null; // {grupo, el}
 function orgPriAddSubgrupo(grupo){
-  const nome=prompt('Nome do subgrupo (ex: Noções de Direito):');if(!nome||!nome.trim())return;
-  // pede quais disciplinas do grupo entram no subgrupo
+  // fechar modal anterior se existir
+  const prev=document.getElementById('org-subgrupo-modal');if(prev)prev.remove();
   const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.filter(d=>(d.grupo||'basicos')===grupo&&!(d.subgrupo||'').trim())||[];
   if(!discs.length){alert('Todas as disciplinas deste grupo já estão em subgrupos.');return;}
-  const lista=discs.map((d,i)=>`${i+1}. ${d.nome}`).join('\n');
-  const sel=prompt(`Quais disciplinas entram em "${nome.trim()}"?\nDigite os números separados por vírgula:\n${lista}`);
-  if(!sel)return;
-  const indices=sel.split(',').map(s=>parseInt(s.trim())-1).filter(i=>i>=0&&i<discs.length);
-  if(!indices.length)return;
-  indices.forEach(i=>{discs[i].subgrupo=nome.trim();});
+  const modal=document.createElement('div');
+  modal.id='org-subgrupo-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`<div style="background:#0d1a26;border:1px solid var(--border);border-radius:12px;padding:20px;min-width:320px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.7)">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">Novo subgrupo</div>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:8px">Nome do subgrupo
+      <input id="org-sg-nome" placeholder="Ex: Noções de Direito" style="display:block;margin-top:3px;width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+    </label>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Disciplinas do subgrupo (marque as que entram):</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;max-height:200px;overflow-y:auto">
+      ${discs.map((d,i)=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='transparent'">
+        <input type="checkbox" id="org-sg-cb-${i}" value="${i}" style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer">
+        <span style="font-size:12px;color:var(--text)">${_esc(d.nome)}</span>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto">${d.aulas} aulas</span>
+      </label>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.getElementById('org-subgrupo-modal').remove()" style="padding:6px 14px;font-size:12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Cancelar</button>
+      <button onclick="orgPriConfirmarSubgrupo('${grupo.replace(/'/g,"\\'")}',${JSON.stringify(discs.map(d=>d.id))})" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:none;background:var(--accent);color:#000;cursor:pointer;font-family:inherit">Criar subgrupo</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  document.getElementById('org-sg-nome').focus();
+}
+function orgPriConfirmarSubgrupo(grupo,discIds){
+  const nomeEl=document.getElementById('org-sg-nome');
+  const nome=(nomeEl&&nomeEl.value||'').trim();
+  if(!nome){nomeEl&&(nomeEl.style.borderColor='var(--danger)');return;}
+  const selecionados=discIds.filter((_,i)=>{const cb=document.getElementById('org-sg-cb-'+i);return cb&&cb.checked;});
+  if(!selecionados.length){alert('Selecione ao menos uma disciplina.');return;}
+  selecionados.forEach(id=>{
+    const d=orgTrilhaAtual.disciplinas.find(d=>d.id===id);
+    if(d)d.subgrupo=nome;
+  });
   if(!orgTrilhaAtual.priCfg)orgTrilhaAtual.priCfg={};
   if(!orgTrilhaAtual.priCfg.subgrupos)orgTrilhaAtual.priCfg.subgrupos={};
-  if(!orgTrilhaAtual.priCfg.subgrupos[nome.trim()])orgTrilhaAtual.priCfg.subgrupos[nome.trim()]={q:0};
+  if(!orgTrilhaAtual.priCfg.subgrupos[nome])orgTrilhaAtual.priCfg.subgrupos[nome]={q:0};
+  document.getElementById('org-subgrupo-modal').remove();
   renderOrgPrioridade();_scheduleOrgSave();
 }
 function orgPriSubChange(sg,field,val){
@@ -7346,6 +7440,17 @@ function deleteMonCargo(id){
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Nome da trilha</div>
           <input id="org-cfg-nome" oninput="orgCfgNomeChange(this.value)" style="width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px">💾 Backup dos dados</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Baixe um arquivo JSON com todos os dados de todas as trilhas. Use para restaurar se os dados sumirem.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="orgExportarBackup()" style="padding:7px 16px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit">⬇ Exportar JSON</button>
+            <label style="padding:7px 16px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">
+              ⬆ Importar JSON<input type="file" accept=".json" onchange="orgImportarBackup(event)" style="display:none">
+            </label>
+          </div>
+          <div id="org-backup-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
         </div>
         <div style="background:rgba(242,107,94,.06);border:1px solid rgba(242,107,94,.3);border-radius:10px;padding:16px">
           <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px">Zona de perigo</div>
