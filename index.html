@@ -4995,7 +4995,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();_loadOrgPadroes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
@@ -5312,6 +5312,18 @@ let orgTrilhaAtual=null;
 let orgSubAtual='aulas';
 let _orgSaveTimer=null;
 
+const _ORG_SEED=[{id:1750000000001,nome:'PM-PI',disciplinas:[
+  {id:1750000000011,nome:'Língua Portuguesa',aulas:15,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390522'},
+  {id:1750000000012,nome:'Noções de Informática',aulas:7,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390523'},
+  {id:1750000000013,nome:'Discursiva',aulas:7,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390563'},
+  {id:1750000000014,nome:'Constituição Federal',aulas:9,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390569'},
+  {id:1750000000015,nome:'Noções de Direito Administrativo',aulas:8,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390730'},
+  {id:1750000000016,nome:'Constituição do Estado do Piauí',aulas:2,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390909'},
+  {id:1750000000017,nome:'Conhecimentos Regionais do Piauí',aulas:5,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390913'},
+  {id:1750000000018,nome:'Raciocínio Lógico e Matemática Básica',aulas:31,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390914'},
+  {id:1750000000019,nome:'Conhecimentos Gerais',aulas:15,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390943'}
+],monitores:[],plano:{inicio:'',fim:'',tpa:3,tpd:4,semanas:[]}}];
+
 async function loadOrgTrilhas(){
   try{const s=localStorage.getItem('nav_org_trilhas');if(s)orgTrilhas=JSON.parse(s);}catch{}
   try{
@@ -5321,6 +5333,7 @@ async function loadOrgTrilhas(){
       try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
     }
   }catch{}
+  if(!orgTrilhas.length){orgTrilhas=_ORG_SEED;_saveOrgTrilhas();}
 }
 async function _saveOrgTrilhas(){
   try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
@@ -5329,6 +5342,46 @@ async function _saveOrgTrilhas(){
 function _scheduleOrgSave(){
   clearTimeout(_orgSaveTimer);
   _orgSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveOrgTrilhas().then(()=>showSync('ok','✓ Salvo'));},1200);
+}
+
+// ── PADRÕES DE TAREFAS ──
+let orgPadroes=[];
+function _loadOrgPadroes(){try{const s=localStorage.getItem('nav_org_padroes');if(s)orgPadroes=JSON.parse(s);}catch{}}
+function _saveOrgPadroes(){try{localStorage.setItem('nav_org_padroes',JSON.stringify(orgPadroes));}catch{}}
+function orgSalvarPadrao(){
+  const tpa=parseInt(document.getElementById('org-plan-tpa').value)||3;
+  const tpd=parseInt(document.getElementById('org-plan-tpd').value)||4;
+  const nome=prompt(`Nome do padrão (${tpa}/aula + ${tpd}/disc.):`);
+  if(!nome||!nome.trim())return;
+  orgPadroes.push({id:Date.now(),nome:nome.trim(),tpa,tpd});
+  _saveOrgPadroes();
+  _renderOrgPadroes();
+}
+function orgAplicarPadrao(id){
+  const p=orgPadroes.find(p=>p.id===id);if(!p)return;
+  document.getElementById('org-plan-tpa').value=p.tpa;
+  document.getElementById('org-plan-tpd').value=p.tpd;
+  orgPlanUpdate();
+}
+function orgExcluirPadrao(id){
+  orgPadroes=orgPadroes.filter(p=>p.id!==id);
+  _saveOrgPadroes();
+  _renderOrgPadroes();
+}
+function _renderOrgPadroes(){
+  const el=document.getElementById('org-padroes-list');if(!el)return;
+  if(!orgPadroes.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum padrão salvo ainda.</div>';
+    return;
+  }
+  el.innerHTML=orgPadroes.map(p=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+      <button onclick="orgAplicarPadrao(${p.id})" style="flex:1;text-align:left;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="color:var(--text)">${_esc(p.nome)}</span>
+        <span style="color:var(--muted);font-weight:400;margin-left:6px">${p.tpa}/aula + ${p.tpd}/disc.</span>
+      </button>
+      <button onclick="orgExcluirPadrao(${p.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1" title="Excluir">×</button>
+    </div>`).join('');
 }
 
 function orgNovaTrilha(){
@@ -5528,6 +5581,7 @@ function renderOrgPlanejamento(){
   if(ftpd)ftpd.value=p.tpd||4;
   if(p.inicio&&p.fim){_orgRecalcSemanas();}
   _renderOrgTabela();
+  _renderOrgPadroes();
 }
 
 function _renderOrgTabela(){
@@ -5674,6 +5728,10 @@ function orgMonitorChange(id,field,val){
   m[field]=field==='disc'?parseInt(val)||null:val;
   _scheduleOrgSave();
 }
+function _orgFmtDataBR(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
+function _orgAgeDays(iso){if(!iso)return null;const diff=new Date()-new Date(iso+'T00:00:00');return Math.floor(diff/86400000);}
+function _orgAgeColor(days){if(days===null)return'var(--muted)';if(days<=3)return'var(--success)';if(days<=7)return'var(--warn)';return'var(--danger)';}
+
 function renderOrgMonitores(){
   const el=document.getElementById('org-monitores-list');if(!el)return;
   const monitores=orgTrilhaAtual&&orgTrilhaAtual.monitores||[];
@@ -5684,32 +5742,84 @@ function renderOrgMonitores(){
   }
   const discOpts=discs.map(d=>`<option value="${d.id}">${_esc(d.nome||'(sem nome)')}</option>`).join('');
   const inp=(val,ph,field,id,col)=>`<input value="${_esc(val||'')}" placeholder="${ph}" oninput="orgMonitorChange(${id},'${field}',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:${col||'var(--text)'};font-size:11px;font-family:inherit;outline:none;padding:2px 0">`;
-  el.innerHTML=monitores.map(m=>`
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+
+  el.innerHTML=monitores.map(m=>{
+    const discNome=discs.find(d=>d.id==m.disc)?.nome||'';
+    const docs=m.docs||[];
+    const docsHTML=docs.length?docs.map((doc,di)=>{
+      const age=_orgAgeDays(doc.ultimaMod);
+      const ageStr=age===null?'—':`${age}d atrás`;
+      const ageCol=_orgAgeColor(age);
+      return`<div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:start;padding:7px 10px;border-bottom:1px solid rgba(30,63,92,.4);background:${di%2?'transparent':'rgba(0,0,0,.1)'}">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Doc ${di+1}</span>
+            ${doc.link?`<a href="${_esc(doc.link)}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none">↗ abrir</a>`:''}
+            <button onclick="orgDelDoc(${m.id},${di})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1" title="Remover doc">×</button>
+          </div>
+          <input value="${_esc(doc.nome||'')}" placeholder="Nome do documento" oninput="orgDocChange(${m.id},${di},'nome',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0;margin-bottom:5px">
+          <input value="${_esc(doc.link||'')}" placeholder="Link do documento" oninput="orgDocChange(${m.id},${di},'link',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--accent);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
+        </div>
+        <div style="text-align:right;min-width:110px">
+          <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Últ. modificação</div>
+          <input type="date" value="${doc.ultimaMod||''}" onchange="orgDocChange(${m.id},${di},'ultimaMod',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:10px;padding:2px 5px;font-family:inherit;outline:none;width:130px">
+          <div style="font-size:10px;font-weight:700;color:${ageCol};margin-top:2px">${ageStr}</div>
+          <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:6px;margin-bottom:3px">Última tarefa</div>
+          <input type="number" min="0" value="${doc.ultimaTarefa||''}" placeholder="nº" onchange="orgDocChange(${m.id},${di},'ultimaTarefa',this.value)" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--success);font-size:11px;font-weight:700;font-family:inherit;text-align:center;padding:2px 4px;outline:none">
+        </div>
+      </div>`;
+    }).join(''):'<div style="font-size:11px;color:var(--muted);padding:8px 10px;text-align:center">Nenhum documento. Clique em "+ Doc" para adicionar.</div>';
+
+    return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+      <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
         <select onchange="orgMonitorChange(${m.id},'disc',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;padding:4px 8px;outline:none;max-width:160px">
           <option value="">-- Disciplina --</option>
           ${discOpts}
         </select>
         <button onclick="orgDelMonitor(${m.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+      <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;border-bottom:1px solid var(--border)">
         <label style="font-size:10px;color:var(--muted)">Nome ${inp(m.nome,'Nome do monitor','nome',m.id,'var(--text)')}</label>
         <label style="font-size:10px;color:var(--muted)">Email ${inp(m.email,'email@...','email',m.id,'var(--accent)')}</label>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <label style="font-size:10px;color:var(--muted)">Docs do monitor ${inp(m.docsLink,'Link Docs','docsLink',m.id,'var(--accent)')}</label>
-        <label style="font-size:10px;color:var(--muted)">Pasta Drive ${inp(m.driveLink,'Link Drive','driveLink',m.id,'var(--accent)')}</label>
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:6px">Pasta Drive ${inp(m.driveLink,'Link da pasta Drive','driveLink',m.id,'var(--accent)')}</label>
       </div>
-    </div>`).join('');
-  // set select values after render
-  monitores.forEach(m=>{
-    const cards=el.querySelectorAll('select');
-    cards.forEach(sel=>{if(sel.closest('[style*="border-radius:10px"]')){try{sel.value=m.disc||'';}catch{}}});
-  });
-  // more reliable: use index
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:rgba(0,0,0,.15)">
+          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Documentos</span>
+          <button onclick="orgAddDoc(${m.id})" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Doc</button>
+        </div>
+        ${docsHTML}
+      </div>
+    </div>`;
+  }).join('');
+
   const sels=el.querySelectorAll('select');
   monitores.forEach((m,i)=>{if(sels[i])sels[i].value=m.disc||'';});
+}
+
+function orgAddDoc(monId){
+  if(!orgTrilhaAtual)return;
+  const m=orgTrilhaAtual.monitores.find(m=>m.id===monId);if(!m)return;
+  if(!m.docs)m.docs=[];
+  m.docs.push({nome:'',link:'',ultimaMod:'',ultimaTarefa:''});
+  renderOrgMonitores();
+  _scheduleOrgSave();
+}
+function orgDelDoc(monId,di){
+  if(!orgTrilhaAtual)return;
+  const m=orgTrilhaAtual.monitores.find(m=>m.id===monId);if(!m||!m.docs)return;
+  m.docs.splice(di,1);
+  renderOrgMonitores();
+  _scheduleOrgSave();
+}
+function orgDocChange(monId,di,field,val){
+  if(!orgTrilhaAtual)return;
+  const m=orgTrilhaAtual.monitores.find(m=>m.id===monId);if(!m||!m.docs||!m.docs[di])return;
+  m.docs[di][field]=field==='ultimaTarefa'?parseInt(val)||'':val;
+  if(field==='ultimaMod'||field==='ultimaTarefa')renderOrgMonitores();
+  _scheduleOrgSave();
 }
 
 let _monSort='oldest';
@@ -6302,13 +6412,20 @@ function deleteMonCargo(id){
               <input id="org-plan-fim" type="date" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
             </label>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
             <label style="font-size:11px;color:var(--muted)">Tarefas por aula
               <input id="org-plan-tpa" type="number" min="1" max="10" value="3" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
             </label>
             <label style="font-size:11px;color:var(--muted)">Tarefas finais/disc.
               <input id="org-plan-tpd" type="number" min="0" max="20" value="4" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
             </label>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+              <span style="font-size:11px;color:var(--muted);font-weight:600">Padrões salvos</span>
+              <button onclick="orgSalvarPadrao()" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Salvar atual</button>
+            </div>
+            <div id="org-padroes-list"></div>
           </div>
         </div>
         <div id="org-plan-resumo" style="margin-bottom:14px"></div>
