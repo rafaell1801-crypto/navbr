@@ -5425,13 +5425,20 @@ function orgExcluirTrilha(){
 
 function orgShowSub(sub){
   orgSubAtual=sub;
-  ['aulas','planejamento','monitores'].forEach(s=>{
+  ['aulas','planejamento','monitores','config'].forEach(s=>{
     const el=document.getElementById('org-sub-'+s);if(el)el.classList.toggle('hidden',s!==sub);
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
   });
   if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();}
   else if(sub==='planejamento')renderOrgPlanejamento();
+  else if(sub==='config'){const el=document.getElementById('org-cfg-nome');if(el&&orgTrilhaAtual)el.value=orgTrilhaAtual.nome||'';}
+}
+function orgCfgNomeChange(val){
+  if(!orgTrilhaAtual)return;
+  orgTrilhaAtual.nome=val;
+  document.getElementById('org-detalhe-nome').textContent=val;
+  _scheduleOrgSave();
 }
 
 function renderOrgLista(){
@@ -5486,6 +5493,10 @@ function orgDiscChange(id,field,val){
     const tots=orgTrilhaAtual.disciplinas.reduce((a,dd)=>a+_discTotal(dd),0);
     const ftEl=document.getElementById('org-tot-footer');
     if(ftEl)ftEl.innerHTML=`${orgTrilhaAtual.disciplinas.reduce((a,dd)=>a+(dd.aulas||0),0)} aulas · <b style="color:var(--accent)">${tots}</b> tarefas totais`;
+    renderOrgPrioridade();
+  } else if(field==='q'||field==='p'){
+    d[field]=parseInt(val)||0;
+    renderOrgPrioridade();
   } else {
     d[field]=val;
   }
@@ -5570,7 +5581,74 @@ function renderOrgDiscs(){
       </table>
     </div>
     <div id="org-tot-footer" style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · <b style="color:var(--accent)">${totalTarefas}</b> tarefas totais</div>
+    <div id="org-prioridade-wrap" style="margin-top:16px"></div>
   `;
+  renderOrgPrioridade();
+}
+
+function renderOrgPrioridade(){
+  const el=document.getElementById('org-prioridade-wrap');if(!el)return;
+  const discs=(orgTrilhaAtual&&orgTrilhaAtual.disciplinas)||[];
+  if(!discs.length){el.innerHTML='';return;}
+
+  // fórmula: score = q * peso  (q=questões na prova, peso=1-5)
+  // normaliza cada componente para o ranking visual
+  const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
+  const totalA=discs.reduce((a,d)=>a+(d.aulas||0),0);
+  const maxP=Math.max(...discs.map(d=>parseInt(d.p)||0),1);
+
+  const scored=discs.map(d=>{
+    const q=parseInt(d.q)||0;
+    const p=parseInt(d.p)||0;
+    const a=d.aulas||0;
+    // score composto: peso maior p/ questões (50%), peso (30%), aulas (20%)
+    const qN=totalQ>0?q/totalQ:0;
+    const pN=maxP>0?p/maxP:0;
+    const aN=totalA>0?a/totalA:0;
+    const score=Math.round((qN*0.5+pN*0.3+aN*0.2)*1000)/10;
+    return{d,q,p,a,score};
+  }).sort((a,b)=>b.score-a.score||b.q-a.q||b.p-a.p||b.a-a.a||(a.d.nome||'').localeCompare(b.d.nome||'','pt'));
+
+  const maxScore=scored[0]?.score||1;
+  const numStyle='width:44px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
+
+  const rows=scored.map(({d,q,p,a,score},rank)=>{
+    return`<div style="display:grid;grid-template-columns:24px 1fr 44px 44px 50px;gap:6px;align-items:center;padding:7px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank+1}</div>
+      <div style="min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)||'(sem nome)'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">${a} aulas</div>
+      </div>
+      <div style="text-align:center">
+        <input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${numStyle}">
+      </div>
+      <div style="text-align:center">
+        <input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${numStyle}">
+      </div>
+      <div style="text-align:right;font-size:13px;font-weight:700;color:${score>0?'var(--accent)':'var(--muted)'}">${score>0?score.toFixed(1):'—'}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`<details open>
+    <summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:8px 0;user-select:none">
+      <span>▸</span> Ranking de prioridade
+      <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">— preencha Q prova e Peso para calcular</span>
+    </summary>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:6px">
+      <div style="display:grid;grid-template-columns:24px 1fr 44px 44px 50px;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:2px">
+        <div></div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px">Disciplina</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q prova</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
+        <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
+      </div>
+      ${rows}
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.6">
+        Fórmula: <b style="color:var(--text)">score = Q×50% + Peso×30% + Aulas×20%</b> (normalizado)<br>
+        Total de questões na prova: <b style="color:var(--text)">${totalQ||'—'}</b>
+      </div>
+    </div>
+  </details>`;
 }
 const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ'];
 let _orgDiscEditFmt=new Set();
@@ -5824,22 +5902,31 @@ function _renderOrgTabela(){
   // tabela acumulada
   if(acumEl){
     acumEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Acumulado</div>
-    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
-    <table style="border-collapse:collapse;min-width:100%">
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <table style="border-collapse:collapse;width:100%">
       <thead>
         <tr>
-          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border)">Disciplina</th>
-          ${semanas.map((s,wi)=>`<th style="${thStyle};opacity:${_semDone(s)?'.4':'1'}">S${wi+1}<div style="font-size:9px;font-weight:400">${_orgFmtData(s.data)}</div></th>`).join('')}
+          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border);min-width:160px">Disciplina</th>
+          ${semanas.map((s,wi)=>`<th style="${thStyle};padding:3px 4px;min-width:48px">S${wi+1}<div style="font-size:9px;font-weight:400">${_orgFmtData(s.data)}</div></th>`).join('')}
+          <th style="${thStyle};border-left:1px solid var(--border);padding:3px 6px">🔗</th>
         </tr>
       </thead>
       <tbody>
         ${discs.map((d,di)=>{
           let acc=0;
+          const mon=monByDisc[d.id];
+          const docs=mon&&mon.docs||[];
+          const docsLinks=docs.filter(doc=>doc.link).map((doc,i)=>linkIcon(doc.link,'📄',doc.nome||`Doc ${i+1}`)).join('');
+          const driveLink=mon&&mon.driveLink?linkIcon(mon.driveLink,'📁','Drive'):'';
+          const hasLinks=docsLinks||driveLink;
+          const monNome=mon&&mon.nome?` — ${mon.nome}`:'';
           return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
-            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}">
+            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}" title="${_esc(d.nome||'')}${monNome}">
               ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
+              ${monNome?`<span style="color:var(--muted);font-weight:400">${_esc(monNome)}</span>`:''}
             </td>
-            ${semanas.map(s=>{acc+=(s.dist&&s.dist[di]!==undefined?s.dist[di]:0);return`<td style="${tdVal(s)};color:var(--muted)">${acc}</td>`;}).join('')}
+            ${semanas.map(s=>{acc+=(s.dist&&s.dist[di]!==undefined?s.dist[di]:0);return`<td style="${tdVal(s)};color:var(--muted);padding:2px 3px">${acc}</td>`;}).join('')}
+            <td style="${tdLinks}">${hasLinks?docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -6530,12 +6617,12 @@ function deleteMonCargo(id){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <button onclick="orgVoltarLista()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0">←</button>
         <span id="org-detalhe-nome" style="font-size:14px;font-weight:700;color:var(--text);flex:1"></span>
-        <button onclick="orgExcluirTrilha()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--danger)">Excluir</button>
       </div>
       <!-- Sub-abas da trilha -->
       <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
+        <button id="org-sub-btn-config" onclick="orgShowSub('config')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Configurações</button>
         <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
       <!-- Disciplinas (Aulas + Monitores combinados) -->
@@ -6571,6 +6658,18 @@ function deleteMonCargo(id){
       </div>
       <!-- Monitores (movido para dentro da aba Disciplinas) -->
       <div id="org-sub-monitores" class="hidden"></div>
+      <!-- Configurações -->
+      <div id="org-sub-config" class="hidden">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">Nome da trilha</div>
+          <input id="org-cfg-nome" oninput="orgCfgNomeChange(this.value)" style="width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div style="background:rgba(242,107,94,.06);border:1px solid rgba(242,107,94,.3);border-radius:10px;padding:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px">Zona de perigo</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Esta ação é irreversível. A trilha e todos os seus dados serão apagados permanentemente.</div>
+          <button onclick="orgExcluirTrilha()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">Excluir trilha</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
