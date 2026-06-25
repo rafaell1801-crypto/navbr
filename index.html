@@ -5336,18 +5336,50 @@ async function _saveMonitor(){
 
 function showTrabalhoSubtab(tab){
   _trabalhoSubtab=tab;
-  ['monitor','organizador'].forEach(t=>{
-    const el=document.getElementById('trab-sub-'+t);if(el)el.classList.toggle('hidden',t!==tab);
-    const btn=document.getElementById('trab-btn-'+t);if(btn)btn.classList.toggle('active',t===tab);
-  });
-  if(tab==='organizador'){
-    const listEl=document.getElementById('org-trilhas-list');
-    if(listEl&&!orgTrilhas.length)listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Carregando...</div>';
-    renderOrgLista();
+  const monEl=document.getElementById('trab-sub-monitor');
+  const orgEl=document.getElementById('trab-sub-organizador');
+  if(monEl)monEl.classList.toggle('hidden',tab!=='monitor');
+  if(orgEl)orgEl.classList.toggle('hidden',tab==='monitor');
+  // atualizar active nos botões
+  document.querySelectorAll('#trab-subtabs-bar .subtab').forEach(b=>b.classList.remove('active'));
+  const activeBtn=document.getElementById('trab-btn-'+tab);
+  if(activeBtn)activeBtn.classList.add('active');
+  if(tab!=='monitor'){
+    const tid=parseInt(tab);
+    if(tid){const t=orgTrilhas.find(t=>t.id===tid);if(t)orgAbrirTrilha(t.id,true);}
   }
 }
+function _renderTrabSubtabs(){
+  const bar=document.getElementById('trab-subtabs-bar');if(!bar)return;
+  // remove trilha tabs antigos
+  bar.querySelectorAll('.trab-trilha-btn').forEach(b=>b.remove());
+  const novaBtn=document.getElementById('trab-btn-nova');
+  orgTrilhas.forEach(t=>{
+    const btn=document.createElement('button');
+    btn.className='subtab trab-trilha-btn';
+    btn.id='trab-btn-'+t.id;
+    btn.textContent=t.nome;
+    btn.onclick=()=>showTrabalhoSubtab(String(t.id));
+    bar.insertBefore(btn,novaBtn);
+  });
+}
+function orgNovaTrilhaTab(){
+  const nome=prompt('Nome da trilha (ex: PM-PI):');
+  if(!nome||!nome.trim())return;
+  const t={id:Date.now(),nome:nome.trim(),disciplinas:[],monitores:[],plano:{inicio:'',fim:'',tpa:3,tpd:4,semanas:[]}};
+  orgTrilhas.unshift(t);
+  _saveOrgTrilhas();
+  _renderTrabSubtabs();
+  showTrabalhoSubtab(String(t.id));
+}
 
-function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
+function renderTrabalho(){
+  renderMonGeneralLinks();renderMonitor();_renderTrabSubtabs();
+  // se há trilhas e nenhuma aba de trilha está ativa, abrir a primeira
+  if(orgTrilhas.length&&_trabalhoSubtab==='monitor'&&orgTrilhas.length){
+    // só abrir automaticamente se já carregou
+  }
+}
 
 // ─── ORGANIZADOR / TRILHAS ───────────────────────────────────────────────────
 let orgTrilhas=[];
@@ -5409,8 +5441,10 @@ async function loadOrgTrilhas(){
   }catch{}
   if(!orgTrilhas.length){orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));await _saveOrgTrilhas();}
   else{_orgMigrateV2();}
+  _renderTrabSubtabs();
+  // abrir primeira trilha se já estiver na aba trabalho
   const orgEl=document.getElementById('trab-sub-organizador');
-  if(orgEl&&!orgEl.classList.contains('hidden'))renderOrgLista();
+  if(orgEl&&!orgEl.classList.contains('hidden')&&orgTrilhas.length){orgAbrirTrilha(orgTrilhas[0].id);}
 }
 async function _saveOrgTrilhas(){
   try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
@@ -5470,28 +5504,27 @@ function orgNovaTrilha(){
   orgAbrirTrilha(t.id);
 }
 
-function orgAbrirTrilha(id){
+function orgAbrirTrilha(id,skipTabSwitch){
   orgTrilhaAtual=orgTrilhas.find(t=>t.id===id);
   if(!orgTrilhaAtual)return;
-  document.getElementById('org-lista-view').classList.add('hidden');
-  document.getElementById('org-detalhe-view').classList.remove('hidden');
-  document.getElementById('org-detalhe-nome').textContent=orgTrilhaAtual.nome;
   orgShowSub('aulas');
 }
 
 function orgVoltarLista(){
   orgTrilhaAtual=null;
-  document.getElementById('org-detalhe-view').classList.add('hidden');
-  document.getElementById('org-lista-view').classList.remove('hidden');
-  renderOrgLista();
+  showTrabalhoSubtab('monitor');
 }
 
 function orgExcluirTrilha(){
   if(!orgTrilhaAtual)return;
   if(!confirm('Excluir a trilha "'+orgTrilhaAtual.nome+'"? Essa ação não pode ser desfeita.'))return;
+  const nextId=orgTrilhas.find(t=>t.id!==orgTrilhaAtual.id)?.id;
   orgTrilhas=orgTrilhas.filter(t=>t.id!==orgTrilhaAtual.id);
+  orgTrilhaAtual=null;
   _saveOrgTrilhas();
-  orgVoltarLista();
+  _renderTrabSubtabs();
+  if(nextId)showTrabalhoSubtab(String(nextId));
+  else showTrabalhoSubtab('monitor');
 }
 
 function orgShowSub(sub){
@@ -6031,10 +6064,11 @@ function renderOrgPrioridade(){
   const priCfg=t.priCfg||{};
   const qTotalB=parseInt(priCfg.qTotalB)||0;
   const qTotalE=parseInt(priCfg.qTotalE)||0;
-  const pesoB=parseInt(priCfg.pesoB)||1;
-  const pesoE=parseInt(priCfg.pesoE)||2;
+  const qTotalD=parseInt(priCfg.qTotalD)||0;
+  // peso fixo por grupo — sem edição individual
+  const _PESO={basicos:1,especificos:2,discursiva:1};
   const ns='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
-  const cols='20px 1fr 38px 38px 44px 44px 38px 90px';
+  const cols='20px 1fr 38px 44px 44px 90px';
 
   // Q efetiva: se disciplina tem subgrupo, usa Q do subgrupo ÷ aulas do subgrupo × aulas próprias
   function qEfetiva(d,allDiscs){
@@ -6058,30 +6092,29 @@ function renderOrgPrioridade(){
     let rank=0;
     let html='';
 
-    // individuais scored
+    // individuais scored — peso automático pelo grupo
     const indScored=individuais.map(d=>{
-      const q=parseInt(d.q)||0;const p=parseInt(d.p)||1;const a=Math.max(1,d.aulas||1);
+      const q=parseInt(d.q)||0;const p=_PESO[d.grupo||'basicos']||1;const a=Math.max(1,d.aulas||1);
       return{d,q,p,a,score:Math.round(q/a*p*100)/100};
     }).sort((a,b)=>b.score-a.score||(a.d.nome||'').localeCompare(b.d.nome||''));
 
     indScored.forEach(({d,q,p,a,score})=>{
       rank++;
-      const hasData=q>0&&p>0;
+      const hasData=q>0;
       const grpVal=d.grupo||'basicos';
       html+=`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:5px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
         <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank}</div>
         <div style="min-width:0">
-          <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
           <div style="font-size:9px;color:var(--muted)">${a} aulas</div>
         </div>
         <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${ns}"></div>
-        <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${ns}"></div>
         <div style="text-align:right;font-size:11px;color:var(--muted)">${q&&a?(q/a).toFixed(2):'—'}</div>
         <div style="text-align:right;font-size:12px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'}">${hasData?score.toFixed(2):'—'}</div>
-        <div></div>
         <div><select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px;outline:none">
-          <option value="basicos" ${grpVal==='basicos'?'selected':''}>Básicos</option>
-          <option value="especificos" ${grpVal==='especificos'?'selected':''}>Específicos</option>
+          <option value="basicos" ${grpVal==='basicos'?'selected':''}>B</option>
+          <option value="especificos" ${grpVal==='especificos'?'selected':''}>E</option>
+          <option value="discursiva" ${grpVal==='discursiva'?'selected':''}>D</option>
         </select></div>
       </div>`;
     });
@@ -6101,27 +6134,26 @@ function renderOrgPrioridade(){
         </div>
         ${sgDiscs.map((d,si)=>{
           const qEf=qSg?Math.round(qSg*Math.max(1,d.aulas||1)/totalAulasSg*10)/10:0;
-          const p=parseInt(d.p)||1;
+          const p=_PESO[d.grupo||'basicos']||1;
           const a=Math.max(1,d.aulas||1);
           const score=qEf&&p?Math.round(qEf/a*p*100)/100:0;
           const grpVal=d.grupo||'basicos';
           return`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:4px 10px;border-bottom:.5px solid rgba(196,181,253,.1)">
             <div style="font-size:10px;color:rgba(196,181,253,.5);text-align:center">${rank}.${si+1}</div>
             <div style="min-width:0">
-              <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
-              <div style="font-size:9px;color:var(--muted)">${a} aulas · Q estimado: ${qEf||'—'}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)}</div>
+              <div style="font-size:9px;color:var(--muted)">${a} aulas · Q≈${qEf||'—'}</div>
             </div>
             <div style="text-align:center;font-size:10px;color:rgba(196,181,253,.6)">${qEf||'—'}</div>
-            <div><input type="number" min="1" max="5" value="${p||''}" placeholder="—" oninput="orgDiscChange(${d.id},'p',this.value)" style="${ns}"></div>
             <div style="text-align:right;font-size:11px;color:var(--muted)">${qEf&&a?(qEf/a).toFixed(2):'—'}</div>
             <div style="text-align:right;font-size:12px;font-weight:700;color:${score?'var(--accent)':'var(--muted)'}">${score?score.toFixed(2):'—'}</div>
-            <div></div>
             <div style="display:flex;gap:3px;align-items:center">
               <select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px;outline:none">
-                <option value="basicos" ${grpVal==='basicos'?'selected':''}>Bás.</option>
-                <option value="especificos" ${grpVal==='especificos'?'selected':''}>Esp.</option>
+                <option value="basicos" ${grpVal==='basicos'?'selected':''}>B</option>
+                <option value="especificos" ${grpVal==='especificos'?'selected':''}>E</option>
+                <option value="discursiva" ${grpVal==='discursiva'?'selected':''}>D</option>
               </select>
-              <button onclick="orgPriRemSubgrupo(${d.id})" title="Remover do subgrupo" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">×</button>
+              <button onclick="orgPriRemSubgrupo(${d.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.5'">×</button>
             </div>
           </div>`;
         }).join('')}
@@ -6130,7 +6162,7 @@ function renderOrgPrioridade(){
     return html;
   }
 
-  function grpBlock(titulo,cor,grupo,qTotal,pesoGrp,grKey){
+  function grpBlock(titulo,cor,grupo,qTotal,_pesoIgnorado,grKey){
     const gDiscs=discs.filter(d=>(d.grupo||'basicos')===grupo);
     const tqg=gDiscs.reduce((a,d)=>{
       if((d.subgrupo||'').trim())return a; // subgrupo conta pelo total do subgrupo
@@ -6149,10 +6181,7 @@ function renderOrgPrioridade(){
           <span style="font-size:10px;color:var(--muted)">Total Q:</span>
           <input type="number" min="0" value="${qTotal||''}" placeholder="—" oninput="orgPriCfgChange('qTotal${grKey}',this.value)" style="${ns}">
           ${statusQ}
-          <span style="font-size:10px;color:var(--muted);margin-left:4px">Peso:</span>
-          <input type="number" min="1" max="5" value="${pesoGrp}" oninput="orgPriCfgChange('peso${grKey}',this.value)" style="${ns}">
-          <button onclick="orgPriAplicarPeso('${grKey}',${pesoGrp})" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Aplicar</button>
-          <button onclick="orgPriAddSubgrupo('${grupo}')" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px dashed rgba(196,181,253,.4);background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit">+ Subgrupo</button>
+          <button onclick="orgPriAddSubgrupo('${grupo}')" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px dashed rgba(196,181,253,.4);background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit;margin-left:4px">+ Subgrupo</button>
         </div>
       </div>
       ${gDiscs.length?makeGroupRows(gDiscs):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
@@ -6169,13 +6198,13 @@ function renderOrgPrioridade(){
       <div style="display:grid;grid-template-columns:${cols};gap:4px;padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:4px">
         <div></div><div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase">Disciplina</div>
         <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Q</div>
-        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Peso</div>
         <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:right">Q/aula</div>
         <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
-        <div></div><div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grupo</div>
+        <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grp</div>
       </div>
-      ${grpBlock('Conhecimentos Básicos','#7dd3fc','basicos',qTotalB,pesoB,'B')}
-      ${grpBlock('Conhecimentos Específicos','#c4b5fd','especificos',qTotalE,pesoE,'E')}
+      ${grpBlock('Conhecimentos Básicos (peso 1)','#7dd3fc','basicos',qTotalB,1,'B')}
+      ${grpBlock('Conhecimentos Específicos (peso 2)','#c4b5fd','especificos',qTotalE,2,'E')}
+      ${grpBlock('Discursiva','#f5a623','discursiva',qTotalD,1,'D')}
       <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">
         <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Em subgrupos, Q é estimado proporcionalmente por aulas.
       </div>
@@ -7150,9 +7179,10 @@ function deleteMonCargo(id){
 
 <!-- TAB TRABALHO -->
 <div id="tab-trabalho" class="hidden" style="font-family:'Nunito','Segoe UI',sans-serif">
-  <div class="subtabs">
+  <div class="subtabs" id="trab-subtabs-bar">
     <button class="subtab active" id="trab-btn-monitor" onclick="showTrabalhoSubtab('monitor')">Monitor</button>
-    <button class="subtab" id="trab-btn-organizador" onclick="showTrabalhoSubtab('organizador')">Organizador</button>
+    <!-- trilhas inseridas dinamicamente aqui -->
+    <button class="subtab" id="trab-btn-nova" onclick="orgNovaTrilhaTab()" style="opacity:.5;font-size:16px;padding:10px 12px">+</button>
   </div>
 
   <!-- Monitor -->
@@ -7189,22 +7219,11 @@ function deleteMonCargo(id){
     <div id="monitor-list"></div>
   </div>
 
-  <!-- Organizador -->
+  <!-- Organizador (painel de trilha ativa) -->
   <div id="trab-sub-organizador" class="hidden" style="padding:14px 20px">
-    <!-- Vista: lista de trilhas -->
-    <div id="org-lista-view">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <span style="font-size:13px;font-weight:700;color:var(--text)">Trilhas</span>
-        <button onclick="orgNovaTrilha()" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit">+ Nova trilha</button>
-      </div>
-      <div id="org-trilhas-list"></div>
-    </div>
-    <!-- Vista: detalhe de uma trilha -->
-    <div id="org-detalhe-view" class="hidden">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <button onclick="orgVoltarLista()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0">←</button>
-        <span id="org-detalhe-nome" style="font-size:14px;font-weight:700;color:var(--text);flex:1"></span>
-      </div>
+    <!-- Vista: detalhe da trilha selecionada (sem lista, acesso direto pela aba) -->
+    <div id="org-detalhe-view">
+      <div id="org-detalhe-nome" style="display:none"></div>
       <!-- Sub-abas da trilha -->
       <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
