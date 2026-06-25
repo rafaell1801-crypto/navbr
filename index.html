@@ -6272,9 +6272,9 @@ function renderOrgPrioridade(){
         </div>
         ${sgDiscs.map((d,si)=>{
           const qEf=qSg?Math.round(qSg*Math.max(1,d.aulas||1)/totalAulasSg*10)/10:0;
-          const p=_PESO[d.grupo||'basicos']||1;
           const a=Math.max(1,d.aulas||1);
-          const score=qEf?Math.round(qEf/a*_valPerQ(d.grupo||'basicos')*100)/100:0;
+          const qTotal=d.grupo==='especificos'?qTotalE:d.grupo==='discursiva'?qTotalD:qTotalB;
+          const score=qEf?Math.round(qEf/a*_valPerQ(d.grupo||'basicos',qTotal)*100)/100:0;
           const grpVal=d.grupo||'basicos';
           return`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:4px 10px;border-bottom:.5px solid rgba(196,181,253,.1)">
             <div style="font-size:10px;color:rgba(196,181,253,.5);text-align:center">${rank}.${si+1}</div>
