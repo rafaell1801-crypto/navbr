@@ -5525,23 +5525,41 @@ function renderOrgDiscs(){
         <tbody>
           ${discs.map((d,i)=>{
             const tpa=_discTpa(d);const tpd=_discTpd(d);const tot=_discTotal(d);
-            const isCustomTpa=d.tpa!=null;const isCustomTpd=d.tpd!=null;
             const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
-            const fmts=d.formatos||[];
-            const chipsHTML=_FORMATOS_LIST.map(f=>`<span onclick="orgToggleDiscFormato(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${fmts.includes(f)?'var(--accent)':'var(--border)'};background:${fmts.includes(f)?'rgba(62,181,200,.15)':'transparent'};color:${fmts.includes(f)?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`).join('');
+            const fmtAula=d.fmtAula||[];const fmtFinal=d.fmtFinal||[];
+            const isEditing=_orgDiscEditFmt.has(d.id);
+            const chip=(f,grupo,sel)=>`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(62,181,200,.15)':'transparent'};color:${sel?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;
+            const padroesFmtHTML=orgPadroes.filter(p=>p.fmtAula||p.fmtFinal).map(p=>`<span onclick="orgAplicarPadraoFmt(${p.id},${d.id})" style="padding:1px 8px;border-radius:99px;border:1px solid rgba(196,181,253,.4);background:rgba(139,107,232,.1);color:#c4b5fd;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Aplicar: ${_esc(p.fmtAula.join('+'))} / ${_esc(p.fmtFinal.join('+'))}">${_esc(p.nome)}</span>`).join('');
+            const fmtContent=isEditing?`
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Por aula (tpa=${fmtAula.length||'global'})</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_FORMATOS_LIST.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Final/disc. (tpd=${fmtFinal.length||'global'})</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_FORMATOS_LIST.map(f=>chip(f,'Final',fmtFinal.includes(f))).join('')}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+                  <button onclick="orgSalvarPadraoFmt(${d.id})" style="padding:2px 8px;font-size:10px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">💾 Salvar padrão</button>
+                  ${padroesFmtHTML?`<span style="font-size:10px;color:var(--muted);align-self:center">Aplicar:</span>${padroesFmtHTML}`:''}
+                </div>
+              </div>`
+            :`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;align-items:center">
+                ${fmtAula.length?fmtAula.map(f=>chip(f,'Aula',true)).join(''):'<span style="font-size:10px;color:var(--muted)">por aula: —</span>'}
+                ${fmtAula.length&&fmtFinal.length?'<span style="color:var(--muted);font-size:10px">·</span>':''}
+                ${fmtFinal.length?fmtFinal.map(f=>chip(f,'Final',true)).join(''):''}
+              </div>`;
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
-                <input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none;margin-bottom:4px">
-                <div style="display:flex;flex-wrap:wrap;gap:3px">${chipsHTML}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">
+                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;font-size:13px;cursor:pointer;padding:0;color:${isEditing?'var(--accent)':'var(--muted)'};line-height:1">${isEditing?'✕':'✎'}</button>
+                </div>
+                ${fmtContent}
               </td>
               <td style="padding:4px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="${numStyle}color:var(--text)"></td>
               <td style="padding:4px;text-align:center">
-                <input type="number" value="${tpa}" min="0" max="20" oninput="orgDiscChange(${d.id},'tpa',this.value)" title="${isCustomTpa?'Personalizado':'Usando padrão global'}" style="${numStyle}color:${isCustomTpa?'var(--warn)':'var(--muted)'}">
-                ${isCustomTpa?`<button onclick="orgDiscResetTpa(${d.id})" title="Usar padrão global" style="display:block;margin:0 auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;line-height:1">↺</button>`:''}
+                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtAula.length?'var(--accent)':'var(--muted)'}">${tpa}</div>
               </td>
               <td style="padding:4px;text-align:center">
-                <input type="number" value="${tpd}" min="0" max="20" oninput="orgDiscChange(${d.id},'tpd',this.value)" title="${isCustomTpd?'Personalizado':'Usando padrão global'}" style="${numStyle}color:${isCustomTpd?'var(--warn)':'var(--muted)'}">
-                ${isCustomTpd?`<button onclick="orgDiscResetTpd(${d.id})" title="Usar padrão global" style="display:block;margin:0 auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;line-height:1">↺</button>`:''}
+                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtFinal.length?'var(--accent)':'var(--muted)'}">${tpd}</div>
               </td>
               <td id="org-tot-${d.id}" style="padding:4px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${tot}</td>
               <td style="padding:6px 10px"><input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none"></td>
@@ -5555,13 +5573,46 @@ function renderOrgDiscs(){
   `;
 }
 const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ'];
-function orgToggleDiscFormato(discId,fmt){
-  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);
-  if(!d)return;
-  if(!d.formatos)d.formatos=[];
-  const i=d.formatos.indexOf(fmt);
-  if(i>=0)d.formatos.splice(i,1);else d.formatos.push(fmt);
+let _orgDiscEditFmt=new Set();
+
+function orgToggleFmtEdit(discId){
+  if(_orgDiscEditFmt.has(discId))_orgDiscEditFmt.delete(discId);
+  else _orgDiscEditFmt.add(discId);
+  renderOrgDiscs();
+}
+function orgToggleFmtAula(discId,fmt){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  if(!d.fmtAula)d.fmtAula=[];
+  const i=d.fmtAula.indexOf(fmt);if(i>=0)d.fmtAula.splice(i,1);else d.fmtAula.push(fmt);
+  d.tpa=d.fmtAula.length||null;
   renderOrgDiscs();_scheduleOrgSave();
+}
+function orgToggleFmtFinal(discId,fmt){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  if(!d.fmtFinal)d.fmtFinal=[];
+  const i=d.fmtFinal.indexOf(fmt);if(i>=0)d.fmtFinal.splice(i,1);else d.fmtFinal.push(fmt);
+  d.tpd=d.fmtFinal.length||null;
+  renderOrgDiscs();_scheduleOrgSave();
+}
+function orgSalvarPadraoFmt(discId){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  const nome=prompt('Nome do padrão (ex: Português, Direito):');if(!nome||!nome.trim())return;
+  const p={id:Date.now(),nome:nome.trim(),fmtAula:[...(d.fmtAula||[])],fmtFinal:[...(d.fmtFinal||[])]};
+  orgPadroes.push(p);_saveOrgPadroes();alert('Padrão "'+p.nome+'" salvo!');
+}
+function orgAplicarPadraoFmt(padraoId,discId){
+  const p=orgPadroes.find(p=>p.id===padraoId);if(!p)return;
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  d.fmtAula=[...(p.fmtAula||[])];d.fmtFinal=[...(p.fmtFinal||[])];
+  d.tpa=d.fmtAula.length||null;d.tpd=d.fmtFinal.length||null;
+  renderOrgDiscs();_scheduleOrgSave();
+}
+function _countUsoPadrao(p){
+  if(!orgTrilhaAtual)return 0;
+  return orgTrilhaAtual.disciplinas.filter(d=>
+    JSON.stringify(d.fmtAula||[])==JSON.stringify(p.fmtAula||[])&&
+    JSON.stringify(d.fmtFinal||[])==JSON.stringify(p.fmtFinal||[])
+  ).length;
 }
 function orgDiscResetTpa(id){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===id);
