@@ -5611,6 +5611,30 @@ function renderOrgSemanal(){
         </table>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <!-- Links da semana -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">🔗 Links</span>
+        </div>
+        <div style="padding:8px 10px">
+          ${(sem.links||[]).map((lk,li)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+            <input value="${_esc(lk.label||'')}" placeholder="Nome" oninput="orgSemLinkChange(${li},'label',this.value)" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+            <input value="${_esc(lk.url||'')}" placeholder="https://..." oninput="orgSemLinkChange(${li},'url',this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+            ${lk.url?`<a href="${_esc(lk.url)}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none;line-height:1">↗</a>`:''}
+            <button onclick="orgSemLinkDel(${li})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.color='var(--danger)';this.style.opacity='1'" onmouseout="this.style.color='var(--muted)';this.style.opacity='.5'">×</button>
+          </div>`).join('')}
+          <button onclick="orgSemLinkAdd()" style="margin-top:2px;padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;width:100%">+ Link</button>
+        </div>
+      </div>
+      <!-- Bloco de notas -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+          <span style="font-size:11px;font-weight:700;color:var(--text)">📝 Observações</span>
+        </div>
+        <textarea oninput="orgSemNotasChange(this.value)" placeholder="Anotações para a semana..." style="width:100%;min-height:90px;padding:10px 12px;background:transparent;border:none;color:var(--text);font-size:12px;font-family:'Nunito','Segoe UI',sans-serif;resize:vertical;outline:none;box-sizing:border-box;line-height:1.5">${_esc(sem.notas||'')}</textarea>
+      </div>
+    </div>
     <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
         <span style="font-size:11px;font-weight:700;color:var(--text)">Tabela de tarefas</span>
@@ -5679,6 +5703,25 @@ function orgSemMove(idx,dir){
   if(sem.tasks&&sem.tasks[idx]!==undefined&&sem.tasks[j]!==undefined)
     [sem.tasks[idx],sem.tasks[j]]=[sem.tasks[j],sem.tasks[idx]];
   _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSemLinkAdd(){
+  const sem=_orgGetSem();if(!sem)return;
+  if(!sem.links)sem.links=[];
+  sem.links.push({label:'',url:''});
+  _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSemLinkDel(li){
+  const sem=_orgGetSem();if(!sem||!sem.links)return;
+  sem.links.splice(li,1);
+  _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSemLinkChange(li,field,val){
+  const sem=_orgGetSem();if(!sem||!sem.links||!sem.links[li])return;
+  sem.links[li][field]=val;_scheduleOrgSave();
+}
+function orgSemNotasChange(val){
+  const sem=_orgGetSem();if(!sem)return;
+  sem.notas=val;_scheduleOrgSave();
 }
 function orgSetTarefaComando(wi,idx,val){
   const semanas=(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
@@ -6097,6 +6140,8 @@ function _orgRecalcSemanas(){
       concluida:old?!!old.concluida:false,
       docLink:old?old.docLink||'':'',
       agenda:old?old.agenda||[]:[],
+      links:old?old.links||[]:[],
+      notas:old?old.notas||'':'',
       dist:discs.map((d,di)=>{
         if(old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
         // Distribute only among non-concluded semanas
