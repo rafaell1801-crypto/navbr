@@ -5691,7 +5691,6 @@ function renderOrgMonitores(){
           <option value="">-- Disciplina --</option>
           ${discOpts}
         </select>
-        <script>setTimeout(()=>{const sel=document.querySelector('[data-mon-sel="${m.id}"]');if(sel)sel.value='${m.disc||''}';},0);<\/script>
         <button onclick="orgDelMonitor(${m.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0">×</button>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
