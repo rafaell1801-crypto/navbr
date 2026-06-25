@@ -693,6 +693,16 @@ input[type=number]{-moz-appearance:textfield}
     </details>
 
     <details class="cfg-group">
+      <summary>Trilhas</summary>
+      <div class="cfg-group-body">
+        <div class="modal-section" style="margin-top:6px;border-top:none;padding-top:0">
+          <div id="cfg-trilhas-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+          <button onclick="orgNovaTrilha();closeSettings();" style="width:100%;padding:7px;font-size:12px;font-weight:700;border-radius:8px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit">+ Nova trilha</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="cfg-group">
       <summary>Dados</summary>
       <div class="cfg-group-body">
         <div class="modal-section">
@@ -1547,6 +1557,7 @@ function openSettings(){
   renderCustomLinkTypesConfig();
   renderBuiltinIconsConfig();
   renderTimerIconsConfig();
+  renderCfgTrilhas();
   const retEl=document.getElementById('cfg-fsrs-ret');if(retEl)retEl.value=Math.round(fsrsCfg.retention*100);
   const maxEl=document.getElementById('cfg-fsrs-max');if(maxEl)maxEl.value=fsrsCfg.maxInterval;
   const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
@@ -1625,6 +1636,34 @@ function onHeaderIconChange(input){
 }
 
 const ICON_INVERT_PREVIEW={editar:1,atrasados:0};
+function renderCfgTrilhas(){
+  const el=document.getElementById('cfg-trilhas-list');if(!el)return;
+  if(!orgTrilhas.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">Nenhuma trilha criada.</div>';return;}
+  el.innerHTML=orgTrilhas.map(t=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+      <input value="${_esc(t.nome)}" onchange="orgCfgRenomearTrilha(${t.id},this.value)"
+        style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;min-width:0">
+      <button onclick="orgCfgExcluirTrilha(${t.id})" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Excluir</button>
+    </div>`).join('');
+}
+function orgCfgRenomearTrilha(id,val){
+  const t=orgTrilhas.find(t=>t.id===id);if(!t||!val.trim())return;
+  t.nome=val.trim();
+  if(orgTrilhaAtual&&orgTrilhaAtual.id===id){
+    orgTrilhaAtual.nome=t.nome;
+    const el=document.getElementById('org-detalhe-nome');if(el)el.textContent=t.nome;
+  }
+  _saveOrgTrilhas();
+  renderOrgLista();
+}
+function orgCfgExcluirTrilha(id){
+  if(!confirm('Excluir esta trilha? Esta ação é irreversível.'))return;
+  orgTrilhas=orgTrilhas.filter(t=>t.id!==id);
+  if(orgTrilhaAtual&&orgTrilhaAtual.id===id){orgTrilhaAtual=null;}
+  _saveOrgTrilhas();
+  renderCfgTrilhas();
+  renderOrgLista();
+}
 function renderBuiltinIconsConfig(){
   const wrap=document.getElementById('cfg-builtin-icons');if(!wrap)return;
   const items=[['resumo','Resumo'],['questoes','Questões'],['drive','Drive'],['editar','Editar'],['atrasados','Atrasados'],['config','Configurações']];
@@ -5425,7 +5464,7 @@ function orgExcluirTrilha(){
 
 function orgShowSub(sub){
   orgSubAtual=sub;
-  ['aulas','planejamento','semanal','monitores','config'].forEach(s=>{
+  ['aulas','planejamento','semanal','monitores'].forEach(s=>{
     const el=document.getElementById('org-sub-'+s);if(el)el.classList.toggle('hidden',s!==sub);
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
@@ -5433,7 +5472,6 @@ function orgShowSub(sub){
   if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();}
   else if(sub==='planejamento')renderOrgPlanejamento();
   else if(sub==='semanal')renderOrgSemanal();
-  else if(sub==='config'){const el=document.getElementById('org-cfg-nome');if(el&&orgTrilhaAtual)el.value=orgTrilhaAtual.nome||'';}
 }
 function orgCfgNomeChange(val){
   if(!orgTrilhaAtual)return;
@@ -5811,11 +5849,11 @@ function renderOrgPrioridade(){
     </div>`;
   }).join('');
 
-  el.innerHTML=`<details open>
-    <summary style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:8px 0;user-select:none">
-      <span>▸</span> Ranking de prioridade
+  el.innerHTML=`<div>
+    <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px;padding:8px 0">
+      Ranking de prioridade
       <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0">— preencha Q prova e Peso para calcular</span>
-    </summary>
+    </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-top:6px">
       <div style="display:grid;grid-template-columns:24px 1fr 44px 44px 50px;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:2px">
         <div></div>
@@ -5830,7 +5868,7 @@ function renderOrgPrioridade(){
         Total de questões na prova: <b style="color:var(--text)">${totalQ||'—'}</b>
       </div>
     </div>
-  </details>`;
+  </div>`;
 }
 const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ']; // legado Monitor
 const _AULA_FMT=['T+Q','T','R+Q','R','SQ','Passo','Aula'];
@@ -6831,7 +6869,6 @@ function deleteMonCargo(id){
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
         <button id="org-sub-btn-semanal" onclick="orgShowSub('semanal')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Semanal</button>
-        <button id="org-sub-btn-config" onclick="orgShowSub('config')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Configurações</button>
         <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
       <!-- Disciplinas (Aulas + Monitores combinados) -->
@@ -6870,18 +6907,6 @@ function deleteMonCargo(id){
       <!-- Semanal -->
       <div id="org-sub-semanal" class="hidden">
         <div id="org-sem-content"></div>
-      </div>
-      <!-- Configurações -->
-      <div id="org-sub-config" class="hidden">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px">Nome da trilha</div>
-          <input id="org-cfg-nome" oninput="orgCfgNomeChange(this.value)" style="width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
-        </div>
-        <div style="background:rgba(242,107,94,.06);border:1px solid rgba(242,107,94,.3);border-radius:10px;padding:16px">
-          <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px">Zona de perigo</div>
-          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Esta ação é irreversível. A trilha e todos os seus dados serão apagados permanentemente.</div>
-          <button onclick="orgExcluirTrilha()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">Excluir trilha</button>
-        </div>
       </div>
     </div>
   </div>
