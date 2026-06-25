@@ -5483,6 +5483,10 @@ function orgDiscChange(id,field,val){
   d[field]=field==='aulas'?parseInt(val)||0:val;
   _scheduleOrgSave();
 }
+function _discTpa(d){return d.tpa!=null?parseInt(d.tpa):parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;}
+function _discTpd(d){return d.tpd!=null?parseInt(d.tpd):parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;}
+function _discTotal(d){return(d.aulas||0)*_discTpa(d)+_discTpd(d);}
+
 function renderOrgDiscs(){
   const el=document.getElementById('org-disc-list');if(!el)return;
   const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas||[];
@@ -5490,33 +5494,60 @@ function renderOrgDiscs(){
     el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">Nenhuma disciplina. Clique em "+ Disciplina" para adicionar.</div>';
     return;
   }
+  const gTpa=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;
+  const gTpd=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
+  const totalTarefas=discs.reduce((a,d)=>a+_discTotal(d),0);
   const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
-  const tpa=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;
-  const tpd=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
-  const total=totalAulas*tpa+discs.length*tpd;
+  const inp=(style,val,type,oninput,attrs='')=>`<input type="${type}" value="${val}" oninput="${oninput}" ${attrs} style="${style}">`;
   el.innerHTML=`
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Padrão global: <b style="color:var(--text)">${gTpa}/aula + ${gTpd}/disc.</b> — sobrescreva por disciplina se necessário.</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
         <thead>
-          <tr style="border-bottom:1px solid var(--border)">
+          <tr style="border-bottom:1px solid var(--border);background:rgba(0,0,0,.15)">
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Disciplina</th>
-            <th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;width:60px">Aulas</th>
+            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px">Aulas</th>
+            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas por aula">/aula</th>
+            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas finais">/final</th>
+            <th style="text-align:center;padding:8px 4px;color:var(--accent);font-weight:600;width:54px">Total</th>
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Link</th>
-            <th style="width:28px"></th>
+            <th style="width:24px"></th>
           </tr>
         </thead>
         <tbody>
-          ${discs.map((d,i)=>`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
-            <td style="padding:6px 10px"><input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none"></td>
-            <td style="padding:6px 6px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-family:inherit;text-align:center;padding:3px 4px;outline:none"></td>
-            <td style="padding:6px 10px"><input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link do pacote (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none"></td>
-            <td style="padding:6px 6px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
-          </tr>`).join('')}
+          ${discs.map((d,i)=>{
+            const tpa=_discTpa(d);const tpd=_discTpd(d);const tot=_discTotal(d);
+            const isCustomTpa=d.tpa!=null;const isCustomTpd=d.tpd!=null;
+            const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
+            return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
+              <td style="padding:6px 10px"><input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none"></td>
+              <td style="padding:4px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="${numStyle}color:var(--text)"></td>
+              <td style="padding:4px;text-align:center">
+                <input type="number" value="${tpa}" min="0" max="20" oninput="orgDiscChange(${d.id},'tpa',this.value)" title="${isCustomTpa?'Personalizado':'Usando padrão global'}" style="${numStyle}color:${isCustomTpa?'var(--warn)':'var(--muted)'}">
+                ${isCustomTpa?`<button onclick="orgDiscResetTpa(${d.id})" title="Usar padrão global" style="display:block;margin:0 auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;line-height:1">↺</button>`:''}
+              </td>
+              <td style="padding:4px;text-align:center">
+                <input type="number" value="${tpd}" min="0" max="20" oninput="orgDiscChange(${d.id},'tpd',this.value)" title="${isCustomTpd?'Personalizado':'Usando padrão global'}" style="${numStyle}color:${isCustomTpd?'var(--warn)':'var(--muted)'}">
+                ${isCustomTpd?`<button onclick="orgDiscResetTpd(${d.id})" title="Usar padrão global" style="display:block;margin:0 auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:9px;padding:0;line-height:1">↺</button>`:''}
+              </td>
+              <td style="padding:4px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${tot}</td>
+              <td style="padding:6px 10px"><input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none"></td>
+              <td style="padding:4px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>
-    <div style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · ${total} tarefas estimadas (${tpa}/aula + ${tpd}/disc.)</div>
+    <div style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · <b style="color:var(--accent)">${totalTarefas}</b> tarefas totais</div>
   `;
+}
+function orgDiscResetTpa(id){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===id);
+  if(d){delete d.tpa;renderOrgDiscs();_scheduleOrgSave();}
+}
+function orgDiscResetTpd(id){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===id);
+  if(d){delete d.tpd;renderOrgDiscs();_scheduleOrgSave();}
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 
@@ -5553,8 +5584,7 @@ function _orgRecalcSemanas(){
   const n=semanaDates.length;
   if(!n){p.semanas=[];return;}
   const discs=orgTrilhaAtual.disciplinas||[];
-  const tpa=p.tpa||3,tpd=p.tpd||4;
-  const totalPorDisc=discs.map(d=>(d.aulas||0)*tpa+tpd);
+  const totalPorDisc=discs.map(d=>_discTotal(d));
   if(!p.semanas)p.semanas=[];
   // preserve user edits; recalc only new semanas structure
   const oldSem=p.semanas;
@@ -5603,9 +5633,8 @@ function _renderOrgTabela(){
     if(acumEl)acumEl.innerHTML='';
     return;
   }
-  const tpa=p.tpa||3,tpd=p.tpd||4;
   const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
-  const totalTarefas=totalAulas*tpa+discs.length*tpd;
+  const totalTarefas=discs.reduce((a,d)=>a+_discTotal(d),0);
   const totalSem=semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0);
   if(resumoEl)resumoEl.innerHTML=`
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
