@@ -6589,7 +6589,8 @@ function _orgRecalcSemanas(){
       links:old?old.links||[]:[],
       notas:old?old.notas||'':'',
       dist:discs.map((d,di)=>{
-        if(old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
+        // preserva só se o usuário editou manualmente (valor > 0)
+        if(old&&old.dist&&old.dist[di]>0)return old.dist[di];
         // Distribute only among non-concluded semanas
         const abertas=semanaDates.filter((_,i)=>!(oldSem[i]&&oldSem[i].concluida)).length||n;
         const base=Math.floor(totalPorDisc[di]/abertas);
@@ -6699,17 +6700,25 @@ function _renderOrgTabela(){
           const docsLinks=docs.filter(doc=>doc.link).map((doc,i)=>linkIcon(doc.link,'📄',doc.nome||`Doc ${i+1}`)).join('');
           const driveLink=mon&&mon.driveLink?linkIcon(mon.driveLink,'📁','Drive'):'';
           const hasLinks=docsLinks||driveLink;
+          let acc=0;
           return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
             <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}" title="${_esc(d.nome||'')}${monNome}">
               ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
               ${monNome?`<span style="color:var(--muted);font-weight:400">${_esc(monNome)}</span>`:''}
             </td>
-            ${semanas.map((s,wi)=>`<td style="${tdVal(s)}">
-              ${_semDone(s)
-                ?`<span style="color:var(--muted);font-size:11px">${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}</span>`
-                :`<input type="number" min="0" value="${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:1px;font-family:inherit;outline:none">`
-              }
-            </td>`).join('')}
+            ${semanas.map((s,wi)=>{
+              const v=s.dist&&s.dist[di]!==undefined?s.dist[di]:0;
+              acc+=v;
+              return`<td style="${tdVal(s)};padding:2px 3px">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
+                  ${_semDone(s)
+                    ?`<span style="color:var(--muted);font-size:11px">${v}</span>`
+                    :`<input type="number" min="0" value="${v}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:1px;font-family:inherit;outline:none">`
+                  }
+                  <span style="font-size:9px;color:rgba(127,179,200,.4);line-height:1">${acc}</span>
+                </div>
+              </td>`;
+            }).join('')}
             <td style="${tdVal({})};font-weight:700;color:var(--accent);padding:2px 6px">${rowTotal}</td>
             <td style="${tdLinks}">${hasLinks?docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}</td>
           </tr>`;
@@ -6724,8 +6733,9 @@ function _renderOrgTabela(){
     </table></div>`;
   }
 
-  // tabela acumulada
-  if(acumEl){
+  // tabela acumulada (integrada na distribuição — limpa container)
+  if(acumEl){acumEl.innerHTML='';return;}
+  if(false&&acumEl){
     acumEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Acumulado</div>
     <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
     <table style="border-collapse:collapse;width:100%">
@@ -7471,7 +7481,7 @@ function deleteMonCargo(id){
         </div>
         <div id="org-plan-resumo" style="margin-bottom:14px"></div>
         <div id="org-plan-tabela" style="overflow-x:auto"></div>
-        <div id="org-plan-acumulado" style="overflow-x:auto;margin-top:16px"></div>
+        <div id="org-plan-acumulado"></div>
       </div>
       <!-- Monitores (movido para dentro da aba Disciplinas) -->
       <div id="org-sub-monitores" class="hidden"></div>
