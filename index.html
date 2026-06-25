@@ -5557,8 +5557,8 @@ function orgPlanUpdate(){
   const p=orgTrilhaAtual.plano;
   p.inicio=document.getElementById('org-plan-inicio').value;
   p.fim=document.getElementById('org-plan-fim').value;
-  p.tpa=parseInt(document.getElementById('org-plan-tpa').value)||3;
-  p.tpd=parseInt(document.getElementById('org-plan-tpd').value)||4;
+  p.tpa=p.tpa||3;
+  p.tpd=p.tpd||4;
   _orgRecalcSemanas();
   _renderOrgTabela();
   _scheduleOrgSave();
@@ -5608,15 +5608,10 @@ function renderOrgPlanejamento(){
   const p=orgTrilhaAtual.plano||{};
   const fi=document.getElementById('org-plan-inicio');
   const ff=document.getElementById('org-plan-fim');
-  const ftpa=document.getElementById('org-plan-tpa');
-  const ftpd=document.getElementById('org-plan-tpd');
   if(fi)fi.value=p.inicio||'';
   if(ff)ff.value=p.fim||'';
-  if(ftpa)ftpa.value=p.tpa||3;
-  if(ftpd)ftpd.value=p.tpd||4;
   if(p.inicio&&p.fim){_orgRecalcSemanas();}
   _renderOrgTabela();
-  _renderOrgPadroes();
 }
 
 function _renderOrgTabela(){
@@ -6506,21 +6501,6 @@ function deleteMonCargo(id){
             <label style="font-size:11px;color:var(--muted)">Data fim
               <input id="org-plan-fim" type="date" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
             </label>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <label style="font-size:11px;color:var(--muted)">Tarefas por aula
-              <input id="org-plan-tpa" type="number" min="1" max="10" value="3" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
-            </label>
-            <label style="font-size:11px;color:var(--muted)">Tarefas finais/disc.
-              <input id="org-plan-tpd" type="number" min="0" max="20" value="4" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
-            </label>
-          </div>
-          <div style="border-top:1px solid var(--border);padding-top:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-              <span style="font-size:11px;color:var(--muted);font-weight:600">Padrões salvos</span>
-              <button onclick="orgSalvarPadrao()" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Salvar atual</button>
-            </div>
-            <div id="org-padroes-list"></div>
           </div>
         </div>
         <div id="org-plan-resumo" style="margin-bottom:14px"></div>
