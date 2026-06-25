@@ -5518,8 +5518,13 @@ function renderOrgDiscs(){
             const tpa=_discTpa(d);const tpd=_discTpd(d);const tot=_discTotal(d);
             const isCustomTpa=d.tpa!=null;const isCustomTpd=d.tpd!=null;
             const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
+            const fmts=d.formatos||[];
+            const chipsHTML=_FORMATOS_LIST.map(f=>`<span onclick="orgToggleDiscFormato(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${fmts.includes(f)?'var(--accent)':'var(--border)'};background:${fmts.includes(f)?'rgba(62,181,200,.15)':'transparent'};color:${fmts.includes(f)?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`).join('');
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
-              <td style="padding:6px 10px"><input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none"></td>
+              <td style="padding:6px 10px">
+                <input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none;margin-bottom:4px">
+                <div style="display:flex;flex-wrap:wrap;gap:3px">${chipsHTML}</div>
+              </td>
               <td style="padding:4px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="${numStyle}color:var(--text)"></td>
               <td style="padding:4px;text-align:center">
                 <input type="number" value="${tpa}" min="0" max="20" oninput="orgDiscChange(${d.id},'tpa',this.value)" title="${isCustomTpa?'Personalizado':'Usando padrão global'}" style="${numStyle}color:${isCustomTpa?'var(--warn)':'var(--muted)'}">
@@ -5539,6 +5544,15 @@ function renderOrgDiscs(){
     </div>
     <div style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · <b style="color:var(--accent)">${totalTarefas}</b> tarefas totais</div>
   `;
+}
+const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ'];
+function orgToggleDiscFormato(discId,fmt){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);
+  if(!d)return;
+  if(!d.formatos)d.formatos=[];
+  const i=d.formatos.indexOf(fmt);
+  if(i>=0)d.formatos.splice(i,1);else d.formatos.push(fmt);
+  renderOrgDiscs();_scheduleOrgSave();
 }
 function orgDiscResetTpa(id){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===id);
@@ -5816,30 +5830,6 @@ function renderOrgMonitores(){
     const disc=discs.find(d=>d.id==m.disc);
     const discNome=disc?disc.nome:'—';
     const isOpen=_orgMonOpenCards.has(m.id);
-    const docs=m.docs||[];
-    const docsHTML=docs.map((doc,di)=>{
-      const age=_orgAgeDays(doc.ultimaMod);
-      const ageStr=age===null?'—':`${age}d atrás`;
-      const ageCol=_orgAgeColor(age);
-      return`<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:7px 12px;border-top:1px solid rgba(30,63,92,.4)">
-        <div>
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-            <span style="font-size:10px;font-weight:700;color:var(--muted)">Doc ${di+1}</span>
-            ${doc.link?`<a href="${_esc(doc.link)}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none">↗</a>`:''}
-            <button onclick="orgDelDoc(${m.id},${di})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1">×</button>
-          </div>
-          <input value="${_esc(doc.nome||'')}" placeholder="Nome do documento" oninput="orgDocChange(${m.id},${di},'nome',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0;margin-bottom:5px">
-          <input value="${_esc(doc.link||'')}" placeholder="Link do documento" oninput="orgDocChange(${m.id},${di},'link',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--accent);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
-        </div>
-        <div style="text-align:right;min-width:110px">
-          <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px">Últ. modificação</div>
-          <input type="date" value="${doc.ultimaMod||''}" onchange="orgDocChange(${m.id},${di},'ultimaMod',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:10px;padding:2px 5px;font-family:inherit;outline:none;width:130px">
-          <div style="font-size:10px;font-weight:700;color:${ageCol};margin-top:2px">${ageStr}</div>
-          <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:6px;margin-bottom:3px">Última tarefa</div>
-          <input type="number" min="0" value="${doc.ultimaTarefa||''}" placeholder="nº" onchange="orgDocChange(${m.id},${di},'ultimaTarefa',this.value)" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--success);font-size:11px;font-weight:700;font-family:inherit;text-align:center;padding:2px 4px;outline:none">
-        </div>
-      </div>`;
-    }).join('');
 
     return`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">
       <div onclick="orgToggleMonCard(${m.id})" style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background='transparent'">
@@ -5858,16 +5848,9 @@ function renderOrgMonitores(){
           </div>
           <label style="font-size:10px;color:var(--muted)">Nome<br>${inp(m.nome,'Nome do monitor','nome',m.id,'var(--text)')}</label>
         </div>
-        <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-bottom:1px solid var(--border)">
+        <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <label style="font-size:10px;color:var(--muted)">Docs ${inp(m.docsLink,'Link do Docs','docsLink',m.id,'var(--accent)')}</label>
           <label style="font-size:10px;color:var(--muted)">Drive ${inp(m.driveLink,'Link da pasta','driveLink',m.id,'var(--accent)')}</label>
-        </div>
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:rgba(0,0,0,.1)">
-            <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Documentos</span>
-            <button onclick="orgAddDoc(${m.id})" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Doc</button>
-          </div>
-          ${docsHTML||'<div style="font-size:11px;color:var(--muted);padding:8px 12px">Nenhum documento.</div>'}
         </div>
       </div>`:''}
     </div>`;
@@ -6474,7 +6457,7 @@ function deleteMonCargo(id){
       <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
-        <button id="org-sub-btn-monitores" onclick="orgShowSub('monitores')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Monitores</button>
+        <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
       <!-- Disciplinas (Aulas + Monitores combinados) -->
       <div id="org-sub-aulas">
