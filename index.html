@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -5426,6 +5426,14 @@ function _orgMigrateV2(){
       t.disciplinas.push({id:1750000000020,nome:'Direito Penal',aulas:16,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=391112'});
       changed=true;
     }
+    // mover Discursiva para grupo 'discursiva'
+    const disc=t.disciplinas.find(d=>d.id===1750000000013||d.nome==='Discursiva');
+    if(disc&&(disc.grupo||'basicos')!=='discursiva'){disc.grupo='discursiva';changed=true;}
+    // mover Direito Penal e Dir. Administrativo para específicos se ainda estão em básicos
+    [1750000000020,1750000000015,1750000000014].forEach(id=>{
+      const d=t.disciplinas.find(d=>d.id===id);
+      if(d&&!d.grupo){d.grupo='especificos';changed=true;}
+    });
   });
   if(changed)_saveOrgTrilhas();
 }
@@ -5914,13 +5922,18 @@ function orgDiscChange(id,field,val){
   }
   _scheduleOrgSave();
 }
-function _discTpa(d){return d.tpa!=null?parseInt(d.tpa):parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;}
+function _discTpa(d){
+  if(d.tpa!=null)return parseInt(d.tpa);
+  if(d.fmtAula&&d.fmtAula.length)return d.fmtAula.length;
+  return 0; // não mostrar padrão global até formato ser definido
+}
 function _discTpd(d){
   if(d.tpd!=null)return parseInt(d.tpd);
   const ff=d.fmtFinal||[];
-  if(!ff.length)return parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
+  if(!ff.length)return 0; // não mostrar padrão global até formato ser definido
   const sqCount=ff.includes('SQ')?parseInt(d.sqN)||1:0;
-  return ff.filter(f=>f!=='SQ').length+sqCount;
+  const simCount=ff.includes('Simulado')?parseInt(d.simN)||1:0;
+  return ff.filter(f=>f!=='SQ'&&f!=='Simulado').length+sqCount+simCount;
 }
 function _discTotal(d){
   const base=(d.aulas||0)*_discTpa(d)+_discTpd(d);
@@ -5939,6 +5952,24 @@ function renderOrgDiscs(){
   const gTpd=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
   const totalTarefas=discs.reduce((a,d)=>a+_discTotal(d),0);
   const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
+  // ordenar por score de prioridade (pontos da prova por aula)
+  const _dPriCfg=orgTrilhaAtual.priCfg||{};
+  const _dQB=parseInt(_dPriCfg.qTotalB)||0;const _dQE=parseInt(_dPriCfg.qTotalE)||0;
+  const _dTwQ=Math.max(1,_dQB+2*_dQE);
+  function _dValPerQ(g){if(g==='discursiva')return 1;if(g==='especificos')return 20/_dTwQ;return 10/_dTwQ;}
+  function _dScore(d){
+    const g=d.grupo||'basicos';const a=Math.max(1,d.aulas||1);
+    const sg=(d.subgrupo||'').trim();
+    if(sg){
+      const qSg=parseInt((_dPriCfg.subgrupos&&_dPriCfg.subgrupos[sg]&&_dPriCfg.subgrupos[sg].q)||0);
+      if(!qSg)return 0;
+      const sgDiscs=discs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===g);
+      const ta=sgDiscs.reduce((s,x)=>s+Math.max(1,x.aulas||1),0);
+      return qSg*Math.max(1,d.aulas||1)/ta/a*_dValPerQ(g);
+    }
+    const q=parseInt(d.q)||0;return q/a*_dValPerQ(g);
+  }
+  const sortedDiscs=[...discs].sort((a,b)=>_dScore(b)-_dScore(a)||((a.nome||'').localeCompare(b.nome||'')));
   const inp=(style,val,type,oninput,attrs='')=>`<input type="${type}" value="${val}" oninput="${oninput}" ${attrs} style="${style}">`;
   el.innerHTML=`
     <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Padrão global: <b style="color:var(--text)">${gTpa}/aula + ${gTpd}/disc.</b> — sobrescreva por disciplina se necessário.</div>
@@ -5956,7 +5987,7 @@ function renderOrgDiscs(){
           </tr>
         </thead>
         <tbody>
-          ${discs.map((d,i)=>{
+          ${sortedDiscs.map((d,i)=>{
             const tpa=_discTpa(d);const tpd=_discTpd(d);const tot=_discTotal(d);
             const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
             const fmtAula=d.fmtAula||[];const fmtFinal=d.fmtFinal||[];
@@ -6039,12 +6070,11 @@ function renderOrgDiscs(){
               <td style="padding:4px 8px;vertical-align:top">
                 <div style="display:flex;align-items:flex-start;gap:4px">
                   <div style="flex:1">${fmtContent}</div>
-                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'.8':'.2'};transition:opacity .15s;flex-shrink:0;filter:${isEditing?'none':'grayscale(1)'}" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='${isEditing?'.8':'.2'}'">
-                    ${isEditing?`<span style="font-size:13px;color:var(--accent);line-height:1">✕</span>`:`<img src="editar.png" style="width:12px;height:12px;display:block">`}
+                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'1':'.65'};transition:opacity .15s;flex-shrink:0;filter:brightness(10)" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.65'}'">
+                    ${isEditing?`<span style="font-size:13px;color:#fff;line-height:1">✕</span>`:`<img src="editar.png" style="width:12px;height:12px;display:block">`}
                   </button>
                 </div>
               </td>
-              <td style="padding:4px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -6067,8 +6097,16 @@ function renderOrgPrioridade(){
   const qTotalD=parseInt(priCfg.qTotalD)||0;
   // peso fixo por grupo — sem edição individual
   const _PESO={basicos:1,especificos:2,discursiva:1};
+  // pontos reais da prova por questão (normalização pelo edital)
+  const _pontsObj=10;
+  const _twQ=Math.max(1,qTotalB*1+qTotalE*2);
+  function _valPerQ(grupo){
+    if(grupo==='discursiva')return 1;
+    if(grupo==='especificos')return 2*_pontsObj/_twQ;
+    return _pontsObj/_twQ;
+  }
   const ns='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
-  const cols='20px 1fr 38px 44px 44px 90px';
+  const cols='20px 1fr 38px 44px 54px 32px';
 
   // Q efetiva: se disciplina tem subgrupo, usa Q do subgrupo ÷ aulas do subgrupo × aulas próprias
   function qEfetiva(d,allDiscs){
@@ -6095,7 +6133,7 @@ function renderOrgPrioridade(){
     // individuais scored — peso automático pelo grupo
     const indScored=individuais.map(d=>{
       const q=parseInt(d.q)||0;const p=_PESO[d.grupo||'basicos']||1;const a=Math.max(1,d.aulas||1);
-      return{d,q,p,a,score:Math.round(q/a*p*100)/100};
+      return{d,q,p,a,score:Math.round(q/a*_valPerQ(d.grupo||'basicos')*100)/100};
     }).sort((a,b)=>b.score-a.score||(a.d.nome||'').localeCompare(b.d.nome||''));
 
     indScored.forEach(({d,q,p,a,score})=>{
@@ -6110,8 +6148,8 @@ function renderOrgPrioridade(){
         </div>
         <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${ns}"></div>
         <div style="text-align:right;font-size:11px;color:var(--muted)">${q&&a?(q/a).toFixed(2):'—'}</div>
-        <div style="text-align:right;font-size:12px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'}">${hasData?score.toFixed(2):'—'}</div>
-        <div><select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px;outline:none">
+        <div style="text-align:right;font-size:12px;font-weight:700;color:${hasData?'var(--accent)':'var(--muted)'};padding-right:6px">${hasData?score.toFixed(2):'—'}</div>
+        <div><select onchange="orgDiscChange(${d.id},'grupo',this.value)" style="width:30px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:9px;font-family:inherit;padding:2px 1px;outline:none;text-align:center;-webkit-appearance:none;appearance:none;cursor:pointer">
           <option value="basicos" ${grpVal==='basicos'?'selected':''}>B</option>
           <option value="especificos" ${grpVal==='especificos'?'selected':''}>E</option>
           <option value="discursiva" ${grpVal==='discursiva'?'selected':''}>D</option>
@@ -6136,7 +6174,7 @@ function renderOrgPrioridade(){
           const qEf=qSg?Math.round(qSg*Math.max(1,d.aulas||1)/totalAulasSg*10)/10:0;
           const p=_PESO[d.grupo||'basicos']||1;
           const a=Math.max(1,d.aulas||1);
-          const score=qEf&&p?Math.round(qEf/a*p*100)/100:0;
+          const score=qEf?Math.round(qEf/a*_valPerQ(d.grupo||'basicos')*100)/100:0;
           const grpVal=d.grupo||'basicos';
           return`<div style="display:grid;grid-template-columns:${cols};gap:4px;align-items:center;padding:4px 10px;border-bottom:.5px solid rgba(196,181,253,.1)">
             <div style="font-size:10px;color:rgba(196,181,253,.5);text-align:center">${rank}.${si+1}</div>
@@ -6162,7 +6200,7 @@ function renderOrgPrioridade(){
     return html;
   }
 
-  function grpBlock(titulo,cor,grupo,qTotal,_pesoIgnorado,grKey){
+  function grpBlock(titulo,cor,grupo,qTotal,_pesoIgnorado,grKey,isDiscursiva){
     const gDiscs=discs.filter(d=>(d.grupo||'basicos')===grupo);
     const tqg=gDiscs.reduce((a,d)=>{
       if((d.subgrupo||'').trim())return a; // subgrupo conta pelo total do subgrupo
@@ -6178,10 +6216,10 @@ function renderOrgPrioridade(){
       <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:2px solid ${cor}25;margin-bottom:6px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px">${titulo}</span>
         <div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap">
-          <span style="font-size:10px;color:var(--muted)">Total Q:</span>
+          <span style="font-size:10px;color:var(--muted)">${isDiscursiva?'Pontos:':'Total Q:'}</span>
           <input type="number" min="0" value="${qTotal||''}" placeholder="—" oninput="orgPriCfgChange('qTotal${grKey}',this.value)" style="${ns}">
           ${statusQ}
-          <button onclick="orgPriAddSubgrupo('${grupo}')" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px dashed rgba(196,181,253,.4);background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit;margin-left:4px">+ Subgrupo</button>
+          ${!isDiscursiva?`<button onclick="orgPriAddSubgrupo('${grupo}')" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px dashed rgba(196,181,253,.4);background:transparent;color:#c4b5fd;cursor:pointer;font-family:inherit;margin-left:4px">+ Subgrupo</button>`:''}
         </div>
       </div>
       ${gDiscs.length?makeGroupRows(gDiscs):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
@@ -6202,11 +6240,11 @@ function renderOrgPrioridade(){
         <div style="font-size:9px;color:var(--accent);font-weight:700;text-align:right">Score</div>
         <div style="font-size:9px;color:var(--muted);font-weight:700;text-align:center">Grp</div>
       </div>
-      ${grpBlock('Conhecimentos Básicos (peso 1)','#7dd3fc','basicos',qTotalB,1,'B')}
-      ${grpBlock('Conhecimentos Específicos (peso 2)','#c4b5fd','especificos',qTotalE,2,'E')}
-      ${grpBlock('Discursiva','#f5a623','discursiva',qTotalD,1,'D')}
+      ${grpBlock('Conhecimentos Básicos','#7dd3fc','basicos',qTotalB,1,'B')}
+      ${grpBlock('Conhecimentos Específicos','#c4b5fd','especificos',qTotalE,2,'E')}
+      ${grpBlock('Discursiva','#f5a623','discursiva',qTotalD,1,'D',true)}
       <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">
-        <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Em subgrupos, Q é estimado proporcionalmente por aulas.
+        <b style="color:var(--text)">Score = pontos/aula</b> · Básico: Q/a × 10/(B+2E) · Específico: Q/a × 20/(B+2E) · Discursiva: Q/a × 1pt · Subgrupos: Q estimado por aulas.
       </div>
     </div>
   </div>`;
@@ -6232,7 +6270,7 @@ function orgToggleFmtFinal(discId,fmt){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
   if(!d.fmtFinal)d.fmtFinal=[];
   const i=d.fmtFinal.indexOf(fmt);if(i>=0)d.fmtFinal.splice(i,1);else d.fmtFinal.push(fmt);
-  d.tpd=d.fmtFinal.length||null;
+  d.tpd=null; // calculado dinamicamente por _discTpd considerando sqN e simN
   renderOrgDiscs();_scheduleOrgSave();
 }
 function orgSalvarPadraoFmt(discId){
@@ -6245,7 +6283,7 @@ function orgAplicarPadraoFmt(padraoId,discId){
   const p=orgPadroes.find(p=>p.id===padraoId);if(!p)return;
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
   d.fmtAula=[...(p.fmtAula||[])];d.fmtFinal=[...(p.fmtFinal||[])];
-  d.tpa=d.fmtAula.length||null;d.tpd=d.fmtFinal.length||null;
+  d.tpa=d.fmtAula.length||null;d.tpd=null;
   renderOrgDiscs();_scheduleOrgSave();
 }
 function orgAddDiscIv(discId){
@@ -7390,3 +7428,5 @@ function deleteMonCargo(id){
 </div>
 </body>
 </html>
+
+
