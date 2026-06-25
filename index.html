@@ -5496,7 +5496,7 @@ function orgExcluirTrilha(){
 
 function orgShowSub(sub){
   orgSubAtual=sub;
-  ['aulas','planejamento','semanal','monitores'].forEach(s=>{
+  ['aulas','planejamento','semanal','monitores','config'].forEach(s=>{
     const el=document.getElementById('org-sub-'+s);if(el)el.classList.toggle('hidden',s!==sub);
     const btn=document.getElementById('org-sub-btn-'+s);
     if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
@@ -5504,6 +5504,7 @@ function orgShowSub(sub){
   if(sub==='aulas'){renderOrgDiscs();renderOrgMonitores();renderOrgPrioridade();}
   else if(sub==='planejamento')renderOrgPlanejamento();
   else if(sub==='semanal')renderOrgSemanal();
+  else if(sub==='config'){const el=document.getElementById('org-cfg-nome');if(el&&orgTrilhaAtual)el.value=orgTrilhaAtual.nome||'';}
 }
 function orgCfgNomeChange(val){
   if(!orgTrilhaAtual)return;
@@ -5586,15 +5587,12 @@ function renderOrgSemanal(){
   const tarefaRows=agenda.map((discId,idx)=>{
     const disc=discs.find(d=>d.id==discId);
     const tarefaNum=_orgCalcTarefa(_orgSemSel,idx);
-    const ordemNum=_orgCalcOrdem(_orgSemSel,idx,discId);
-    const cmd=((sem.tasks[idx]&&sem.tasks[idx].comando)||'').replace(/"/g,'&quot;');
+    const cmd=((sem.tasks&&sem.tasks[idx]&&sem.tasks[idx].comando)||'').replace(/"/g,'&quot;');
     return`<tr style="border-top:1px solid rgba(30,63,92,.3)">
-      <td style="padding:5px 8px;text-align:center;font-size:11px;color:var(--muted);white-space:nowrap">${trilhaCod}</td>
-      <td style="padding:5px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${tarefaNum}</td>
-      <td style="padding:5px 8px;text-align:center;font-size:11px;color:var(--muted)">${ordemNum}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">${tarefaNum}</td>
       <td style="padding:5px 8px;font-size:11px;color:${disc&&disc.link?'var(--accent)':'var(--text)'};white-space:nowrap">${disc?_esc(disc.nome):'—'}</td>
-      <td style="padding:3px 8px;min-width:200px">
-        <input value="${cmd}" onchange="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Comando da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
+      <td style="padding:3px 8px;min-width:220px">
+        <input value="${cmd}" onchange="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Ação da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
       </td>
     </tr>`;
   }).join('');
@@ -5683,25 +5681,26 @@ function renderOrgSemanal(){
     </div>
     <div style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
-        <span style="font-size:11px;font-weight:700;color:var(--text)">Tabela de tarefas</span>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:10px;color:var(--muted)">Tarefa base:</span>
-          <input type="number" min="1" value="${orgTrilhaAtual.tarefaBase||1}" onchange="orgSetTarefaBase(this.value)" style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
+        <span style="font-size:11px;font-weight:700;color:var(--text)">Resumo de Tarefas — ${_esc(orgTrilhaAtual.nome||'')} S${_orgSemSel+1}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:10px;color:var(--muted)">Tarefa base:</span>
+            <input type="number" min="1" value="${orgTrilhaAtual.tarefaBase||1}" onchange="orgSetTarefaBase(this.value)" style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
+          </div>
+          <button onclick="orgCopiarTabela()" id="org-copy-btn" style="padding:4px 12px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='var(--accent)';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='var(--accent)'">📋 Copiar para Docs</button>
         </div>
       </div>
-      <div style="overflow-x:auto">
+      <div id="org-tarefa-table" style="overflow-x:auto">
         <table style="border-collapse:collapse;width:100%;font-size:11px">
           <thead>
             <tr style="background:rgba(0,0,0,.1)">
-              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Trilha</th>
               <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Tarefa</th>
-              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:center;white-space:nowrap">Ordem</th>
               <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:left;white-space:nowrap">Disciplina</th>
-              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:left">Comando</th>
+              <th style="padding:5px 8px;color:var(--muted);font-weight:600;text-align:left">Ação</th>
             </tr>
           </thead>
           <tbody>
-            ${tarefaRows||`<tr><td colspan="5" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Adicione disciplinas à semana para gerar as tarefas.</td></tr>`}
+            ${tarefaRows||`<tr><td colspan="3" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Adicione disciplinas à semana para gerar as tarefas.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -5945,28 +5944,41 @@ function renderOrgDiscs(){
             const finalChipsHTML=_FINAL_FMT.map(f=>{
               const sel=fmtFinal.includes(f);
               if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
+              if(f==='Simulado'){const simN=parseInt(d.simN)||1;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?`<input type="number" min="1" max="9" value="${simN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'simN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;}
               return chip(f,'Final',sel);
             }).join('');
+            const _bmkSvg=`<svg width="13" height="13" viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="45" stroke-linecap="round" stroke-linejoin="round"><path d="M96 48h320a16 16 0 0 1 16 16v392L256 376 80 456V64a16 16 0 0 1 16-16z"/></svg>`;
             const fmtContent=isEditing?`
-              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
-                <div style="font-size:9px;color:#7dd3fc;font-weight:700;text-transform:uppercase;margin-bottom:4px">Por aula (tpa=${fmtAula.length||'global'})</div>
-                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
-                <div style="font-size:9px;color:#f5a623;font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:2px">A cada X aulas</div>
-                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px;align-items:center">
-                  ${ivRowHTML}
-                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed rgba(245,166,35,.4);background:transparent;color:#f5a623;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ a cada X aulas</button>
+              <div style="background:var(--surface2);border:1px solid rgba(30,63,92,.8);border-radius:8px;padding:10px;margin-top:4px">
+                <div style="border-left:2px solid #7dd3fc;padding-left:8px;margin-bottom:8px">
+                  <div style="font-size:9px;color:#7dd3fc;font-weight:700;letter-spacing:.5px;margin-bottom:5px">POR AULA · tpa=${fmtAula.length||'global'}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
                 </div>
-                <div style="font-size:9px;color:#c4b5fd;font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:6px">Final/disc. (tpd=${_discTpd(d)||'global'})</div>
-                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${finalChipsHTML}</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">
-                  <button onclick="orgSalvarPadraoFmt(${d.id})" title="Salvar padrão" style="width:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--border);background:transparent;color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1">✓</button>
-                  ${padroesFmtHTML?`<span style="font-size:10px;color:var(--muted)">Aplicar:</span>${padroesFmtHTML}`:''}
+                ${intervalos.length||true?`<div style="border-left:2px solid #f5a623;padding-left:8px;margin-bottom:8px">
+                  <div style="font-size:9px;color:#f5a623;font-weight:700;letter-spacing:.5px;margin-bottom:5px">A CADA X AULAS</div>
+                  ${ivRowHTML}
+                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed rgba(245,166,35,.5);background:transparent;color:#f5a623;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">+ a cada X</button>
+                </div>`:''}
+                <div style="border-left:2px solid #c4b5fd;padding-left:8px;margin-bottom:10px">
+                  <div style="font-size:9px;color:#c4b5fd;font-weight:700;letter-spacing:.5px;margin-bottom:5px">FINAL/DISC. · tpd=${_discTpd(d)||'global'}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px">${finalChipsHTML}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(30,63,92,.6)">
+                  <button onclick="orgSalvarPadraoFmt(${d.id})" title="Salvar padrão" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;line-height:1">
+                    <span style="color:rgba(255,255,255,.6)">${_bmkSvg}</span> Salvar
+                  </button>
+                  ${padroesFmtHTML?`<span style="font-size:10px;color:var(--muted)">Padrões:</span>${padroesFmtHTML}`:''}
                 </div>
               </div>`
-            :`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;align-items:center">
-                ${fmtAula.length?fmtAula.map(f=>chip(f,'Aula',true)).join(''):'<span style="font-size:10px;color:var(--muted)">por aula: —</span>'}
-                ${intervalos.length?intervalos.map(iv=>`<span style="font-size:10px;color:rgba(245,166,35,.7);white-space:nowrap">/${iv.a}a:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
-                ${fmtFinal.length?`<span style="color:var(--muted);font-size:10px">·</span>${fmtFinal.map(f=>f==='SQ'?`<span style="padding:1px 6px;border-radius:99px;border:1px solid var(--accent);background:rgba(62,181,200,.15);color:var(--accent);font-size:10px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`:chip(f,'Final',true)).join('')}`:''}
+            :`<div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">
+                ${fmtAula.length?fmtAula.map(f=>chip(f,'Aula',true)).join(''):''}
+                ${intervalos.length?intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
+                ${fmtFinal.length?fmtFinal.map(f=>{
+                  if(f==='SQ')return`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`;
+                  if(f==='Simulado')return`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(196,181,253,.5);background:rgba(196,181,253,.1);color:#c4b5fd;font-size:9px;font-weight:600">${(parseInt(d.simN)||1)>1?(parseInt(d.simN))+'×':''}Sim</span>`;
+                  return chip(f,'Final',true);
+                }).join(''):''}
+                ${!fmtAula.length&&!fmtFinal.length?'<span style="font-size:10px;color:rgba(127,179,200,.4)">—</span>':''}
               </div>`;
             const fmtResumo=[
               ...fmtAula.map(f=>`<span style="padding:1px 6px;border-radius:99px;border:1px solid rgba(125,211,252,.4);color:#7dd3fc;font-size:9px;font-weight:600">${f}</span>`),
@@ -5991,7 +6003,7 @@ function renderOrgDiscs(){
               <td style="padding:4px 8px;vertical-align:top">
                 <div style="display:flex;align-items:flex-start;gap:4px">
                   <div style="flex:1">${fmtContent}</div>
-                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'1':'.35'};transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.35'}'">
+                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'.8':'.2'};transition:opacity .15s;flex-shrink:0;filter:${isEditing?'none':'grayscale(1)'}" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='${isEditing?'.8':'.2'}'">
                     ${isEditing?`<span style="font-size:13px;color:var(--accent);line-height:1">✕</span>`:`<img src="editar.png" style="width:12px;height:12px;display:block">`}
                   </button>
                 </div>
@@ -7055,6 +7067,7 @@ function deleteMonCargo(id){
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
         <button id="org-sub-btn-semanal" onclick="orgShowSub('semanal')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Semanal</button>
+        <button id="org-sub-btn-config" onclick="orgShowSub('config')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">⚙</button>
         <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
       <!-- Disciplinas (Aulas + Monitores combinados) -->
@@ -7091,6 +7104,18 @@ function deleteMonCargo(id){
       </div>
       <!-- Monitores (movido para dentro da aba Disciplinas) -->
       <div id="org-sub-monitores" class="hidden"></div>
+      <!-- Configurações -->
+      <div id="org-sub-config" class="hidden">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Nome da trilha</div>
+          <input id="org-cfg-nome" oninput="orgCfgNomeChange(this.value)" style="width:100%;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div style="background:rgba(242,107,94,.06);border:1px solid rgba(242,107,94,.3);border-radius:10px;padding:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px">Zona de perigo</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Esta ação é irreversível. A trilha e todos os seus dados serão apagados permanentemente.</div>
+          <button onclick="orgExcluirTrilha()" style="padding:7px 18px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='var(--danger)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--danger)'">Excluir trilha</button>
+        </div>
+      </div>
       <!-- Semanal -->
       <div id="org-sub-semanal" class="hidden">
         <div id="org-sem-content"></div>
