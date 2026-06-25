@@ -6080,7 +6080,13 @@ function renderOrgDiscs(){
         </tbody>
       </table>
     </div>
-    <div id="org-tot-footer" style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · <b style="color:var(--accent)">${totalTarefas}</b> tarefas totais</div>
+    <div id="org-tot-footer" style="font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-top:6px;border-top:1px solid rgba(30,63,92,.4)">
+      <span>${totalAulas} aulas</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span><b style="color:var(--accent);font-size:13px">${totalTarefas}</b> tarefas totais</span>
+        ${(()=>{const s=(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];const n=s.length;if(!n)return'<span style="font-size:10px;color:var(--muted)">configure datas no Planejamento</span>';const ps=Math.round(totalTarefas/n*10)/10;return`<span style="color:rgba(30,63,92,.6)">|</span><b style="color:var(--success);font-size:13px">≈${ps}</b><span style="font-size:10px">/semana (${n} sem.)</span>`;})()}
+      </span>
+    </div>
   `;
   renderOrgPrioridade();
 }
@@ -7428,5 +7434,6 @@ function deleteMonCargo(id){
 </div>
 </body>
 </html>
+
 
 
