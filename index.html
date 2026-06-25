@@ -82,12 +82,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .subtab.active{color:#6dd4eb;border-bottom-color:#6dd4eb}
 .subtab-count{display:inline-block;font-size:10px;padding:1px 5px;border-radius:99px;margin-left:3px;background:#1e3f5c;color:var(--muted);font-weight:600}
 .subtab-count.done{background:#0d2820;color:#2dd4a0}
-.late-section{margin:12px 20px 0;border:1px solid var(--warn);border-radius:var(--radius);overflow:hidden}
-.late-header{display:flex;align-items:center;gap:8px;padding:9px 14px;background:#2a1f00;font-weight:600;font-size:13px;color:var(--warn);cursor:pointer;user-select:none}
-.late-count{background:#f59e0b;color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:auto}
-.late-body{padding:0 12px 8px;background:#1a1400}
-.late-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid #f59e0b}
-.late-item:last-child{border-bottom:none}
 .days-list{padding:6px 20px 12px;display:flex;flex-direction:column;gap:14px}
 .day-group{border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s;background:var(--surface)}
 .day-group.all-done{border-color:#86efac;background:#000}
@@ -316,33 +310,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .sim-spin:hover{border-color:var(--accent)}.sim-spin:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(62,181,200,.15)}
 .sim-spin::-webkit-outer-spin-button,.sim-spin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 select.sim-spin{-moz-appearance:auto;appearance:auto}
-/* Horários */
-.hor-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.hor-table{border-collapse:collapse;width:100%;min-width:520px;table-layout:fixed}
-.hor-table th{min-width:0;font-size:11px;font-weight:700;color:var(--muted);padding:5px 2px;text-align:center;background:var(--surface2);border:1px solid var(--border);position:sticky;top:0;z-index:1}
-.hor-table th.hor-time-col{width:44px}
-.hor-table td{border:1px solid rgba(255,255,255,.07);padding:0;vertical-align:top;height:1px}
-.hor-time-cell{font-size:10px;color:var(--muted);padding:3px 5px;text-align:right;white-space:nowrap;background:var(--surface2);vertical-align:middle;font-variant-numeric:tabular-nums}
-.hor-cell{position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .1s;height:100%;box-sizing:border-box}
-.hor-cell:hover{filter:brightness(1.12)}
-.hor-cell-inner{display:flex;flex-direction:row;align-items:center;gap:4px;padding:2px 5px;overflow:hidden}
-.hor-cell .hor-edit-btn{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.4);color:#fff;border:none;border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;opacity:0;transition:opacity .15s;line-height:1.3}
-.hor-cell:hover .hor-edit-btn{opacity:1}
-.hor-emoji{font-size:13px;line-height:1}
-.hor-label{font-size:9px;font-weight:500;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
-.hor-picker{position:fixed;z-index:9999;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 14px 12px;box-shadow:0 8px 40px rgba(0,0,0,.7);width:420px;min-width:360px;max-width:420px;overflow-y:auto;max-height:min(600px,90vh)}
-.hor-picker-title{font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;padding-right:18px}
-.hor-acts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px}
-.hor-act-btn{display:flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer;font-size:11px;font-family:'Nunito','Segoe UI',sans-serif;transition:border-color .15s;white-space:nowrap}
-.hor-act-btn:hover{border-color:var(--accent)}
-.hor-custom-input{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--text);font-size:11px;font-family:'Nunito','Segoe UI',sans-serif;outline:none}
-.hor-custom-input:focus{border-color:var(--accent)}
-.hor-picker-close{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;padding:4px}
-.hor-comp-card{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:7px}
-.hor-comp-emoji{font-size:17px}
-.hor-comp-info{flex:1;min-width:0}
-.hor-comp-label{font-size:13px;font-weight:700;color:var(--text)}
-.hor-comp-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .hor-add-btn{display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--muted);border-radius:6px;padding:2px 6px;cursor:pointer;font-size:20px;font-family:'Nunito','Segoe UI',sans-serif;font-weight:400;transition:color .15s;line-height:1}
 .hor-add-btn:hover{color:var(--accent)}
 
@@ -423,7 +390,6 @@ input[type=number]{-moz-appearance:textfield}
 <div class="tabs">
   <button class="tab active" onclick="showTab('ciclo')">Ciclo</button>
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
-  <button class="tab" onclick="showTab('horarios')">Horários</button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
   <button class="tab" onclick="showTab('content')">Tópicos</button>
@@ -518,10 +484,6 @@ input[type=number]{-moz-appearance:textfield}
       <div class="prog-outer" style="flex:1;height:6px"><div class="prog-inner" id="day-prog-bar" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#2dd4a0)"></div></div>
     </div>
   </div>
-  <div class="late-section hidden" id="late-section">
-    <div class="late-header" onclick="toggleLate()"><img src="atrasados.png" id="late-icon" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:6px">Assuntos atrasados<button onclick="event.stopPropagation();replanLate()" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer;font-weight:600;margin-left:auto;margin-right:8px">↺ Replanejar</button><span class="late-count" id="late-count">0</span></div>
-    <div class="late-body hidden" id="late-body"></div>
-  </div>
   <div class="days-list" id="ciclo-list"></div>
 </div>
 
@@ -586,13 +548,6 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="stats-card"><h3>Por disciplina</h3><div id="disc-list"></div></div>
-  <div class="stats-card" style="padding:0;overflow:hidden">
-    <div onclick="(function(){var c=document.getElementById('topic-freq-content');var a=document.getElementById('topic-freq-arrow');var open=c.style.display!=='none';c.style.display=open?'none':'block';a.textContent=open?'▾':'▴';})()" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:14px 16px;user-select:none">
-      <span style="flex:1;font-size:13px;font-weight:700;color:var(--text)">📊 Frequência por assunto</span>
-      <span id="topic-freq-arrow" style="font-size:11px;color:var(--muted)">▴</span>
-    </div>
-    <div id="topic-freq-content" style="padding:0 16px 14px"></div>
-  </div>
   <div class="stats-card">
     <h3>🎯 Aproveitamento em questões</h3>
     <div id="q-stats-content"></div>
@@ -654,7 +609,6 @@ input[type=number]{-moz-appearance:textfield}
             <input id="pause-days" type="number" min="1" max="365" value="7" style="width:52px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface2);color:var(--text)">
             <span style="font-size:12px;color:var(--muted)">dias</span>
             <button onclick="applyPause()" style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">Aplicar pausa</button>
-            <button onclick="replanLate()" style="padding:5px 12px;font-size:12px;font-weight:600;border-radius:6px;border:1.5px solid #f5a623;background:transparent;color:#f5a623;cursor:pointer">↺ Replanejar atrasos</button>
           </div>
         </div>
         <div class="modal-section">
@@ -662,23 +616,6 @@ input[type=number]{-moz-appearance:textfield}
           <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Desmarca todos os itens e zera as revisões espaçadas. A data de início é redefinida para hoje. Cadernos, resumos e configurações são preservados.</p>
           <button onclick="resetEstudos()" style="padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;border:1.5px solid #f5a623;background:transparent;color:#f5a623">↺ Reiniciar estudos</button>
         </div>
-      </div>
-    </details>
-
-    <details class="cfg-group">
-      <summary>Horários</summary>
-      <div class="cfg-group-body">
-        <div class="modal-row" style="margin-top:6px"><label>Início do dia</label><div class="spin-wrap"><span class="spin-val" id="spin-hor-start">06</span><span class="spin-sep">h</span></div></div>
-        <div class="modal-row"><label>Fim do dia</label><div class="spin-wrap"><span class="spin-val" id="spin-hor-end">23</span><span class="spin-sep">h</span></div></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 10px">
-          <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horários dos blocos</span>
-          <span style="font-size:11px;color:var(--muted);white-space:nowrap">Total/dia <span id="cfg-block-total" style="color:#7dd3fc;font-weight:700">–</span></span>
-        </div>
-        <div class="modal-row"><label>Bloco 1</label><div class="spin-wrap"><span class="spin-val" id="spin-b1-sh">08</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b1-eh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b1-em">00</span></div></div>
-        <div class="modal-row"><label>Bloco 2</label><div class="spin-wrap"><span class="spin-val" id="spin-b2-sh">09</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b2-eh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b2-em">00</span></div></div>
-        <div class="modal-row"><label>Bloco 3</label><div class="spin-wrap"><span class="spin-val" id="spin-b3-sh">10</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-sm">00</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b3-eh">11</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b3-em">00</span></div></div>
-        <div class="modal-row"><label>Bloco 4</label><div class="spin-wrap"><span class="spin-val" id="spin-b4-sh">13</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b4-eh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b4-em">40</span></div></div>
-        <div class="modal-row"><label>Português</label><div class="spin-wrap"><span class="spin-val" id="spin-b5-sh">14</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-sm">40</span><span class="spin-sep">–</span><span class="spin-val" id="spin-b5-eh">15</span><span class="spin-sep">:</span><span class="spin-val" id="spin-b5-em">40</span></div></div>
       </div>
     </details>
 
@@ -1898,7 +1835,7 @@ function saveSettings(){
       horariosConfig.start=ns;horariosConfig.end=ne;
       document.getElementById('hor-start').value=ns;
       document.getElementById('hor-end').value=ne;
-      _horSave();renderHorarios();
+      _horSave();
     }
   }
   const thEl=document.getElementById('spin-timer-h'),tmEl=document.getElementById('spin-timer-m');
@@ -2059,11 +1996,11 @@ function _enableSpinEdit(el,max,onChange){
 })();
 
 function showTab(t){
-  ['ciclo','rev','stats','content','simulados','horarios','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','horarios','stats','simulados','content','trabalho'][i]===t));
+  ['ciclo','rev','stats','content','simulados','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','simulados','content','trabalho'][i]===t));
   const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo');
   if(t==='rev'){renderRev();populateSwDisc();updateSwUI();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
-  if(t==='content')renderContentStats();if(t==='horarios')renderHorarios();if(t==='trabalho')renderTrabalho();
+  if(t==='content')renderContentStats();if(t==='trabalho')renderTrabalho();
 }
 let currentSubtab='today';
 function showSubtab(s){
@@ -3119,7 +3056,6 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 setInterval(()=>{if(!document.hidden)syncAll();},60000);
-setInterval(()=>{const t=document.getElementById('tab-horarios');if(t&&!t.classList.contains('hidden'))_horUpdateNowBar();},60000);
 
 // ── Conteúdo Programático ─────────────────────────────────────────────────────
 // customTopics: { discName: [ {id, topico, deleted} ] }
@@ -3267,20 +3203,43 @@ function renderContent() {
   const discNames = [...baseDiscs, ...customDiscs, ...(infVisible ? [INF] : [])];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
-  const ESP_CURSOS = new Set((CICLO_GRUPOS.find(g=>g.key==='esp')?.cursos) || []);
-  const espDiscs = discNames.filter(d => ESP_CURSOS.has(d));
-  const regularDiscs = discNames.filter(d => !ESP_CURSOS.has(d));
-
   function buildDiscBlock(disc, di) {
     const topics = getDiscTopics(disc);
     const c = CORES[disc] || '#888';
     const filtered = (q ? topics.filter(t => disc.toLowerCase().includes(q) || t.topico.toLowerCase().includes(q)) : [...topics])
       .sort((a,b)=>(topicFreq[b.id]||0)-(topicFreq[a.id]||0));
     if (q && filtered.length === 0) return '';
+
+    // Análise estatística: calcula totais da disciplina para relativizar
+    const discQtds = topics.filter(t=>!t.deleted).map(t=>(questoesState[t.id]||{}).t||0);
+    const discTotal = discQtds.reduce((s,v)=>s+v,0);
+    const maxQ = Math.max(...discQtds, 1);
+    const sorted75 = [...discQtds].filter(v=>v>0).sort((a,b)=>a-b);
+    const q75 = sorted75[Math.floor(sorted75.length*0.75)] || 0;
+    const q50 = sorted75[Math.floor(sorted75.length*0.50)] || 0;
+
     const rows = filtered.map((t) => {
       const realIdx = topics.indexOf(t);
       const done = !t.deleted && isDone(t.id);
       const freqVal=topicFreq[t.id]||'';
+      const tqData = questoesState[t.id]||{};
+      const tqt = tqData.t||0;
+      const tqa = tqData.a||0;
+      let statHtml = '';
+      if (tqt > 0 && discTotal > 0) {
+        const barW = Math.round(tqt/maxQ*100);
+        let priorCor, priorLbl;
+        if (tqt >= q75) { priorCor='#ef4444'; priorLbl='ALTA'; }
+        else if (tqt >= q50) { priorCor='#f59e0b'; priorLbl='MÉD'; }
+        else { priorCor='#6b7280'; priorLbl='BAIXA'; }
+        const acertoHtml = tqa>0?`<span style="font-size:9px;color:${tqa/tqt>=.7?'var(--success)':tqa/tqt>=.5?'var(--warn)':'var(--danger)'};font-weight:700">${Math.round(tqa/tqt*100)}%✓</span>`:'';
+        statHtml=`<div class="tstat" title="${tqt} questões · ${Math.round(tqt/discTotal*100)}% do total da disciplina">
+          <span class="tstat-q">${tqt}q</span>
+          <div class="tstat-bar-wrap"><div class="tstat-bar" style="width:${barW}%;background:${priorCor}"></div></div>
+          <span class="tstat-lbl" style="background:${priorCor}1a;color:${priorCor}">${priorLbl}</span>
+          ${acertoHtml}
+        </div>`;
+      }
       return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
         <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
         <input class="content-topic-input ${t.deleted?'deleted':''}"
@@ -3288,6 +3247,7 @@ function renderContent() {
           onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
           style="${done?'text-decoration:line-through;opacity:.45;':''}"
           ${t.deleted?'disabled':''}>
+        ${statHtml}
         <div style="display:flex;align-items:center;gap:1px;flex-shrink:0">
           <input type="text" inputmode="numeric" maxlength="3" value="${freqVal}" placeholder="%" title="% de incidência em provas"
             onchange="const v=parseInt(this.value);if(!this.value||isNaN(v)){delete topicFreq[${t.id}];}else{topicFreq[${t.id}]=Math.min(100,Math.max(0,v));}saveTopicFreq()"
@@ -3339,40 +3299,7 @@ function renderContent() {
     </div>`;
   }
 
-  const regularHtml = regularDiscs.map((disc, i) => buildDiscBlock(disc, i)).join('');
-
-  let espHtml = '';
-  if (!q || 'conhecimentos específicos'.includes(q) || espDiscs.some(d => d.toLowerCase().includes(q))) {
-    const pills = espDiscs.map(disc => {
-      const c = CORES[disc] || '#8b6be8';
-      const url = DISC_LINKS[disc] || '';
-      const escapedDisc = disc.replace(/"/g,'&quot;').replace(/'/g,"\\'");
-      if (url) {
-        return `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="esp-pill" title="${disc.replace(/"/g,'&quot;')}">
-          <span class="esp-pill-dot" style="background:${c}"></span>
-          <span class="esp-pill-name">${disc}</span>
-        </a>`;
-      }
-      return `<div class="esp-pill">
-        <span class="esp-pill-dot" style="background:${c}"></span>
-        <span class="esp-pill-name">${disc}</span>
-      </div>`;
-    }).join('');
-    if (pills) {
-      espHtml = `<div class="esp-parent-block">
-        <div class="esp-parent-header" onclick="toggleEspBlock()">
-          <span style="width:12px;height:12px;border-radius:3px;background:#8b6be8;display:inline-block;flex-shrink:0"></span>
-          <span class="esp-parent-title">Conhecimentos Específicos</span>
-          <span class="esp-parent-chevron" id="chev-esp">▾</span>
-        </div>
-        <div class="esp-parent-body content-disc-body" id="cdb-esp">
-          ${pills}
-        </div>
-      </div>`;
-    }
-  }
-
-  list.innerHTML = regularHtml + espHtml;
+  list.innerHTML = discNames.map((disc, di) => buildDiscBlock(disc, di)).join('');
   populateBulkDiscSelect();
 }
 
@@ -3814,8 +3741,6 @@ let _horNowTimer=null;
         }).filter(Boolean);
       }
       try{localStorage.setItem('nav_horarios',JSON.stringify({config:horariosConfig,grid:horariosGrid,comps:horariosComps,exceptions:horariosExceptions}));}catch{}
-      const tab=document.getElementById('tab-horarios');
-      if(tab&&!tab.classList.contains('hidden'))renderHorarios();
     }
   }catch{}
 })();
@@ -5070,7 +4995,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
@@ -5376,9 +5301,417 @@ function showTrabalhoSubtab(tab){
     const el=document.getElementById('trab-sub-'+t);if(el)el.classList.toggle('hidden',t!==tab);
     const btn=document.getElementById('trab-btn-'+t);if(btn)btn.classList.toggle('active',t===tab);
   });
+  if(tab==='organizador')renderOrgLista();
 }
 
 function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
+
+// ─── ORGANIZADOR / TRILHAS ───────────────────────────────────────────────────
+let orgTrilhas=[];
+let orgTrilhaAtual=null;
+let orgSubAtual='aulas';
+let _orgSaveTimer=null;
+
+async function loadOrgTrilhas(){
+  try{const s=localStorage.getItem('nav_org_trilhas');if(s)orgTrilhas=JSON.parse(s);}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__org_trilhas__');
+    if(d&&d[0]&&d[0].topics&&Array.isArray(d[0].topics)){
+      orgTrilhas=d[0].topics;
+      try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
+    }
+  }catch{}
+}
+async function _saveOrgTrilhas(){
+  try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
+  await sbUpsert('conteudo',{disc:'__org_trilhas__',topics:orgTrilhas});
+}
+function _scheduleOrgSave(){
+  clearTimeout(_orgSaveTimer);
+  _orgSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveOrgTrilhas().then(()=>showSync('ok','✓ Salvo'));},1200);
+}
+
+function orgNovaTrilha(){
+  const nome=prompt('Nome da trilha (ex: PM-PI):');
+  if(!nome||!nome.trim())return;
+  const t={id:Date.now(),nome:nome.trim(),disciplinas:[],monitores:[],plano:{inicio:'',fim:'',tpa:3,tpd:4,semanas:[]}};
+  orgTrilhas.unshift(t);
+  _saveOrgTrilhas();
+  orgAbrirTrilha(t.id);
+}
+
+function orgAbrirTrilha(id){
+  orgTrilhaAtual=orgTrilhas.find(t=>t.id===id);
+  if(!orgTrilhaAtual)return;
+  document.getElementById('org-lista-view').classList.add('hidden');
+  document.getElementById('org-detalhe-view').classList.remove('hidden');
+  document.getElementById('org-detalhe-nome').textContent=orgTrilhaAtual.nome;
+  orgShowSub('aulas');
+}
+
+function orgVoltarLista(){
+  orgTrilhaAtual=null;
+  document.getElementById('org-detalhe-view').classList.add('hidden');
+  document.getElementById('org-lista-view').classList.remove('hidden');
+  renderOrgLista();
+}
+
+function orgExcluirTrilha(){
+  if(!orgTrilhaAtual)return;
+  if(!confirm('Excluir a trilha "'+orgTrilhaAtual.nome+'"? Essa ação não pode ser desfeita.'))return;
+  orgTrilhas=orgTrilhas.filter(t=>t.id!==orgTrilhaAtual.id);
+  _saveOrgTrilhas();
+  orgVoltarLista();
+}
+
+function orgShowSub(sub){
+  orgSubAtual=sub;
+  ['aulas','planejamento','monitores'].forEach(s=>{
+    const el=document.getElementById('org-sub-'+s);if(el)el.classList.toggle('hidden',s!==sub);
+    const btn=document.getElementById('org-sub-btn-'+s);
+    if(btn){btn.style.background=s===sub?'rgba(255,255,255,.12)':'transparent';btn.style.color=s===sub?'#fff':'var(--muted)';}
+  });
+  if(sub==='aulas')renderOrgDiscs();
+  else if(sub==='planejamento')renderOrgPlanejamento();
+  else if(sub==='monitores')renderOrgMonitores();
+}
+
+function renderOrgLista(){
+  const el=document.getElementById('org-trilhas-list');if(!el)return;
+  if(!orgTrilhas.length){
+    el.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">Nenhuma trilha criada.<br>Clique em "+ Nova trilha" para começar.</div>';
+    return;
+  }
+  el.innerHTML=orgTrilhas.map(t=>{
+    const nd=t.disciplinas?t.disciplinas.length:0;
+    const nm=t.monitores?t.monitores.filter(m=>m.nome).length:0;
+    const totalAulas=t.disciplinas?t.disciplinas.reduce((a,d)=>a+(parseInt(d.aulas)||0),0):0;
+    const totalTarefas=totalAulas*(parseInt(t.plano&&t.plano.tpa)||3)+nd*(parseInt(t.plano&&t.plano.tpd)||4);
+    return `<div onclick="orgAbrirTrilha(${t.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">${t.nome}</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--muted)">📚 ${nd} disc. · ${totalAulas} aulas</span>
+        <span style="font-size:11px;color:var(--muted)">📋 ${totalTarefas} tarefas</span>
+        ${nm?`<span style="font-size:11px;color:var(--muted)">👤 ${nm} monitor${nm>1?'es':''}</span>`:''}
+        ${t.plano&&t.plano.inicio&&t.plano.fim?`<span style="font-size:11px;color:var(--accent)">${_orgFmtData(t.plano.inicio)} → ${_orgFmtData(t.plano.fim)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _orgFmtData(iso){
+  if(!iso)return'';
+  const [y,m,d]=iso.split('-');return`${d}/${m}/${y.slice(2)}`;
+}
+
+// ── ABA AULAS ──
+function orgAddDisc(){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.disciplinas)orgTrilhaAtual.disciplinas=[];
+  orgTrilhaAtual.disciplinas.push({id:Date.now(),nome:'',aulas:0,link:''});
+  renderOrgDiscs();
+  _scheduleOrgSave();
+}
+function orgDelDisc(id){
+  if(!orgTrilhaAtual)return;
+  orgTrilhaAtual.disciplinas=orgTrilhaAtual.disciplinas.filter(d=>d.id!==id);
+  renderOrgDiscs();
+  _scheduleOrgSave();
+}
+function orgDiscChange(id,field,val){
+  if(!orgTrilhaAtual)return;
+  const d=orgTrilhaAtual.disciplinas.find(d=>d.id===id);if(!d)return;
+  d[field]=field==='aulas'?parseInt(val)||0:val;
+  _scheduleOrgSave();
+}
+function renderOrgDiscs(){
+  const el=document.getElementById('org-disc-list');if(!el)return;
+  const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas||[];
+  if(!discs.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">Nenhuma disciplina. Clique em "+ Disciplina" para adicionar.</div>';
+    return;
+  }
+  const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
+  const tpa=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;
+  const tpd=parseInt(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
+  const total=totalAulas*tpa+discs.length*tpd;
+  el.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Disciplina</th>
+            <th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;width:60px">Aulas</th>
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Link</th>
+            <th style="width:28px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${discs.map((d,i)=>`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
+            <td style="padding:6px 10px"><input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none"></td>
+            <td style="padding:6px 6px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;font-family:inherit;text-align:center;padding:3px 4px;outline:none"></td>
+            <td style="padding:6px 10px"><input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link do pacote (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none"></td>
+            <td style="padding:6px 6px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:right">${totalAulas} aulas · ${total} tarefas estimadas (${tpa}/aula + ${tpd}/disc.)</div>
+  `;
+}
+function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+// ── ABA PLANEJAMENTO ──
+function orgPlanUpdate(){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.plano)orgTrilhaAtual.plano={};
+  const p=orgTrilhaAtual.plano;
+  p.inicio=document.getElementById('org-plan-inicio').value;
+  p.fim=document.getElementById('org-plan-fim').value;
+  p.tpa=parseInt(document.getElementById('org-plan-tpa').value)||3;
+  p.tpd=parseInt(document.getElementById('org-plan-tpd').value)||4;
+  _orgRecalcSemanas();
+  _renderOrgTabela();
+  _scheduleOrgSave();
+}
+
+function _orgGetSemanas(inicio,fim){
+  if(!inicio||!fim)return[];
+  const start=new Date(inicio+'T00:00:00');
+  const end=new Date(fim+'T00:00:00');
+  const semanas=[];
+  let cur=new Date(start);
+  while(cur<=end){
+    semanas.push(cur.toISOString().slice(0,10));
+    cur=new Date(cur.getTime()+7*24*3600*1000);
+  }
+  return semanas;
+}
+
+function _orgRecalcSemanas(){
+  const p=orgTrilhaAtual.plano;
+  const semanaDates=_orgGetSemanas(p.inicio,p.fim);
+  const n=semanaDates.length;
+  if(!n){p.semanas=[];return;}
+  const discs=orgTrilhaAtual.disciplinas||[];
+  const tpa=p.tpa||3,tpd=p.tpd||4;
+  const totalPorDisc=discs.map(d=>(d.aulas||0)*tpa+tpd);
+  if(!p.semanas)p.semanas=[];
+  // preserve user edits; recalc only new semanas structure
+  const oldSem=p.semanas;
+  p.semanas=semanaDates.map((dt,wi)=>{
+    const old=oldSem[wi];
+    const passada=new Date(dt+'T00:00:00')<new Date(new Date().toISOString().slice(0,10)+'T00:00:00');
+    return {
+      data:dt,
+      passada,
+      docLink:old?old.docLink||'':'',
+      dist:discs.map((d,di)=>{
+        if(old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
+        const base=Math.round(totalPorDisc[di]/n);
+        return wi<totalPorDisc[di]%n?base+1:base;
+      })
+    };
+  });
+}
+
+function renderOrgPlanejamento(){
+  if(!orgTrilhaAtual)return;
+  const p=orgTrilhaAtual.plano||{};
+  const fi=document.getElementById('org-plan-inicio');
+  const ff=document.getElementById('org-plan-fim');
+  const ftpa=document.getElementById('org-plan-tpa');
+  const ftpd=document.getElementById('org-plan-tpd');
+  if(fi)fi.value=p.inicio||'';
+  if(ff)ff.value=p.fim||'';
+  if(ftpa)ftpa.value=p.tpa||3;
+  if(ftpd)ftpd.value=p.tpd||4;
+  if(p.inicio&&p.fim){_orgRecalcSemanas();}
+  _renderOrgTabela();
+}
+
+function _renderOrgTabela(){
+  const p=orgTrilhaAtual&&orgTrilhaAtual.plano||{};
+  const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas||[];
+  const semanas=p.semanas||[];
+  const resumoEl=document.getElementById('org-plan-resumo');
+  const tabelaEl=document.getElementById('org-plan-tabela');
+  const acumEl=document.getElementById('org-plan-acumulado');
+  if(!semanas.length){
+    if(resumoEl)resumoEl.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px 0">Configure as datas para ver o planejamento.</div>';
+    if(tabelaEl)tabelaEl.innerHTML='';
+    if(acumEl)acumEl.innerHTML='';
+    return;
+  }
+  const tpa=p.tpa||3,tpd=p.tpd||4;
+  const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
+  const totalTarefas=totalAulas*tpa+discs.length*tpd;
+  const totalSem=semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0);
+  if(resumoEl)resumoEl.innerHTML=`
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--text)">${semanas.length}</div>
+        <div style="font-size:10px;color:var(--muted)">Semanas</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--accent)">${totalTarefas}</div>
+        <div style="font-size:10px;color:var(--muted)">Tarefas totais</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--success)">${totalSem>0?Math.round(totalSem/semanas.length):0}</div>
+        <div style="font-size:10px;color:var(--muted)">Média/semana</div>
+      </div>
+    </div>`;
+
+  const thStyle='padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:2';
+  const tdDisc='padding:6px 8px;font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;background:var(--surface);position:sticky;left:0;z-index:1;border-right:1px solid var(--border)';
+  const tdVal=(passada)=>`padding:4px 6px;font-size:11px;text-align:center;background:${passada?'rgba(0,0,0,.3)':'transparent'}`;
+
+  // tabela de distribuição
+  if(tabelaEl){
+    tabelaEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Distribuição semanal</div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
+    <table style="border-collapse:collapse;min-width:100%">
+      <thead>
+        <tr>
+          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border)">Disciplina</th>
+          ${semanas.map((s,wi)=>`<th style="${thStyle}">
+            <div style="font-size:9px;color:var(--muted);font-weight:400;margin-bottom:2px">S${wi+1}</div>
+            <div>${_orgFmtData(s.data)}</div>
+            <div style="margin-top:2px">${s.docLink?`<a href="${_esc(s.docLink)}" target="_blank" style="font-size:9px;color:var(--accent);text-decoration:none">📄</a>`:`<button onclick="orgEditDocLink(${wi})" style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0">+ doc</button>`}</div>
+          </th>`).join('')}
+          <th style="${thStyle}">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${discs.map((d,di)=>{
+          const rowTotal=semanas.reduce((a,s)=>a+(s.dist&&s.dist[di]!==undefined?s.dist[di]:0),0);
+          return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
+            <td style="${tdDisc}">${_esc(d.nome)||'(sem nome)'}</td>
+            ${semanas.map((s,wi)=>`<td style="${tdVal(s.passada)}">
+              ${s.passada
+                ?`<span style="color:var(--muted)">${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}</span>`
+                :`<input type="number" min="0" value="${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:36px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:2px;font-family:inherit;outline:none">`
+              }
+            </td>`).join('')}
+            <td style="${tdVal(false)};font-weight:700;color:var(--accent)">${rowTotal}</td>
+          </tr>`;
+        }).join('')}
+        <tr style="border-top:2px solid var(--border)">
+          <td style="${tdDisc};font-weight:700;color:var(--accent)">Total/semana</td>
+          ${semanas.map(s=>{const t=s.dist?s.dist.reduce((a,v)=>a+v,0):0;return`<td style="${tdVal(s.passada)};font-weight:700;color:var(--text)">${t}</td>`;}).join('')}
+          <td style="${tdVal(false)};font-weight:700;color:var(--success)">${semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0)}</td>
+        </tr>
+      </tbody>
+    </table></div>`;
+  }
+
+  // tabela acumulada
+  if(acumEl){
+    acumEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Acumulado</div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
+    <table style="border-collapse:collapse;min-width:100%">
+      <thead>
+        <tr>
+          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border)">Disciplina</th>
+          ${semanas.map((s,wi)=>`<th style="${thStyle}">S${wi+1}<div style="font-size:9px;font-weight:400">${_orgFmtData(s.data)}</div></th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${discs.map((d,di)=>{
+          let acc=0;
+          return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
+            <td style="${tdDisc}">${_esc(d.nome)||'(sem nome)'}</td>
+            ${semanas.map(s=>{acc+=(s.dist&&s.dist[di]!==undefined?s.dist[di]:0);return`<td style="${tdVal(false)};color:var(--muted)">${acc}</td>`;}).join('')}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>`;
+  }
+}
+
+function orgPlanSetDist(wi,di,val){
+  if(!orgTrilhaAtual||!orgTrilhaAtual.plano||!orgTrilhaAtual.plano.semanas)return;
+  const s=orgTrilhaAtual.plano.semanas[wi];if(!s)return;
+  if(!s.dist)s.dist=[];
+  s.dist[di]=parseInt(val)||0;
+  _renderOrgTabela();
+  _scheduleOrgSave();
+}
+
+function orgEditDocLink(wi){
+  if(!orgTrilhaAtual||!orgTrilhaAtual.plano||!orgTrilhaAtual.plano.semanas)return;
+  const s=orgTrilhaAtual.plano.semanas[wi];if(!s)return;
+  const url=prompt('Link do documento da semana '+(wi+1)+':',s.docLink||'');
+  if(url===null)return;
+  s.docLink=url.trim();
+  _renderOrgTabela();
+  _scheduleOrgSave();
+}
+
+// ── ABA MONITORES ──
+function orgAddMonitor(){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.monitores)orgTrilhaAtual.monitores=[];
+  // sugere disciplinas ainda sem monitor
+  const discs=orgTrilhaAtual.disciplinas||[];
+  const comMon=new Set(orgTrilhaAtual.monitores.map(m=>m.disc));
+  const sem=discs.filter(d=>!comMon.has(d.id));
+  const discSel=sem.length?sem[0].id:null;
+  orgTrilhaAtual.monitores.push({id:Date.now(),disc:discSel,nome:'',email:'',docsLink:'',driveLink:''});
+  renderOrgMonitores();
+  _scheduleOrgSave();
+}
+function orgDelMonitor(id){
+  if(!orgTrilhaAtual)return;
+  orgTrilhaAtual.monitores=orgTrilhaAtual.monitores.filter(m=>m.id!==id);
+  renderOrgMonitores();
+  _scheduleOrgSave();
+}
+function orgMonitorChange(id,field,val){
+  if(!orgTrilhaAtual)return;
+  const m=orgTrilhaAtual.monitores.find(m=>m.id===id);if(!m)return;
+  m[field]=field==='disc'?parseInt(val)||null:val;
+  _scheduleOrgSave();
+}
+function renderOrgMonitores(){
+  const el=document.getElementById('org-monitores-list');if(!el)return;
+  const monitores=orgTrilhaAtual&&orgTrilhaAtual.monitores||[];
+  const discs=orgTrilhaAtual&&orgTrilhaAtual.disciplinas||[];
+  if(!monitores.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:24px 0">Nenhum monitor. Clique em "+ Monitor" para adicionar.</div>';
+    return;
+  }
+  const discOpts=discs.map(d=>`<option value="${d.id}">${_esc(d.nome||'(sem nome)')}</option>`).join('');
+  const inp=(val,ph,field,id,col)=>`<input value="${_esc(val||'')}" placeholder="${ph}" oninput="orgMonitorChange(${id},'${field}',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:${col||'var(--text)'};font-size:11px;font-family:inherit;outline:none;padding:2px 0">`;
+  el.innerHTML=monitores.map(m=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <select onchange="orgMonitorChange(${m.id},'disc',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;padding:4px 8px;outline:none;max-width:160px">
+          <option value="">-- Disciplina --</option>
+          ${discOpts}
+        </select>
+        <script>setTimeout(()=>{const sel=document.querySelector('[data-mon-sel="${m.id}"]');if(sel)sel.value='${m.disc||''}';},0);<\/script>
+        <button onclick="orgDelMonitor(${m.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+        <label style="font-size:10px;color:var(--muted)">Nome ${inp(m.nome,'Nome do monitor','nome',m.id,'var(--text)')}</label>
+        <label style="font-size:10px;color:var(--muted)">Email ${inp(m.email,'email@...','email',m.id,'var(--accent)')}</label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="font-size:10px;color:var(--muted)">Docs do monitor ${inp(m.docsLink,'Link Docs','docsLink',m.id,'var(--accent)')}</label>
+        <label style="font-size:10px;color:var(--muted)">Pasta Drive ${inp(m.driveLink,'Link Drive','driveLink',m.id,'var(--accent)')}</label>
+      </div>
+    </div>`).join('');
+  // set select values after render
+  monitores.forEach(m=>{
+    const cards=el.querySelectorAll('select');
+    cards.forEach(sel=>{if(sel.closest('[style*="border-radius:10px"]')){try{sel.value=m.disc||'';}catch{}}});
+  });
+  // more reliable: use index
+  const sels=el.querySelectorAll('select');
+  monitores.forEach((m,i)=>{if(sels[i])sels[i].value=m.disc||'';});
+}
 
 let _monSort='oldest';
 function _monTipoNorm(t){return(t==='espanhol'||t==='outros')?'outros':t||'outros';}
@@ -5929,7 +6262,69 @@ function deleteMonCargo(id){
 
   <!-- Organizador -->
   <div id="trab-sub-organizador" class="hidden" style="padding:14px 20px">
-    <div style="text-align:center;padding:48px 20px;color:var(--muted);font-size:13px">Em breve ✨</div>
+    <!-- Vista: lista de trilhas -->
+    <div id="org-lista-view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-size:13px;font-weight:700;color:var(--text)">Trilhas</span>
+        <button onclick="orgNovaTrilha()" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit">+ Nova trilha</button>
+      </div>
+      <div id="org-trilhas-list"></div>
+    </div>
+    <!-- Vista: detalhe de uma trilha -->
+    <div id="org-detalhe-view" class="hidden">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <button onclick="orgVoltarLista()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0">←</button>
+        <span id="org-detalhe-nome" style="font-size:14px;font-weight:700;color:var(--text);flex:1"></span>
+        <button onclick="orgExcluirTrilha()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--danger)">Excluir</button>
+      </div>
+      <!-- Sub-abas da trilha -->
+      <div style="display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px">
+        <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Aulas</button>
+        <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
+        <button id="org-sub-btn-monitores" onclick="orgShowSub('monitores')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Monitores</button>
+      </div>
+      <!-- Aulas -->
+      <div id="org-sub-aulas">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:12px;color:var(--muted)">Disciplinas e aulas do pacote</span>
+          <button onclick="orgAddDisc()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Disciplina</button>
+        </div>
+        <div id="org-disc-list"></div>
+      </div>
+      <!-- Planejamento -->
+      <div id="org-sub-planejamento" class="hidden">
+        <div id="org-plan-config" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">Configurações</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <label style="font-size:11px;color:var(--muted)">Data início
+              <input id="org-plan-inicio" type="date" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
+            </label>
+            <label style="font-size:11px;color:var(--muted)">Data fim
+              <input id="org-plan-fim" type="date" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <label style="font-size:11px;color:var(--muted)">Tarefas por aula
+              <input id="org-plan-tpa" type="number" min="1" max="10" value="3" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
+            </label>
+            <label style="font-size:11px;color:var(--muted)">Tarefas finais/disc.
+              <input id="org-plan-tpd" type="number" min="0" max="20" value="4" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
+            </label>
+          </div>
+        </div>
+        <div id="org-plan-resumo" style="margin-bottom:14px"></div>
+        <div id="org-plan-tabela" style="overflow-x:auto"></div>
+        <div id="org-plan-acumulado" style="overflow-x:auto;margin-top:16px"></div>
+      </div>
+      <!-- Monitores -->
+      <div id="org-sub-monitores" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:12px;color:var(--muted)">Monitores por disciplina</span>
+          <button onclick="orgAddMonitor()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Monitor</button>
+        </div>
+        <div id="org-monitores-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -5947,54 +6342,6 @@ function deleteMonCargo(id){
   <div class="content-save-bar">
     <button class="content-save-btn" onclick="saveContent()" title="Salvar alterações">💾</button>
     <span class="content-save-note" id="content-save-note">Alterações são salvas no Supabase e sincronizadas em todos os dispositivos.</span>
-  </div>
-</div>
-
-<div id="tab-horarios" class="hidden" style="padding:16px 20px;font-family:'Nunito','Segoe UI',sans-serif">
-  <!-- Barra atividade atual -->
-  <div id="hor-now-bar" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px">
-    <span id="hor-now-emoji" style="font-size:20px">⏳</span>
-    <div style="flex:1;min-width:0">
-      <div id="hor-now-label" style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.3px">–</div>
-    </div>
-    <div id="hor-now-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
-  </div>
-  <!-- Config bar: hidden -->
-  <div style="display:none">
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:12px;color:var(--muted);font-weight:600">Início</span>
-      <input type="number" id="hor-start" class="sim-spin" style="width:50px" min="0" max="23" value="6" onchange="_horSaveConfig()">
-      <span style="font-size:12px;color:var(--muted)">h</span>
-    </div>
-    <div style="width:1px;height:16px;background:var(--border)"></div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:12px;color:var(--muted);font-weight:600">Fim</span>
-      <input type="number" id="hor-end" class="sim-spin" style="width:50px" min="1" max="24" value="23" onchange="_horSaveConfig()">
-      <span style="font-size:12px;color:var(--muted)">h</span>
-    </div>
-    <div style="width:1px;height:16px;background:var(--border)"></div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:12px;color:var(--muted);font-weight:600">Bloco</span>
-      <select id="hor-slot" class="sim-spin" style="width:76px" onchange="_horSaveConfig()">
-        <option value="15">15 min</option>
-        <option value="30">30 min</option>
-        <option value="60" selected>60 min</option>
-      </select>
-    </div>
-    <span id="hor-now" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
-  </div>
-  <!-- Resumo do dia -->
-  <div id="hor-day-summary" style="display:none"></div>
-  <!-- Grade semanal -->
-  <div class="hor-wrap" id="hor-grid-wrap" style="margin-bottom:24px"></div>
-<div id="hor-exceptions-wrap" style="margin-bottom:24px"></div>
-  <!-- Compromissos -->
-  <div style="margin-top:22px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span style="font-size:13px;font-weight:700;color:var(--text)">Compromissos da semana</span>
-      <button onclick="addCompromisso()" title="Adicionar compromisso" style="background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:50%;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:16px;line-height:1;transition:all .15s" onmouseover="this.style.opacity='1';this.style.borderColor='rgba(255,255,255,.5)'" onmouseout="this.style.opacity='.8';this.style.borderColor='rgba(255,255,255,.2)'">+</button>
-    </div>
-    <div id="hor-comp-list"></div>
   </div>
 </div>
 
