@@ -5618,13 +5618,27 @@ function renderOrgSemanal(){
           <span style="font-size:11px;font-weight:700;color:var(--text)">🔗 Links</span>
         </div>
         <div style="padding:8px 10px">
-          ${(sem.links||[]).map((lk,li)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
-            <input value="${_esc(lk.label||'')}" placeholder="Nome" oninput="orgSemLinkChange(${li},'label',this.value)" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
-            <input value="${_esc(lk.url||'')}" placeholder="https://..." oninput="orgSemLinkChange(${li},'url',this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
-            ${lk.url?`<a href="${_esc(lk.url)}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none;line-height:1">↗</a>`:''}
-            <button onclick="orgSemLinkDel(${li})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.color='var(--danger)';this.style.opacity='1'" onmouseout="this.style.color='var(--muted)';this.style.opacity='.5'">×</button>
-          </div>`).join('')}
-          <button onclick="orgSemLinkAdd()" style="margin-top:2px;padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;width:100%">+ Link</button>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+            ${(sem.links||[]).map((lk,li)=>{
+              const isEditingLink=_orgSemLinkEdit.has(`${_orgSemSel}_${li}`);
+              if(isEditingLink){
+                return`<div style="display:flex;align-items:center;gap:5px;width:100%;margin-bottom:2px">
+                  <input value="${_esc(lk.label||'')}" placeholder="Nome" oninput="orgSemLinkChange(${li},'label',this.value)" style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+                  <input value="${_esc(lk.url||'')}" placeholder="https://..." oninput="orgSemLinkChange(${li},'url',this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--accent);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+                  <button onclick="orgSemLinkToggleEdit(${li})" style="background:none;border:none;color:var(--success);cursor:pointer;font-size:13px;padding:0;line-height:1">✓</button>
+                  <button onclick="orgSemLinkDel(${li})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.5" onmouseover="this.style.color='var(--danger)';this.style.opacity='1'" onmouseout="this.style.color='var(--muted)';this.style.opacity='.5'">×</button>
+                </div>`;
+              }
+              return`<div style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+                ${lk.url
+                  ?`<a href="${_esc(lk.url)}" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600;text-decoration:none">${_esc(lk.label||lk.url)}</a>`
+                  :`<span style="color:var(--muted);font-size:12px">${_esc(lk.label||'sem nome')}</span>`}
+                <button onclick="orgSemLinkToggleEdit(${li})" style="background:none;border:none;cursor:pointer;padding:0;opacity:.4;line-height:1;display:flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.4'" title="Editar"><img src="editar.png" style="width:11px;height:11px;display:block"></button>
+                <button onclick="orgSemLinkDel(${li})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1;opacity:.4" onmouseover="this.style.color='var(--danger)';this.style.opacity='1'" onmouseout="this.style.color='var(--muted)';this.style.opacity='.4'">×</button>
+              </div>`;
+            }).join('')}
+          </div>
+          <button onclick="orgSemLinkAdd()" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;width:100%">+ Link</button>
         </div>
       </div>
       <!-- Bloco de notas -->
@@ -5704,10 +5718,18 @@ function orgSemMove(idx,dir){
     [sem.tasks[idx],sem.tasks[j]]=[sem.tasks[j],sem.tasks[idx]];
   _saveOrgTrilhas();renderOrgSemanal();
 }
+let _orgSemLinkEdit=new Set();
+function orgSemLinkToggleEdit(li){
+  const key=`${_orgSemSel}_${li}`;
+  if(_orgSemLinkEdit.has(key))_orgSemLinkEdit.delete(key);
+  else _orgSemLinkEdit.add(key);
+  renderOrgSemanal();
+}
 function orgSemLinkAdd(){
   const sem=_orgGetSem();if(!sem)return;
   if(!sem.links)sem.links=[];
   sem.links.push({label:'',url:''});
+  _orgSemLinkEdit.add(`${_orgSemSel}_${sem.links.length-1}`);
   _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemLinkDel(li){
