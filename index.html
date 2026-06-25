@@ -5356,16 +5356,47 @@ let orgSubAtual='aulas';
 let _orgSaveTimer=null;
 
 const _ORG_SEED=[{id:1750000000001,nome:'PM-PI',disciplinas:[
-  {id:1750000000011,nome:'Língua Portuguesa',aulas:15,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390522'},
-  {id:1750000000012,nome:'Noções de Informática',aulas:7,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390523'},
-  {id:1750000000013,nome:'Discursiva',aulas:7,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390563'},
-  {id:1750000000014,nome:'Constituição Federal',aulas:9,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390569'},
-  {id:1750000000015,nome:'Noções de Direito Administrativo',aulas:8,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390730'},
-  {id:1750000000016,nome:'Constituição do Estado do Piauí',aulas:2,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390909'},
-  {id:1750000000017,nome:'Conhecimentos Regionais do Piauí',aulas:5,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390913'},
-  {id:1750000000018,nome:'Raciocínio Lógico e Matemática Básica',aulas:31,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390914'},
-  {id:1750000000019,nome:'Conhecimentos Gerais',aulas:15,link:'https://www.estrategiaconcursos.com.br/app/dashboard/curso/390943'}
+  {id:1750000000011,nome:'Língua Portuguesa',aulas:15,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390522'},
+  {id:1750000000012,nome:'Noções de Informática',aulas:7,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390523'},
+  {id:1750000000013,nome:'Discursiva',aulas:7,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390563'},
+  {id:1750000000014,nome:'Constituição Federal',aulas:9,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390569'},
+  {id:1750000000015,nome:'Noções de Direito Administrativo',aulas:8,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390730'},
+  {id:1750000000016,nome:'Constituição do Estado do Piauí',aulas:2,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390909'},
+  {id:1750000000017,nome:'Conhecimentos Regionais do Estado do Piauí',aulas:5,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390913'},
+  {id:1750000000018,nome:'Raciocínio Lógico e Matemática Básica',aulas:31,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390914'},
+  {id:1750000000019,nome:'Conhecimentos Gerais',aulas:15,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390943'},
+  {id:1750000000020,nome:'Direito Penal',aulas:16,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=391112'}
 ],monitores:[],plano:{inicio:'',fim:'',tpa:3,tpd:4,semanas:[]}}];
+
+// Migração v2: atualiza links e adiciona Direito Penal nas trilhas existentes
+const _ORG_LINKS_V2={
+  1750000000011:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390522',
+  1750000000012:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390523',
+  1750000000013:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390563',
+  1750000000014:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390569',
+  1750000000015:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390730',
+  1750000000016:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390909',
+  1750000000017:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390913',
+  1750000000018:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390914',
+  1750000000019:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=390943',
+};
+function _orgMigrateV2(){
+  let changed=false;
+  orgTrilhas.forEach(t=>{
+    if(!t.disciplinas)return;
+    // corrigir links
+    t.disciplinas.forEach(d=>{if(_ORG_LINKS_V2[d.id]&&d.link!==_ORG_LINKS_V2[d.id]){d.link=_ORG_LINKS_V2[d.id];changed=true;}});
+    // corrigir nome Conhecimentos Regionais
+    const kr=t.disciplinas.find(d=>d.id===1750000000017);
+    if(kr&&kr.nome!=='Conhecimentos Regionais do Estado do Piauí'){kr.nome='Conhecimentos Regionais do Estado do Piauí';changed=true;}
+    // adicionar Direito Penal se não existe
+    if(!t.disciplinas.find(d=>d.id===1750000000020)){
+      t.disciplinas.push({id:1750000000020,nome:'Direito Penal',aulas:16,link:'https://www.estrategiaconcursos.com.br/admin/produto-curso/?id=391112'});
+      changed=true;
+    }
+  });
+  if(changed)_saveOrgTrilhas();
+}
 
 async function loadOrgTrilhas(){
   try{const s=localStorage.getItem('nav_org_trilhas');if(s)orgTrilhas=JSON.parse(s);}catch{}
@@ -5377,6 +5408,7 @@ async function loadOrgTrilhas(){
     }
   }catch{}
   if(!orgTrilhas.length){orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));await _saveOrgTrilhas();}
+  else{_orgMigrateV2();}
   const orgEl=document.getElementById('trab-sub-organizador');
   if(orgEl&&!orgEl.classList.contains('hidden'))renderOrgLista();
 }
@@ -5943,27 +5975,26 @@ function renderOrgDiscs(){
             ].join('');
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
-                <div style="display:flex;align-items:center;gap:6px">
-                  ${d.link
-                    ?`<a href="${_esc(d.link)}" target="_blank" style="flex:1;color:var(--text);font-size:12px;font-weight:600;text-decoration:none" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${_esc(d.nome)||'(sem nome)'}</a>`
-                    :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">`
-                  }
-                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:0;opacity:${isEditing?'1':'.4'};transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.4'}'">
-                    ${isEditing?`<span style="font-size:13px;color:var(--accent);line-height:1">✕</span>`:`<img src="editar.png" style="width:13px;height:13px;display:block">`}
-                  </button>
-                </div>
-                ${fmtContent}
+                ${d.link
+                  ?`<a href="${_esc(d.link)}" target="_blank" style="color:var(--text);font-size:12px;font-weight:600;text-decoration:none" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${_esc(d.nome)||'(sem nome)'}</a>`
+                  :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">`
+                }
               </td>
               <td style="padding:4px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="${numStyle}color:var(--text)"></td>
               <td style="padding:4px;text-align:center">
-                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtAula.length?'var(--accent)':'var(--muted)'}">${tpa}</div>
+                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtAula.length?'#7dd3fc':'var(--muted)'}">${tpa}</div>
               </td>
               <td style="padding:4px;text-align:center">
-                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtFinal.length?'var(--accent)':'var(--muted)'}">${tpd}</div>
+                <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtFinal.length?'#c4b5fd':'var(--muted)'}">${tpd}</div>
               </td>
               <td id="org-tot-${d.id}" style="padding:4px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${tot}</td>
-              <td style="padding:6px 10px">
-                ${fmtResumo?`<div style="display:flex;flex-wrap:wrap;gap:2px">${fmtResumo}</div>`:`<input value="${_esc(d.link||'')}" oninput="orgDiscChange(${d.id},'link',this.value)" placeholder="Link (opcional)" style="width:100%;background:transparent;border:none;color:var(--accent);font-size:11px;font-family:inherit;outline:none">`}
+              <td style="padding:4px 8px;vertical-align:top">
+                <div style="display:flex;align-items:flex-start;gap:4px">
+                  <div style="flex:1">${fmtContent}</div>
+                  <button onclick="orgToggleFmtEdit(${d.id})" title="${isEditing?'Fechar':'Editar formatos'}" style="background:none;border:none;cursor:pointer;padding:2px 0;opacity:${isEditing?'1':'.35'};transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${isEditing?'1':'.35'}'">
+                    ${isEditing?`<span style="font-size:13px;color:var(--accent);line-height:1">✕</span>`:`<img src="editar.png" style="width:12px;height:12px;display:block">`}
+                  </button>
+                </div>
               </td>
               <td style="padding:4px;text-align:center"><button onclick="orgDelDisc(${d.id})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;line-height:1;padding:0">×</button></td>
             </tr>`;
