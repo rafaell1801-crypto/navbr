@@ -2532,17 +2532,17 @@ function render(){
   const _subtxt=`${doneCount}/${TOTAL_MAIN} tópicos · conclusão: ${calcDeadline()}`;
   const _subEl=document.getElementById('cfg-subtitle');if(_subEl)_subEl.textContent=_subtxt;
   const lateSection=document.getElementById('late-section');
-  document.getElementById('late-count').textContent=lateItems.length;
+  const lateCountEl=document.getElementById('late-count');if(lateCountEl)lateCountEl.textContent=lateItems.length;
   if(lateItems.length>0){
-    lateSection.classList.remove('hidden');
-    document.getElementById('late-body').innerHTML=lateItems.map(item=>`
+    if(lateSection)lateSection.classList.remove('hidden');
+    const lateBodyEl=document.getElementById('late-body');if(lateBodyEl)lateBodyEl.innerHTML=lateItems.map(item=>`
       <div class="late-item">
         <div class="check-btn ${isDone(item.id)?'checked':''}" onclick="toggleItem(${item.id})">${chkIcon()}</div>
         <div>${discBadgeHTML(item.disc)}<br>
         <span style="font-size:12px">${item.topico}</span></div>
         <div style="font-size:11px;color:var(--muted);text-align:right">${item.data}<br>${getBlocoLabel(item.bloco)}</div>
       </div>`).join('');
-  }else{lateSection.classList.add('hidden');}
+  }else{if(lateSection)lateSection.classList.add('hidden');}
   const dateKeys=Object.keys(days);
   const pendingDays=dateKeys.filter(d=>!days[d].every(i=>isDone(i.id)));
   const doneDays=dateKeys.filter(d=>days[d].every(i=>isDone(i.id)));
