@@ -5467,7 +5467,7 @@ function renderOrgSemanal(){
   // selector de semanas
   const semOpts=semanas.map((s,i)=>`<option value="${i}" ${i===_orgSemSel?'selected':''}>S${i+1} — ${_orgFmtData(s.data)} (${(s.dist||[]).reduce((a,v)=>a+v,0)} tarefas)</option>`).join('');
 
-  // tabela de comparação (lado direito)
+  // tabela de comparação (lado direito) — com botão + por disciplina
   const linhasComp=discs.map((d,di)=>{
     const plan=(sem.dist&&sem.dist[di]!==undefined?sem.dist[di]:0);
     const atual=contagem[d.id]||0;
@@ -5476,21 +5476,27 @@ function renderOrgSemanal(){
     const diffStr=diff===0?'✓':diff>0?`-${diff}`:`+${Math.abs(diff)}`;
     if(plan===0&&atual===0)return'';
     return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
-      <td style="padding:5px 8px;font-size:11px;color:${d.link?'var(--accent)':'var(--text)'};white-space:nowrap">
+      <td style="padding:4px 8px;font-size:11px;color:${d.link?'var(--accent)':'var(--text)'}">
         ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)}</a>`:_esc(d.nome)}
       </td>
-      <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--muted)">${plan}</td>
-      <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${atual}</td>
-      <td style="padding:5px 6px;text-align:center;font-size:12px;font-weight:700;color:${diffColor}">${diffStr}</td>
+      <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--muted)">${plan}</td>
+      <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${atual}</td>
+      <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:${diffColor}">${diffStr}</td>
+      <td style="padding:4px 5px;text-align:center">
+        <button onclick="orgSemAddDisc(${d.id})" title="Adicionar ${_esc(d.nome)}" style="width:22px;height:22px;border-radius:50%;border:1px solid ${diff>0?'var(--accent)':'var(--border)'};background:${diff>0?'rgba(62,181,200,.12)':'transparent'};color:${diff>0?'var(--accent)':'var(--muted)'};cursor:pointer;font-size:14px;font-weight:700;line-height:1;padding:0;font-family:inherit;display:inline-flex;align-items:center;justify-content:center">+</button>
+      </td>
     </tr>`;
   }).join('');
 
-  // lista de agenda (lado esquerdo)
+  // lista de agenda (lado esquerdo) com setas de reordenação
   const agendaItems=agenda.map((discId,idx)=>{
-    const disc=discs.find(d=>d.id==discId);
-    return`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(30,63,92,.3)">
-      <span style="font-size:10px;color:var(--muted);min-width:20px;text-align:right">${idx+1}</span>
-      <select onchange="orgSemSetDisc(${idx},this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 6px;outline:none">
+    return`<div style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid rgba(30,63,92,.3)">
+      <div style="display:flex;flex-direction:column;gap:0">
+        <button onclick="orgSemMove(${idx},-1)" ${idx===0?'disabled':''} style="background:none;border:none;color:${idx===0?'rgba(127,179,200,.2)':'var(--muted)'};cursor:${idx===0?'default':'pointer'};font-size:10px;padding:0;line-height:1">▲</button>
+        <button onclick="orgSemMove(${idx},1)" ${idx===agenda.length-1?'disabled':''} style="background:none;border:none;color:${idx===agenda.length-1?'rgba(127,179,200,.2)':'var(--muted)'};cursor:${idx===agenda.length-1?'default':'pointer'};font-size:10px;padding:0;line-height:1">▼</button>
+      </div>
+      <span style="font-size:10px;color:var(--muted);min-width:18px;text-align:right">${idx+1}</span>
+      <select onchange="orgSemSetDisc(${idx},this.value)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit;padding:3px 5px;outline:none">
         <option value="">—</option>
         ${discs.map(d=>`<option value="${d.id}" ${d.id==discId?'selected':''}>${_esc(d.nome)}</option>`).join('')}
       </select>
@@ -5510,15 +5516,12 @@ function renderOrgSemanal(){
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
           <span style="font-size:11px;font-weight:700;color:var(--text)">Disciplinas da semana</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;font-weight:700;color:${diffTotColor}">${totalAgenda}/${totalPlan}</span>
-            <button onclick="orgSemAdd()" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit">+ Add</button>
-          </div>
+          <span style="font-size:11px;font-weight:700;color:${diffTotColor}">${totalAgenda}/${totalPlan}</span>
         </div>
-        <div style="padding:6px 10px;max-height:420px;overflow-y:auto">
-          ${agendaItems||'<div style="font-size:11px;color:var(--muted);padding:16px 0;text-align:center">Clique em "+ Add" para adicionar disciplinas.</div>'}
+        <div style="padding:4px 8px;max-height:440px;overflow-y:auto">
+          ${agendaItems||'<div style="font-size:11px;color:var(--muted);padding:16px 0;text-align:center">Use os botões + no Comparativo para adicionar.</div>'}
         </div>
-        ${diffTotal!==0?`<div style="padding:6px 12px;font-size:11px;font-weight:700;color:${diffTotColor};border-top:1px solid var(--border);text-align:right">${diffTotal>0?`Faltam ${diffTotal} tarefas`:`${Math.abs(diffTotal)} tarefas a mais`}</div>`:''}
+        ${diffTotal!==0?`<div style="padding:5px 12px;font-size:11px;font-weight:700;color:${diffTotColor};border-top:1px solid var(--border);text-align:right">${diffTotal>0?`Faltam ${diffTotal}`:`${Math.abs(diffTotal)} a mais`}</div>`:''}
       </div>
       <!-- Comparação -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
@@ -5528,19 +5531,21 @@ function renderOrgSemanal(){
         <table style="width:100%;border-collapse:collapse">
           <thead>
             <tr style="background:rgba(0,0,0,.1)">
-              <th style="padding:5px 8px;font-size:10px;color:var(--muted);font-weight:600;text-align:left">Disciplina</th>
-              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Plan.</th>
-              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Atual</th>
-              <th style="padding:5px 6px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Dif.</th>
+              <th style="padding:4px 8px;font-size:10px;color:var(--muted);font-weight:600;text-align:left">Disciplina</th>
+              <th style="padding:4px 5px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Plan.</th>
+              <th style="padding:4px 5px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Atual</th>
+              <th style="padding:4px 5px;font-size:10px;color:var(--muted);font-weight:600;text-align:center">Dif.</th>
+              <th style="width:30px"></th>
             </tr>
           </thead>
           <tbody>
-            ${linhasComp||`<tr><td colspan="4" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Nenhuma tarefa planejada para esta semana.</td></tr>`}
+            ${linhasComp||`<tr><td colspan="5" style="padding:16px;text-align:center;font-size:11px;color:var(--muted)">Nenhuma tarefa planejada para esta semana.</td></tr>`}
             <tr style="border-top:2px solid var(--border)">
-              <td style="padding:5px 8px;font-size:11px;font-weight:700;color:var(--accent)">Total</td>
-              <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--accent)">${totalPlan}</td>
-              <td style="padding:5px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${totalAgenda}</td>
-              <td style="padding:5px 6px;text-align:center;font-size:12px;font-weight:700;color:${diffTotColor}">${diffTotal===0?'✓':diffTotal>0?`-${diffTotal}`:`+${Math.abs(diffTotal)}`}</td>
+              <td style="padding:4px 8px;font-size:11px;font-weight:700;color:var(--accent)">Total</td>
+              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--accent)">${totalPlan}</td>
+              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:var(--text)">${totalAgenda}</td>
+              <td style="padding:4px 5px;text-align:center;font-size:11px;font-weight:700;color:${diffTotColor}">${diffTotal===0?'✓':diffTotal>0?`-${diffTotal}`:`+${Math.abs(diffTotal)}`}</td>
+              <td></td>
             </tr>
           </tbody>
         </table>
@@ -5548,12 +5553,18 @@ function renderOrgSemanal(){
     </div>`;
 }
 
-function orgSemAdd(){
-  if(!orgTrilhaAtual)return;
-  const sem=orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
-  if(!sem)return;
+function _orgGetSem(){
+  return orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
+}
+function orgSemAddDisc(discId){
+  const sem=_orgGetSem();if(!sem)return;
   if(!sem.agenda)sem.agenda=[];
-  // sugere a disciplina com mais diferença positiva
+  sem.agenda.push(parseInt(discId)||discId);
+  _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSemAdd(){
+  const sem=_orgGetSem();if(!sem)return;
+  if(!sem.agenda)sem.agenda=[];
   const discs=orgTrilhaAtual.disciplinas||[];
   const contagem={};sem.agenda.forEach(id=>{contagem[id]=(contagem[id]||0)+1;});
   const melhor=discs.reduce((best,d,di)=>{
@@ -5561,19 +5572,23 @@ function orgSemAdd(){
     return diff>best.diff?{id:d.id,diff}:best;
   },{id:discs[0]&&discs[0].id||'',diff:-999});
   sem.agenda.push(melhor.id||'');
-  _scheduleOrgSave();renderOrgSemanal();
+  _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemRemove(idx){
-  const sem=orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
-  if(!sem||!sem.agenda)return;
+  const sem=_orgGetSem();if(!sem||!sem.agenda)return;
   sem.agenda.splice(idx,1);
-  _scheduleOrgSave();renderOrgSemanal();
+  _saveOrgTrilhas();renderOrgSemanal();
 }
 function orgSemSetDisc(idx,discId){
-  const sem=orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas&&orgTrilhaAtual.plano.semanas[_orgSemSel];
-  if(!sem||!sem.agenda)return;
+  const sem=_orgGetSem();if(!sem||!sem.agenda)return;
   sem.agenda[idx]=discId?parseInt(discId)||discId:'';
-  _scheduleOrgSave();renderOrgSemanal();
+  _saveOrgTrilhas();renderOrgSemanal();
+}
+function orgSemMove(idx,dir){
+  const sem=_orgGetSem();if(!sem||!sem.agenda)return;
+  const j=idx+dir;if(j<0||j>=sem.agenda.length)return;
+  [sem.agenda[idx],sem.agenda[j]]=[sem.agenda[j],sem.agenda[idx]];
+  _saveOrgTrilhas();renderOrgSemanal();
 }
 
 function renderOrgLista(){
@@ -5638,8 +5653,18 @@ function orgDiscChange(id,field,val){
   _scheduleOrgSave();
 }
 function _discTpa(d){return d.tpa!=null?parseInt(d.tpa):parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpa)||3;}
-function _discTpd(d){return d.tpd!=null?parseInt(d.tpd):parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;}
-function _discTotal(d){return(d.aulas||0)*_discTpa(d)+_discTpd(d);}
+function _discTpd(d){
+  if(d.tpd!=null)return parseInt(d.tpd);
+  const ff=d.fmtFinal||[];
+  if(!ff.length)return parseInt(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.tpd)||4;
+  const sqCount=ff.includes('SQ')?parseInt(d.sqN)||1:0;
+  return ff.filter(f=>f!=='SQ').length+sqCount;
+}
+function _discTotal(d){
+  const base=(d.aulas||0)*_discTpa(d)+_discTpd(d);
+  const ivExtra=(d.intervalos||[]).reduce((s,iv)=>s+Math.floor((d.aulas||0)/Math.max(1,parseInt(iv.a)||1))*(iv.fmts||[]).length,0);
+  return base+ivExtra;
+}
 
 function renderOrgDiscs(){
   const el=document.getElementById('org-disc-list');if(!el)return;
@@ -5676,21 +5701,43 @@ function renderOrgDiscs(){
             const isEditing=_orgDiscEditFmt.has(d.id);
             const chip=(f,grupo,sel)=>`<span onclick="orgToggleFmt${grupo}(${d.id},'${f}')" style="padding:1px 7px;border-radius:99px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(62,181,200,.15)':'transparent'};color:${sel?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none">${f}</span>`;
             const padroesFmtHTML=orgPadroes.filter(p=>p.fmtAula||p.fmtFinal).map(p=>`<span onclick="orgAplicarPadraoFmt(${p.id},${d.id})" style="padding:1px 8px;border-radius:99px;border:1px solid rgba(196,181,253,.4);background:rgba(139,107,232,.1);color:#c4b5fd;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" title="Aplicar: ${_esc(p.fmtAula.join('+'))} / ${_esc(p.fmtFinal.join('+'))}">${_esc(p.nome)}</span>`).join('');
+            const intervalos=d.intervalos||[];
+            const sqN=parseInt(d.sqN)||1;
+            const sqSel=fmtFinal.includes('SQ');
+            const ivRowHTML=intervalos.map((iv,ii)=>{
+              const ivFmts=iv.fmts||[];
+              return`<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap">
+                <span style="font-size:9px;color:var(--muted);white-space:nowrap">a cada</span>
+                <input type="number" min="1" max="99" value="${iv.a||3}" onchange="orgSetDiscIvA(${d.id},${ii},this.value)" style="width:32px;padding:1px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px;background:var(--surface);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
+                <span style="font-size:9px;color:var(--muted);white-space:nowrap">aulas:</span>
+                ${_AULA_FMT.map(f=>`<span onclick="orgToggleDiscIvFmt(${d.id},${ii},'${f}')" style="padding:1px 6px;border-radius:99px;border:1px solid ${ivFmts.includes(f)?'var(--accent)':'var(--border)'};background:${ivFmts.includes(f)?'rgba(62,181,200,.15)':'transparent'};color:${ivFmts.includes(f)?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none">${f}</span>`).join('')}
+                <button onclick="orgDelDiscIv(${d.id},${ii})" style="margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0">×</button>
+              </div>`;
+            }).join('');
+            const finalChipsHTML=_FINAL_FMT.map(f=>{
+              const sel=fmtFinal.includes(f);
+              if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(62,181,200,.15)':'transparent'};color:${sel?'var(--accent)':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?`<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},'sqN',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid var(--accent);color:var(--accent);font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×`:''}</span>`;
+              return chip(f,'Final',sel);
+            }).join('');
             const fmtContent=isEditing?`
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
-                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Por aula (tpa=${fmtAula.length||'global'})</div>
-                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_FORMATOS_LIST.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
-                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">Final/disc. (tpd=${fmtFinal.length||'global'})</div>
-                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_FORMATOS_LIST.map(f=>chip(f,'Final',fmtFinal.includes(f))).join('')}</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-                  <button onclick="orgSalvarPadraoFmt(${d.id})" style="padding:2px 8px;font-size:10px;font-weight:700;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">💾 Salvar padrão</button>
-                  ${padroesFmtHTML?`<span style="font-size:10px;color:var(--muted);align-self:center">Aplicar:</span>${padroesFmtHTML}`:''}
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">POR AULA (TPA=${fmtAula.length||'global'})</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px;align-items:center">
+                  ${ivRowHTML}
+                  <button onclick="orgAddDiscIv(${d.id})" style="padding:1px 8px;border-radius:99px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ a cada X aulas</button>
+                </div>
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;margin-top:8px">FINAL/DISC. (TPD=${_discTpd(d)||'global'})</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px">${finalChipsHTML}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">
+                  <button onclick="orgSalvarPadraoFmt(${d.id})" title="Salvar padrão" style="width:26px;height:26px;padding:0;border-radius:5px;border:1px solid var(--border);background:transparent;color:#fff;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1">✓</button>
+                  ${padroesFmtHTML?`<span style="font-size:10px;color:var(--muted)">Aplicar:</span>${padroesFmtHTML}`:''}
                 </div>
               </div>`
             :`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;align-items:center">
                 ${fmtAula.length?fmtAula.map(f=>chip(f,'Aula',true)).join(''):'<span style="font-size:10px;color:var(--muted)">por aula: —</span>'}
-                ${fmtAula.length&&fmtFinal.length?'<span style="color:var(--muted);font-size:10px">·</span>':''}
-                ${fmtFinal.length?fmtFinal.map(f=>chip(f,'Final',true)).join(''):''}
+                ${intervalos.length?intervalos.map(iv=>`<span style="font-size:10px;color:rgba(245,166,35,.7);white-space:nowrap">/${iv.a}a:${(iv.fmts||[]).join('+')}</span>`).join(''):''}
+                ${fmtFinal.length?`<span style="color:var(--muted);font-size:10px">·</span>${fmtFinal.map(f=>f==='SQ'?`<span style="padding:1px 6px;border-radius:99px;border:1px solid var(--accent);background:rgba(62,181,200,.15);color:var(--accent);font-size:10px;font-weight:600">${sqN>1?sqN+'×':''}SQ</span>`:chip(f,'Final',true)).join('')}`:''}
               </div>`;
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
@@ -5785,7 +5832,9 @@ function renderOrgPrioridade(){
     </div>
   </details>`;
 }
-const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ'];
+const _FORMATOS_LIST=['T+Q','T','R+Q','R','SQ','Passo','Aula','Simulado','Bizu','nSQ']; // legado Monitor
+const _AULA_FMT=['T+Q','T','R+Q','R','SQ','Passo','Aula'];
+const _FINAL_FMT=['SQ','Bizu','Simulado'];
 let _orgDiscEditFmt=new Set();
 
 function orgToggleFmtEdit(discId){
@@ -5818,6 +5867,29 @@ function orgAplicarPadraoFmt(padraoId,discId){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
   d.fmtAula=[...(p.fmtAula||[])];d.fmtFinal=[...(p.fmtFinal||[])];
   d.tpa=d.fmtAula.length||null;d.tpd=d.fmtFinal.length||null;
+  renderOrgDiscs();_scheduleOrgSave();
+}
+function orgAddDiscIv(discId){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  if(!d.intervalos)d.intervalos=[];
+  d.intervalos.push({a:3,fmts:[]});
+  renderOrgDiscs();_scheduleOrgSave();
+}
+function orgDelDiscIv(discId,ii){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d||!d.intervalos)return;
+  d.intervalos.splice(ii,1);
+  renderOrgDiscs();_scheduleOrgSave();
+}
+function orgSetDiscIvA(discId,ii,val){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d||!d.intervalos)return;
+  d.intervalos[ii].a=Math.max(1,parseInt(val)||1);
+  _scheduleOrgSave();
+}
+function orgToggleDiscIvFmt(discId,ii,fmt){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d||!d.intervalos)return;
+  const fmts=d.intervalos[ii].fmts||[];
+  const idx=fmts.indexOf(fmt);if(idx>=0)fmts.splice(idx,1);else fmts.push(fmt);
+  d.intervalos[ii].fmts=fmts;
   renderOrgDiscs();_scheduleOrgSave();
 }
 function _countUsoPadrao(p){
@@ -5882,6 +5954,7 @@ function _orgRecalcSemanas(){
       passada,
       concluida:old?!!old.concluida:false,
       docLink:old?old.docLink||'':'',
+      agenda:old?old.agenda||[]:[],
       dist:discs.map((d,di)=>{
         if(old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
         // Distribute only among non-concluded semanas
@@ -5989,7 +6062,7 @@ function _renderOrgTabela(){
             <div style="display:flex;align-items:center;justify-content:center;margin-bottom:1px">
               <input type="checkbox" ${s.concluida?'checked':''} onchange="orgToggleSemConcluida(${wi})" title="Marcar semana como concluída" style="width:12px;height:12px;cursor:pointer;accent-color:var(--accent)">
             </div>
-            <div style="font-size:9px;color:var(--muted);font-weight:400">S${wi+1}</div>
+            <div style="font-size:9px;color:var(--muted);font-weight:400">${String(wi).padStart(2,"0")}</div>
             <div style="font-size:10px">${_orgFmtData(s.data)}</div>
             <div style="margin-top:1px">${s.docLink
               ?`<a href="${_esc(s.docLink)}" target="_blank" style="font-size:9px;color:var(--accent);text-decoration:none">📄</a>`
@@ -6042,7 +6115,7 @@ function _renderOrgTabela(){
       <thead>
         <tr>
           <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border);min-width:160px">Disciplina</th>
-          ${semanas.map((s,wi)=>`<th style="${thStyle};padding:3px 4px;min-width:48px">S${wi+1}<div style="font-size:9px;font-weight:400">${_orgFmtData(s.data)}</div></th>`).join('')}
+          ${semanas.map((s,wi)=>`<th style="${thStyle};padding:3px 4px;min-width:48px">${String(wi).padStart(2,"0")}<div style="font-size:9px;font-weight:400">${_orgFmtData(s.data)}</div></th>`).join('')}
           <th style="${thStyle};border-left:1px solid var(--border);padding:3px 6px">🔗</th>
         </tr>
       </thead>
