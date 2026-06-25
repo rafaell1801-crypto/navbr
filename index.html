@@ -6217,7 +6217,7 @@ function renderOrgPrioridade(){
     const tqSgs=uniqueSgs.reduce((a,sg)=>a+parseInt((priCfg.subgrupos&&priCfg.subgrupos[sg]&&priCfg.subgrupos[sg].q)||0),0);
     const totalGrp=tqg+tqSgs;
     const diff=qTotal?qTotal-totalGrp:null;
-    const statusQ=qTotal?(totalGrp===qTotal?`<span style="color:rgba(45,212,160,.6);font-size:10px">✓ ${totalGrp}/${qTotal}</span>`:`<span style="color:${diff>0?'var(--warn)':'var(--danger)'};font-size:10px">${totalGrp}/${qTotal} (${diff>0?'faltam '+diff:Math.abs(diff)+' a mais'})</span>`):'';
+    const statusQ=isDiscursiva?'':(qTotal&&totalGrp!==qTotal?`<span style="font-size:15px" title="${totalGrp}/${qTotal}">❗</span>`:'')
     return`<div style="margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:2px solid ${cor}25;margin-bottom:6px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px">${titulo}</span>
