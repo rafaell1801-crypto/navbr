@@ -5956,7 +5956,7 @@ function renderOrgDiscs(){
   const _dPriCfg=orgTrilhaAtual.priCfg||{};
   const _dQB=parseInt(_dPriCfg.qTotalB)||0;const _dQE=parseInt(_dPriCfg.qTotalE)||0;
   const _dTwQ=Math.max(1,_dQB+2*_dQE);
-  function _dValPerQ(g){if(g==='discursiva')return 1;if(g==='especificos')return 20/_dTwQ;return 10/_dTwQ;}
+  function _dValPerQ(g){if(g==='discursiva')return 1;if(g==='especificos')return 20/(3*Math.max(1,_dQE));return 10/(3*Math.max(1,_dQB));}
   function _dScore(d){
     const g=d.grupo||'basicos';const a=Math.max(1,d.aulas||1);
     const sg=(d.subgrupo||'').trim();
@@ -6244,7 +6244,7 @@ function renderOrgPrioridade(){
       ${grpBlock('Conhecimentos Específicos','#c4b5fd','especificos',qTotalE,2,'E')}
       ${grpBlock('Discursiva','#f5a623','discursiva',qTotalD,1,'D',true)}
       <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)">
-        <b style="color:var(--text)">Score = pontos/aula</b> · Básico: Q/a × 10/(B+2E) · Específico: Q/a × 20/(B+2E) · Discursiva: Q/a × 1pt · Subgrupos: Q estimado por aulas.
+        <b style="color:var(--text)">Score = pontos/aula</b> · Básico: Q/a × 10/(3×QB) · Específico: Q/a × 20/(3×QE) · Discursiva: Q/a × 1pt · Subgrupos: Q estimado por aulas.
       </div>
     </div>
   </div>`;
