@@ -5956,18 +5956,21 @@ function renderOrgDiscs(){
   const _dPriCfg=orgTrilhaAtual.priCfg||{};
   const _dQB=parseInt(_dPriCfg.qTotalB)||0;const _dQE=parseInt(_dPriCfg.qTotalE)||0;
   const _dTwQ=Math.max(1,_dQB+2*_dQE);
-  function _dValPerQ(g){if(g==='discursiva')return 1;if(g==='especificos')return 20/(3*Math.max(1,_dQE));return 10/(3*Math.max(1,_dQB));}
+  const _PESO_GRP={basicos:1,especificos:2,discursiva:1};
   function _dScore(d){
-    const g=d.grupo||'basicos';const a=Math.max(1,d.aulas||1);
+    const g=d.grupo||'basicos';
+    const a=Math.max(1,d.aulas||1);
+    const p=_PESO_GRP[g]||1;
     const sg=(d.subgrupo||'').trim();
     if(sg){
       const qSg=parseInt((_dPriCfg.subgrupos&&_dPriCfg.subgrupos[sg]&&_dPriCfg.subgrupos[sg].q)||0);
       if(!qSg)return 0;
       const sgDiscs=discs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===g);
       const ta=sgDiscs.reduce((s,x)=>s+Math.max(1,x.aulas||1),0);
-      return qSg*Math.max(1,d.aulas||1)/ta/a*_dValPerQ(g);
+      return(qSg*a/ta)/a*p;
     }
-    const q=parseInt(d.q)||0;return q/a*_dValPerQ(g);
+    const q=parseInt(d.q)||0;
+    return q/a*p;
   }
   const sortedDiscs=[...discs].sort((a,b)=>_dScore(b)-_dScore(a)||((a.nome||'').localeCompare(b.nome||'')));
   const inp=(style,val,type,oninput,attrs='')=>`<input type="${type}" value="${val}" oninput="${oninput}" ${attrs} style="${style}">`;
