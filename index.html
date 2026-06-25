@@ -6034,7 +6034,8 @@ function renderOrgDiscs(){
       if(!qSg)return 0;
       const sgDiscs=discs.filter(x=>(x.subgrupo||'').trim()===sg&&(x.grupo||'basicos')===g);
       const ta=sgDiscs.reduce((s,x)=>s+Math.max(1,x.aulas||1),0);
-      return(qSg*a/ta)/a*_dValPerQ(g,qt);
+      // Q igual por disciplina → quem tem menos aulas tem score maior
+      return(qSg/sgDiscs.length)/a*_dValPerQ(g,qt);
     }
     return(parseInt(d.q)||0)/a*_dValPerQ(g,qt);
   }
@@ -6054,6 +6055,7 @@ function renderOrgDiscs(){
         <thead>
           <tr style="border-bottom:1px solid var(--border);background:rgba(0,0,0,.15)">
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Disciplina</th>
+            <th style="text-align:center;padding:8px 4px;color:rgba(255,255,255,.5);font-weight:600;width:46px" title="Score de prioridade">Score</th>
             <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px">Aulas</th>
             <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas por aula">/aula</th>
             <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas finais">/final</th>
@@ -6095,7 +6097,10 @@ function renderOrgDiscs(){
               <div style="background:var(--surface2);border:1px solid rgba(30,63,92,.8);border-radius:8px;padding:10px;margin-top:4px">
                 <div style="border-left:2px solid #7dd3fc;padding-left:8px;margin-bottom:8px">
                   <div style="font-size:9px;color:#7dd3fc;font-weight:700;letter-spacing:.5px;margin-bottom:5px">POR AULA <span style="font-weight:400;color:rgba(125,211,252,.6)">— cada chip selecionado = 1 tarefa/aula</span> · <b style="color:#7dd3fc">${fmtAula.length||0} selecionado${fmtAula.length!==1?'s':''}</b></div>
-                  <div style="display:flex;flex-wrap:wrap;gap:3px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">
+                    ${[..._AULA_FMT,...(d.fmtAulaCustom||[])].map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}
+                    <input onkeydown="if(event.key==='Enter'&&this.value.trim()){orgAddCustomFmt(${d.id},'Aula',this.value.trim());this.value='';}" placeholder="+ formato" style="width:70px;background:transparent;border:none;border-bottom:1px dashed rgba(125,211,252,.4);color:#7dd3fc;font-size:10px;font-family:inherit;outline:none;padding:1px 3px">
+                  </div>
                 </div>
                 ${intervalos.length||true?`<div style="border-left:2px solid #f5a623;padding-left:8px;margin-bottom:8px">
                   <div style="font-size:9px;color:#f5a623;font-weight:700;letter-spacing:.5px;margin-bottom:5px">A CADA X AULAS</div>
@@ -6104,7 +6109,15 @@ function renderOrgDiscs(){
                 </div>`:''}
                 <div style="border-left:2px solid #c4b5fd;padding-left:8px;margin-bottom:10px">
                   <div style="font-size:9px;color:#c4b5fd;font-weight:700;letter-spacing:.5px;margin-bottom:5px">FINAL/DISC. · tpd=${_discTpd(d)||'global'}</div>
-                  <div style="display:flex;flex-wrap:wrap;gap:3px">${finalChipsHTML}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">
+                    ${[..._FINAL_FMT,...(d.fmtFinalCustom||[])].map(f=>{
+                      const sel=fmtFinal.includes(f);
+                      if(f==='SQ') return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'SQ')">SQ${sel?'<input type="number" min="1" max="9" value="${sqN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},\'sqN\',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×':''}</span>`;
+                      if(f==='Simulado'){const simN=parseInt(d.simN)||1;return`<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:99px;border:1px solid ${sel?'rgba(196,181,253,.5)':'var(--border)'};background:${sel?'rgba(196,181,253,.15)':'transparent'};color:${sel?'#c4b5fd':'var(--muted)'};font-size:10px;font-weight:600;cursor:pointer;user-select:none" onclick="orgToggleFmtFinal(${d.id},'Simulado')">Simulado${sel?'<input type="number" min="1" max="9" value="${simN}" onclick="event.stopPropagation()" onchange="orgDiscChange(${d.id},\'simN\',this.value)" style="width:22px;padding:0 2px;background:transparent;border:none;border-bottom:1px solid #c4b5fd;color:#c4b5fd;font-size:10px;font-weight:700;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">×':''}` + '</span>';}
+                      return chip(f,'Final',sel);
+                    }).join('')}
+                    <input onkeydown="if(event.key==='Enter'&&this.value.trim()){orgAddCustomFmt(${d.id},'Final',this.value.trim());this.value='';}" placeholder="+ formato" style="width:70px;background:transparent;border:none;border-bottom:1px dashed rgba(196,181,253,.4);color:#c4b5fd;font-size:10px;font-family:inherit;outline:none;padding:1px 3px">
+                  </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(30,63,92,.6)">
                   <button onclick="orgSalvarPadraoFmt(${d.id})" title="Salvar padrão" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;font-size:10px;font-weight:600;font-family:inherit;line-height:1">
@@ -6128,6 +6141,8 @@ function renderOrgDiscs(){
               ...intervalos.map(iv=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(245,166,35,.4);color:#f5a623;font-size:9px;font-weight:600">/${iv.a}:${(iv.fmts||[]).join('+')}</span>`),
               ...fmtFinal.map(f=>`<span style="padding:1px 6px;border-radius:5px;border:1px solid rgba(196,181,253,.4);color:#c4b5fd;font-size:9px;font-weight:600">${f==='SQ'&&sqN>1?sqN+'×SQ':f}</span>`)
             ].join('');
+            const scoreDisc=_dScore(d);
+            const scoreStr=scoreDisc>0?scoreDisc.toFixed(2):'—';
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
                 ${d.link
@@ -6135,6 +6150,7 @@ function renderOrgDiscs(){
                   :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">`
                 }
               </td>
+              <td style="padding:4px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,${scoreDisc>0?'.8':'.2'})">${scoreStr}</td>
               <td style="padding:4px;text-align:center"><input type="number" value="${d.aulas||0}" min="0" oninput="orgDiscChange(${d.id},'aulas',this.value)" style="${numStyle}color:var(--text)"></td>
               <td style="padding:4px;text-align:center">
                 <div style="${numStyle}display:inline-flex;align-items:center;justify-content:center;height:26px;color:${fmtAula.length?'#7dd3fc':'var(--muted)'}">${tpa}</div>
@@ -6278,7 +6294,9 @@ function renderOrgPrioridade(){
           </div>
         </div>
         ${sgDiscs.map((d,si)=>{
-          const qEf=qSg?Math.round(qSg*Math.max(1,d.aulas||1)/totalAulasSg*10)/10:0;
+          // Q distribuída igualmente entre as disciplinas do subgrupo
+          // → menos aulas = mais Q/aula = maior score (mais importante estudar primeiro)
+          const qEf=qSg?Math.round(qSg/sgDiscs.length*10)/10:0;
           const a=Math.max(1,d.aulas||1);
           const qTotal=d.grupo==='especificos'?qTotalE:d.grupo==='discursiva'?qTotalD:qTotalB;
           const score=qEf?Math.round(qEf/a*_valPerQ(d.grupo||'basicos',qTotal)*100)/100:0;
@@ -6365,6 +6383,16 @@ function orgToggleFmtEdit(discId){
   if(_orgDiscEditFmt.has(discId))_orgDiscEditFmt.delete(discId);
   else _orgDiscEditFmt.add(discId);
   renderOrgDiscs();
+}
+function orgAddCustomFmt(discId,grupo,fmt){
+  const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
+  const key=grupo==='Aula'?'fmtAulaCustom':'fmtFinalCustom';
+  if(!d[key])d[key]=[];
+  if(!d[key].includes(fmt))d[key].push(fmt);
+  // selecionar automaticamente o novo formato
+  if(grupo==='Aula'){if(!d.fmtAula)d.fmtAula=[];if(!d.fmtAula.includes(fmt))d.fmtAula.push(fmt);d.tpa=d.fmtAula.length||null;}
+  else{if(!d.fmtFinal)d.fmtFinal=[];if(!d.fmtFinal.includes(fmt))d.fmtFinal.push(fmt);d.tpd=null;}
+  renderOrgDiscs();_scheduleOrgSave();
 }
 function orgToggleFmtAula(discId,fmt){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas.find(d=>d.id===discId);if(!d)return;
