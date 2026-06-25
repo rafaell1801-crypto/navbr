@@ -5301,7 +5301,11 @@ function showTrabalhoSubtab(tab){
     const el=document.getElementById('trab-sub-'+t);if(el)el.classList.toggle('hidden',t!==tab);
     const btn=document.getElementById('trab-btn-'+t);if(btn)btn.classList.toggle('active',t===tab);
   });
-  if(tab==='organizador')renderOrgLista();
+  if(tab==='organizador'){
+    const listEl=document.getElementById('org-trilhas-list');
+    if(listEl&&!orgTrilhas.length)listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">Carregando...</div>';
+    renderOrgLista();
+  }
 }
 
 function renderTrabalho(){renderMonGeneralLinks();renderMonitor();}
@@ -5333,7 +5337,9 @@ async function loadOrgTrilhas(){
       try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
     }
   }catch{}
-  if(!orgTrilhas.length){orgTrilhas=_ORG_SEED;_saveOrgTrilhas();}
+  if(!orgTrilhas.length){orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));await _saveOrgTrilhas();}
+  const orgEl=document.getElementById('trab-sub-organizador');
+  if(orgEl&&!orgEl.classList.contains('hidden'))renderOrgLista();
 }
 async function _saveOrgTrilhas(){
   try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
