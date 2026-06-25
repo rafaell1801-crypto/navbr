@@ -5873,6 +5873,9 @@ function orgDiscChange(id,field,val){
   } else if(field==='q'||field==='p'){
     d[field]=parseInt(val)||0;
     renderOrgPrioridade();
+  } else if(field==='grupo'){
+    d[field]=val;
+    renderOrgPrioridade();
   } else {
     d[field]=val;
   }
@@ -6054,7 +6057,7 @@ function renderOrgPrioridade(){
     return`<div style="display:grid;grid-template-columns:${grCols};gap:4px;align-items:center;padding:6px 0;border-bottom:.5px solid rgba(30,63,92,.3)">
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">${rank+1}</div>
       <div style="min-width:0">
-        <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)||'(sem nome)'}</div>
+        <div style="font-size:${(d.nome||'').length>25?'10px':(d.nome||'').length>18?'11px':'12px'};font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(d.nome)||'(sem nome)'}</div>
         <div style="font-size:10px;color:var(--muted)">${a} aulas</div>
       </div>
       <div><input type="number" min="0" value="${q||''}" placeholder="—" oninput="orgDiscChange(${d.id},'q',this.value)" style="${numStyle}"></div>
@@ -6073,15 +6076,31 @@ function renderOrgPrioridade(){
   const totalQ=discs.reduce((a,d)=>a+(parseInt(d.q)||0),0);
   const {scored:sb,totalQGrupo:tqb,numStyle}=_orgPriScoreDiscs(discs,'basicos');
   const {scored:se,totalQGrupo:tqe}=_orgPriScoreDiscs(discs,'especificos');
+  const priCfg=t.priCfg||{};
+  const qTotalB=parseInt(priCfg.qTotalB)||0;
+  const qTotalE=parseInt(priCfg.qTotalE)||0;
+  const pesoB=parseInt(priCfg.pesoB)||1;
+  const pesoE=parseInt(priCfg.pesoE)||2;
+  const qnStyle='width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;background:var(--surface2);color:var(--text);outline:none;-moz-appearance:textfield';
 
-  const grpBlock=(titulo,cor,scored,tqg)=>`
-    <div style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:2px solid ${cor}30;margin-bottom:6px">
+  const grpBlock=(titulo,cor,scored,tqg,grKey,qTotal,pesoGrp)=>{
+    const qRestante=qTotal-tqg;
+    const statusQ=qTotal>0?(tqg===qTotal?`<span style="color:rgba(45,212,160,.6);font-size:10px">✓ ${tqg}/${qTotal}</span>`:`<span style="color:${qRestante>0?'var(--warn)':'var(--danger)'};font-size:10px">${tqg}/${qTotal} (${qRestante>0?'faltam '+qRestante:Math.abs(qRestante)+' a mais'})</span>`):'';
+    return`<div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:2px solid ${cor}25;margin-bottom:6px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px">${titulo}</span>
-        ${tqg>0?`<span style="font-size:10px;color:var(--muted)">${tqg} questões</span>`:''}
+        <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+          <span style="font-size:10px;color:var(--muted)">Total Q:</span>
+          <input type="number" min="0" value="${qTotal||''}" placeholder="—" oninput="orgPriCfgChange('qTotal${grKey}',this.value)" style="${qnStyle}">
+          ${statusQ}
+          <span style="font-size:10px;color:var(--muted);margin-left:6px">Peso padrão:</span>
+          <input type="number" min="1" max="5" value="${pesoGrp}" oninput="orgPriCfgChange('peso${grKey}',this.value)" style="${qnStyle}">
+          <button onclick="orgPriAplicarPeso('${grKey}',${pesoGrp})" title="Aplicar peso a todas do grupo" style="padding:2px 7px;font-size:10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Aplicar</button>
+        </div>
       </div>
       ${scored.length?makeRows(scored,numStyle):`<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Nenhuma disciplina neste grupo</div>`}
     </div>`;
+  };
 
   el.innerHTML=`<div style="margin-top:8px">
     <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px;padding:8px 0">
@@ -6090,8 +6109,8 @@ function renderOrgPrioridade(){
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px">
       ${grHead}
-      ${grpBlock('Conhecimentos Básicos','#7dd3fc',sb,tqb)}
-      ${grpBlock('Conhecimentos Específicos','#c4b5fd',se,tqe)}
+      ${grpBlock('Conhecimentos Básicos','#7dd3fc',sb,tqb,'B',qTotalB,pesoB)}
+      ${grpBlock('Conhecimentos Específicos','#c4b5fd',se,tqe,'E',qTotalE,pesoE)}
       <div style="padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.7">
         <b style="color:var(--text)">Score = (Q ÷ aulas) × peso</b> · Peso amplifica a importância.
         ${totalQ>0?` · Total: <b style="color:var(--text)">${totalQ} questões</b>`:''}
@@ -6165,6 +6184,20 @@ function _countUsoPadrao(p){
     JSON.stringify(d.fmtAula||[])==JSON.stringify(p.fmtAula||[])&&
     JSON.stringify(d.fmtFinal||[])==JSON.stringify(p.fmtFinal||[])
   ).length;
+}
+function orgPriCfgChange(key,val){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.priCfg)orgTrilhaAtual.priCfg={};
+  orgTrilhaAtual.priCfg[key]=parseInt(val)||0;
+  renderOrgPrioridade();_scheduleOrgSave();
+}
+function orgPriAplicarPeso(grKey,peso){
+  if(!orgTrilhaAtual)return;
+  const grupo=grKey==='B'?'basicos':'especificos';
+  orgTrilhaAtual.disciplinas.forEach(d=>{
+    if((d.grupo||'basicos')===grupo)d.p=peso;
+  });
+  renderOrgPrioridade();_scheduleOrgSave();
 }
 function orgDiscResetTpa(id){
   const d=orgTrilhaAtual&&orgTrilhaAtual.disciplinas&&orgTrilhaAtual.disciplinas.find(d=>d.id===id);
