@@ -5459,7 +5459,7 @@ function renderOrgLista(){
 
 function _orgFmtData(iso){
   if(!iso)return'';
-  const [y,m,d]=iso.split('-');return`${d}/${m}/${y.slice(2)}`;
+  const [y,m,d]=iso.split('-');return`${d}/${m}`;
 }
 
 // ── ABA AULAS ──
@@ -5652,9 +5652,9 @@ function _renderOrgTabela(){
     </div>`;
 
   const thStyle='padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:2';
-  const tdDisc='padding:6px 8px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--surface);position:sticky;left:0;z-index:1;border-right:1px solid var(--border)';
-  const tdVal=(passada)=>`padding:4px 6px;font-size:11px;text-align:center;background:${passada?'rgba(0,0,0,.3)':'transparent'}`;
-  const tdLinks='padding:6px 10px;font-size:11px;background:var(--surface);border-left:1px solid var(--border);white-space:nowrap';
+  const tdDisc='padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--surface);position:sticky;left:0;z-index:1;border-right:1px solid var(--border);max-width:180px;overflow:hidden;text-overflow:ellipsis';
+  const tdVal=(passada)=>`padding:2px 3px;font-size:11px;text-align:center;background:${passada?'rgba(0,0,0,.3)':'transparent'}`;
+  const tdLinks='padding:4px 6px;font-size:14px;background:var(--surface);border-left:1px solid var(--border);white-space:nowrap';
 
   // monitorInfo por disciplina
   const monitores=orgTrilhaAtual.monitores||[];
@@ -5663,57 +5663,70 @@ function _renderOrgTabela(){
 
   const linkIcon=(href,icon,label)=>href?`<a href="${_esc(href)}" target="_blank" title="${label}" style="font-size:16px;text-decoration:none;line-height:1">${icon}</a>`:'';
 
+  const _FORMATOS=[
+    {k:'T+Q',d:'Teoria + Questões'},{k:'T',d:'Teoria'},{k:'R+Q',d:'Revisão + Questões'},
+    {k:'R',d:'Revisão'},{k:'SQ',d:'Simulado de Questões'},{k:'Passo',d:'Passo a passo'},
+    {k:'Aula',d:'Aula gravada'},{k:'Simulado',d:'Simulado'},{k:'Bizu',d:'Final: Bizu'},
+    {k:'nSQ',d:'n Simulados de Questões'}
+  ];
+  const formatosHTML=`<details style="margin-bottom:8px">
+    <summary style="font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+      <span>▸</span> Formatos de tarefas
+    </summary>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+      ${_FORMATOS.map(f=>`<span title="${f.d}" style="padding:2px 8px;border-radius:99px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;cursor:default">${f.k}</span>`).join('')}
+    </div>
+  </details>`;
+
   // tabela de distribuição
   if(tabelaEl){
     tabelaEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Distribuição semanal</div>
-    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px">
-    <table style="border-collapse:collapse;min-width:100%">
+    ${formatosHTML}
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <table style="border-collapse:collapse;width:100%">
       <thead>
         <tr>
-          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border)">Disciplina</th>
-          ${semanas.map((s,wi)=>`<th style="${thStyle}">
-            <div style="font-size:9px;color:var(--muted);font-weight:400;margin-bottom:1px">S${wi+1}</div>
-            <div style="margin-bottom:2px">${_orgFmtData(s.data)}</div>
-            <div>${s.docLink
-              ?`<a href="${_esc(s.docLink)}" target="_blank" style="font-size:9px;color:var(--accent);text-decoration:none;border:1px solid rgba(62,181,200,.4);border-radius:3px;padding:1px 5px">📄 doc</a>`
-              :`<button onclick="orgEditDocLink(${wi})" style="font-size:9px;color:var(--muted);background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.15);border-radius:3px;cursor:pointer;padding:1px 5px;font-family:inherit">+ doc</button>`
+          <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border);min-width:160px">Disciplina</th>
+          ${semanas.map((s,wi)=>`<th style="${thStyle};padding:3px 4px;min-width:48px">
+            <div style="font-size:9px;color:var(--muted);font-weight:400">S${wi+1}</div>
+            <div style="font-size:10px">${_orgFmtData(s.data)}</div>
+            <div style="margin-top:1px">${s.docLink
+              ?`<a href="${_esc(s.docLink)}" target="_blank" style="font-size:9px;color:var(--accent);text-decoration:none">📄</a>`
+              :`<button onclick="orgEditDocLink(${wi})" style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;font-family:inherit">+doc</button>`
             }</div>
           </th>`).join('')}
-          <th style="${thStyle}">Total</th>
-          <th style="${thStyle};border-left:1px solid var(--border)">Links</th>
+          <th style="${thStyle};padding:3px 6px">Tot.</th>
+          <th style="${thStyle};border-left:1px solid var(--border);padding:3px 6px">🔗</th>
         </tr>
       </thead>
       <tbody>
         ${discs.map((d,di)=>{
           const rowTotal=semanas.reduce((a,s)=>a+(s.dist&&s.dist[di]!==undefined?s.dist[di]:0),0);
           const mon=monByDisc[d.id];
-          const discLink=d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:var(--accent);text-decoration:none" title="Abrir curso">↗</a>`:'';
+          const monNome=mon&&mon.nome?` — ${mon.nome}`:'';
           const docs=mon&&mon.docs||[];
-          const docsLinks=docs.filter(doc=>doc.link).map((doc,i)=>linkIcon(doc.link,'📄',doc.nome||`Doc ${i+1}`)).join(' ');
+          const docsLinks=docs.filter(doc=>doc.link).map((doc,i)=>linkIcon(doc.link,'📄',doc.nome||`Doc ${i+1}`)).join('');
           const driveLink=mon&&mon.driveLink?linkIcon(mon.driveLink,'📁','Drive'):'';
+          const hasLinks=docsLinks||driveLink;
           return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
-            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}">
+            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}" title="${_esc(d.nome||'')}${monNome}">
               ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
+              ${monNome?`<span style="color:var(--muted);font-weight:400">${_esc(monNome)}</span>`:''}
             </td>
             ${semanas.map((s,wi)=>`<td style="${tdVal(s.passada)}">
               ${s.passada
-                ?`<span style="color:var(--muted)">${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}</span>`
-                :`<input type="number" min="0" value="${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:36px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:2px;font-family:inherit;outline:none">`
+                ?`<span style="color:var(--muted);font-size:11px">${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}</span>`
+                :`<input type="number" min="0" value="${s.dist&&s.dist[di]!==undefined?s.dist[di]:0}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:1px;font-family:inherit;outline:none">`
               }
             </td>`).join('')}
-            <td style="${tdVal(false)};font-weight:700;color:var(--accent)">${rowTotal}</td>
-            <td style="${tdLinks}">
-              <div style="display:flex;flex-direction:column;gap:3px">
-                ${docsLinks||'<span style="color:var(--muted);font-size:10px">sem docs</span>'}
-                ${driveLink}
-              </div>
-            </td>
+            <td style="${tdVal(false)};font-weight:700;color:var(--accent);padding:2px 6px">${rowTotal}</td>
+            <td style="${tdLinks}">${hasLinks?docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}</td>
           </tr>`;
         }).join('')}
         <tr style="border-top:2px solid var(--border)">
           <td style="${tdDisc};font-weight:700;color:var(--accent)">Total/semana</td>
-          ${semanas.map(s=>{const t=s.dist?s.dist.reduce((a,v)=>a+v,0):0;return`<td style="${tdVal(s.passada)};font-weight:700;color:var(--text)">${t}</td>`;}).join('')}
-          <td style="${tdVal(false)};font-weight:700;color:var(--success)">${semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0)}</td>
+          ${semanas.map(s=>{const t=s.dist?s.dist.reduce((a,v)=>a+v,0):0;return`<td style="${tdVal(s.passada)};font-weight:700;color:var(--text);padding:2px 3px">${t}</td>`;}).join('')}
+          <td style="${tdVal(false)};font-weight:700;color:var(--success);padding:2px 6px">${semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0)}</td>
           <td style="${tdLinks}"></td>
         </tr>
       </tbody>
