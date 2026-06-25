@@ -6094,7 +6094,7 @@ function renderOrgDiscs(){
             const fmtContent=isEditing?`
               <div style="background:var(--surface2);border:1px solid rgba(30,63,92,.8);border-radius:8px;padding:10px;margin-top:4px">
                 <div style="border-left:2px solid #7dd3fc;padding-left:8px;margin-bottom:8px">
-                  <div style="font-size:9px;color:#7dd3fc;font-weight:700;letter-spacing:.5px;margin-bottom:5px">POR AULA · tpa=${fmtAula.length||'global'}</div>
+                  <div style="font-size:9px;color:#7dd3fc;font-weight:700;letter-spacing:.5px;margin-bottom:5px">POR AULA <span style="font-weight:400;color:rgba(125,211,252,.6)">— cada chip selecionado = 1 tarefa/aula</span> · <b style="color:#7dd3fc">${fmtAula.length||0} selecionado${fmtAula.length!==1?'s':''}</b></div>
                   <div style="display:flex;flex-wrap:wrap;gap:3px">${_AULA_FMT.map(f=>chip(f,'Aula',fmtAula.includes(f))).join('')}</div>
                 </div>
                 ${intervalos.length||true?`<div style="border-left:2px solid #f5a623;padding-left:8px;margin-bottom:8px">
@@ -6154,13 +6154,20 @@ function renderOrgDiscs(){
         </tbody>
       </table>
     </div>
-    <div id="org-tot-footer" style="font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-top:6px;border-top:1px solid rgba(30,63,92,.4)">
-      <span>${totalAulas} aulas</span>
-      <span style="display:flex;align-items:center;gap:10px">
-        <span><b style="color:var(--accent);font-size:13px">${totalTarefas}</b> tarefas totais</span>
-        ${(()=>{const s=(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];const n=s.length;if(!n)return'<span style="font-size:10px;color:var(--muted)">configure datas no Planejamento</span>';const ps=Math.round(totalTarefas/n*10)/10;return`<span style="color:rgba(30,63,92,.6)">|</span><b style="color:var(--success);font-size:13px">≈${ps}</b><span style="font-size:10px">/semana (${n} sem.)</span>`;})()}
-      </span>
-    </div>
+    ${(()=>{
+      const s=(orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
+      const n=s.length;
+      const ps=n>0?Math.round(totalTarefas/n*10)/10:null;
+      const semStr=ps!==null?`≈<b style="color:var(--success);font-size:16px;font-weight:800">${ps}</b> <span style="font-size:11px;color:var(--muted)">tarefas/semana (${n} sem.)</span>`:'<span style="font-size:11px;color:var(--muted)">configure datas no Planejamento</span>';
+      return`<div id="org-tot-footer" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+        <span style="font-size:11px;color:var(--muted)">${totalAulas} aulas</span>
+        <span style="display:flex;align-items:center;gap:16px">
+          <span style="font-size:11px;color:var(--muted)">Total: <b style="color:var(--accent);font-size:16px;font-weight:800">${totalTarefas}</b> <span style="color:var(--muted)">tarefas</span></span>
+          <span style="color:var(--border)">|</span>
+          <span>${semStr}</span>
+        </span>
+      </div>`;
+    })()}
   `;
   renderOrgPrioridade();
 }
