@@ -863,6 +863,16 @@ async function saveCaderno(itemId, url) {
   if (document.getElementById('tab-rev') && !document.getElementById('tab-rev').classList.contains('hidden')) renderRev();
 }
 
+async function saveCursoQuestoes(cursoName, url) {
+  if (!url.trim()) {
+    delete DISC_CADERNOS[cursoName];
+  } else {
+    DISC_CADERNOS[cursoName] = url;
+  }
+  try { localStorage.setItem('nav_disc_cadernos', JSON.stringify(DISC_CADERNOS)); } catch {}
+  try { await sbUpsert('conteudo', {disc: '__disc_cadernos__', topics: DISC_CADERNOS}); } catch {}
+}
+
 function cadernoInputHTML(itemId, timeLabel) {
   const url = cadernosState[itemId] || '';
   const safeId = 'cad-'+itemId;
@@ -2426,7 +2436,16 @@ function buildCicloHTML(){
     const ids=new Set(items.map(i=>i.id));
     const {a,t}=getQuestoesTotals(id=>ids.has(id));
     const acpct=t>0?Math.round(a/t*100):null;
-    const cursoLinks=(g.cursos||[]).map(c=>DISC_LINKS[c]?`<a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}" onclick="event.stopPropagation()">${c} ↗</a>`:'').filter(Boolean).join('');
+    const cursoLinks=(g.cursos||[]).map(c=>{
+      if(!DISC_LINKS[c])return '';
+      const cKey=c.replace(/'/g,"\\'");
+      const cadUrl=DISC_CADERNOS[c]||'';
+      const safeVal=cadUrl.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      return`<div class="ciclo-curso-item" style="display:flex;align-items:center;gap:6px;font-size:11px">
+        <a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}" onclick="event.stopPropagation()">${c}</a>
+        <input type="text" value="${safeVal}" placeholder="🔑" title="Cole a chave do link das questões" onclick="event.stopPropagation()" oninput="saveCursoQuestoes('${cKey}',this.value)" style="width:60px;padding:3px 6px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface)">
+      </div>`;
+    }).filter(Boolean).join('');
     const rows=total
       ? items.map(it=>cicloRowHTML(it)).join('')
       : (g.key==='inf'
@@ -3304,29 +3323,30 @@ function renderContent() {
         }
       </div>`;
     }).join('');
-    const curLink=(DISC_LINKS[disc]||'').replace(/"/g,'&quot;');
-    const nameHtml = curLink
-      ? `<a class="content-disc-title-link" href="${curLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${disc}</a>`
-      : `<span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>`;
+    const nameHtml = `<span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>`;
     return `<div class="content-disc-block">
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
         ${nameHtml}
-        <button onclick="event.stopPropagation();_discMenu('${disc.replace(/'/g,"\\'")}',this)" title="Opções da disciplina" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s;flex-shrink:0" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
+        <div style="display:flex;gap:4px;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
+          ${(DISC_LINKS[disc])?`<a href="${DISC_LINKS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para aula" style="cursor:pointer;font-size:14px;opacity:.6;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">📋</a>`:''}
+          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para questões" style="cursor:pointer;font-size:14px;opacity:.6;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`:''}
+          <button onclick="_toggleDiscLinksEdit('${disc.replace(/'/g,"\\'")}',${di})" title="Editar links" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
+        </div>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
       </div>
       <div class="content-disc-body" id="cdb-${di}">
-        <div class="dlnk-row" style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1620">
-          <span style="font-size:11px;color:var(--muted);white-space:nowrap">🔗 Link da disciplina:</span>
-          <input type="url" id="dlnk-${di}" data-original="${curLink}" oninput="markDiscLinkModified(${di})" value="${curLink}" placeholder="cole o link do curso..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s">
-          <button id="dlnk-btn-${di}" class="content-add-btn" style="padding:4px 10px;font-size:11px;opacity:.5;cursor:default" onclick="saveDiscLinkInput('${disc.replace(/'/g,"\\'")}','dlnk-${di}')">Salvar</button>
-          <span id="dlnk-status-${di}" style="font-size:10px;color:var(--muted);min-width:60px"></span>
-        </div>
-        <div class="dlnk-row" style="display:flex;gap:6px;align-items:center;padding:6px 14px;border-bottom:.5px solid var(--border);background:#0a1a10">
-          <span style="font-size:11px;color:var(--muted);white-space:nowrap">📝 Caderno de questões:</span>
-          <input type="url" id="dcad-${di}" value="${(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do caderno geral..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
-          <button class="content-add-btn" style="padding:4px 10px;font-size:11px" onclick="(async()=>{const u=document.getElementById('dcad-${di}').value.trim();await saveDiscCadernoLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('dcad-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('dcad-${di}'))document.getElementById('dcad-${di}').style.borderColor='';},1500);})()">Salvar</button>
-          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" class="caderno-link-btn" style="white-space:nowrap">Abrir ↗</a>`:'<span style="min-width:60px"></span>'}
+        <div class="disc-links-edit hidden" id="dle-${di}" style="display:none;padding:10px 14px;border-bottom:.5px solid var(--border);background:#0a1620;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--muted);white-space:nowrap;min-width:110px">📋 Link da aula:</span>
+            <input type="url" id="daul-${di}" value="${(DISC_LINKS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link da aula..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
+            <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px;transition:color .15s;font-weight:300;letter-spacing:.5px" title="Salvar" onclick="(async()=>{const u=document.getElementById('daul-${di}').value.trim();await saveDiscCourseLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('daul-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('daul-${di}'))document.getElementById('daul-${di}').style.borderColor='';},1500);})()">✓</button>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--muted);white-space:nowrap;min-width:110px">🔑 Link das questões:</span>
+            <input type="url" id="dcad-${di}" value="${(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do caderno..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
+            <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px;transition:color .15s;font-weight:300;letter-spacing:.5px" title="Salvar" onclick="(async()=>{const u=document.getElementById('dcad-${di}').value.trim();await saveDiscCadernoLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('dcad-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('dcad-${di}'))document.getElementById('dcad-${di}').style.borderColor='';},1500);})()">✓</button>
+          </div>
         </div>
         ${rows}
         <div class="content-add-row">
@@ -3454,6 +3474,13 @@ function toggleDiscBlock(di) {
   if (!body) return;
   const open = body.classList.toggle('open');
   chev.classList.toggle('open', open);
+}
+
+function _toggleDiscLinksEdit(disc, di) {
+  const el = document.getElementById('dle-'+di);
+  if (!el) return;
+  const hidden = el.classList.toggle('hidden');
+  el.style.display = hidden ? 'none' : 'flex';
 }
 
 function toggleEspBlock() {
