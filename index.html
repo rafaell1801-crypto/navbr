@@ -7640,7 +7640,35 @@ function deleteMonCargo(id){
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
 
-  <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()" style="flex:1">
+    <button onclick="document.getElementById('group-links-modal').style.display='flex'" title="Editar links de grupos" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font-weight:600">⚙️ Links</button>
+  </div>
+
+  <div id="group-links-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:500px;width:90%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;color:var(--text)">Editar Links de Grupos</h3>
+        <button onclick="document.getElementById('group-links-modal').style.display='none'" style="border:none;background:transparent;font-size:20px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">📋 Legislação - Questões</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="modal-leg-link" value="${(DISC_GROUP_LINKS.leg||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
+          <button onclick="(async()=>{const u=document.getElementById('modal-leg-link').value.trim();await saveDiscGroupLink('leg',u);alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
+        </div>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">📚 Conhecimentos Específicos - Questões</label>
+        <div style="display:flex;gap:8px">
+          <input type="url" id="modal-esp-link" value="${(DISC_GROUP_LINKS.esp||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
+          <button onclick="(async()=>{const u=document.getElementById('modal-esp-link').value.trim();await saveDiscGroupLink('esp',u);alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="content-disc-list"></div>
   <div class="content-save-bar">
     <button class="content-save-btn" onclick="saveContent()" title="Salvar alterações">💾</button>
