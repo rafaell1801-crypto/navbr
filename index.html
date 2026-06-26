@@ -1085,6 +1085,19 @@ async function loadDiscCadernos(){
   }catch{}
   render();
 }
+async function loadDiscGroupLinks(){
+  try{const s=localStorage.getItem('nav_disc_group_links');if(s)Object.assign(DISC_GROUP_LINKS,JSON.parse(s));}catch{}
+  try{
+    const d=await sbGet('conteudo','select=topics&disc=eq.__disc_group_links__');
+    if(d&&d.length>0&&d[0].topics){Object.assign(DISC_GROUP_LINKS,d[0].topics);try{localStorage.setItem('nav_disc_group_links',JSON.stringify(DISC_GROUP_LINKS));}catch{}}
+  }catch{}
+}
+async function saveDiscGroupLink(groupKey,url){
+  DISC_GROUP_LINKS[groupKey]=url;
+  const obj={};for(const k in DISC_GROUP_LINKS)obj[k]=DISC_GROUP_LINKS[k];
+  try{localStorage.setItem('nav_disc_group_links',JSON.stringify(obj));}catch{}
+  await sbUpsert('conteudo',{disc:'__disc_group_links__',topics:obj});
+}
 async function saveDiscCadernoLink(disc,url){
   DISC_CADERNOS[disc]=url;
   const obj={};for(const k in DISC_CADERNOS)obj[k]=DISC_CADERNOS[k];
@@ -2374,6 +2387,12 @@ const CICLO_GRUPOS=[
 ];
 const ESP_DISCS=new Set(['Administração','Gestão de Suprimentos','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira','Matemática Financeira']);
 const LEG_DISCS=new Set(['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']);
+// Grupos de disciplinas para organizar na aba Tópicos
+const DISC_GROUPS={
+  'leg':{nome:'Legislação',discs:['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']},
+  'esp':{nome:'Conhecimentos Específicos',discs:['Administração','Matemática Financeira','Orçamento Público e Análise Financeira','Gestão de Suprimentos','Teoria Econômica Aplicada']}
+};
+let DISC_GROUP_LINKS={};
 function cicloGrupoOf(item){
   const d=item.disc;
   if(d==='Língua Portuguesa')return 'lp';
@@ -2485,7 +2504,13 @@ ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:
         <div class="ciclo-meta">
           <span>${done}/${total} tópicos vistos</span>
           ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
-          ${cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:''}
+          ${(()=>{
+            let groupLink='';
+            if((g.key==='leg'||g.key==='esp')&&DISC_GROUP_LINKS[g.key]){
+              groupLink=`<a href="${DISC_GROUP_LINKS[g.key].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais de ${g.nome}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);text-decoration:none;padding:4px 8px;background:rgba(62,181,200,.1);border-radius:6px">🔑 Questões Gerais</a>`;
+            }
+            return groupLink+(cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:'');
+          })()}
         </div>
         <div class="ciclo-rows">${rows}</div>
       </div>
@@ -3106,7 +3131,7 @@ async function timerFinish(){
   timerSt.remaining=0;_timerButtonsUpdate();updateTimerUI();render();showSync('ok','✓ Sessão concluída');
   timerNotify(disc);
 }
-async function syncAll(){await loadAll();await loadCadernos();await loadResumos();await loadDiscCadernos();}
+async function syncAll(){await loadAll();await loadCadernos();await loadResumos();await loadDiscCadernos();await loadDiscGroupLinks();}
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden){
     if(timerSt.running)timerTick();
@@ -3482,6 +3507,7 @@ function _toggleDiscLinksEdit(disc, di) {
   const hidden = el.classList.toggle('hidden');
   el.style.display = hidden ? 'none' : 'flex';
 }
+
 
 function toggleEspBlock() {
   const body = document.getElementById('cdb-esp');
@@ -5061,7 +5087,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();_loadOrgPadroes();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadDiscGroupLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();_loadOrgPadroes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
