@@ -7656,7 +7656,7 @@ function deleteMonCargo(id){
         <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">📋 Legislação - Questões</label>
         <div style="display:flex;gap:8px">
           <input type="url" id="modal-leg-link" value="${(DISC_GROUP_LINKS.leg||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
-          <button onclick="(async()=>{const u=document.getElementById('modal-leg-link').value.trim();await saveDiscGroupLink('leg',u);alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
+          <button onclick="(async()=>{const u=document.getElementById('modal-leg-link').value.trim();await saveDiscGroupLink('leg',u);render();alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
         </div>
       </div>
 
@@ -7664,7 +7664,7 @@ function deleteMonCargo(id){
         <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">📚 Conhecimentos Específicos - Questões</label>
         <div style="display:flex;gap:8px">
           <input type="url" id="modal-esp-link" value="${(DISC_GROUP_LINKS.esp||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
-          <button onclick="(async()=>{const u=document.getElementById('modal-esp-link').value.trim();await saveDiscGroupLink('esp',u);alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
+          <button onclick="(async()=>{const u=document.getElementById('modal-esp-link').value.trim();await saveDiscGroupLink('esp',u);render();alert('Link salvo!');})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">Salvar</button>
         </div>
       </div>
     </div>
