@@ -1091,6 +1091,7 @@ async function loadDiscGroupLinks(){
     const d=await sbGet('conteudo','select=topics&disc=eq.__disc_group_links__');
     if(d&&d.length>0&&d[0].topics){Object.assign(DISC_GROUP_LINKS,d[0].topics);try{localStorage.setItem('nav_disc_group_links',JSON.stringify(DISC_GROUP_LINKS));}catch{}}
   }catch{}
+  console.log('DISC_GROUP_LINKS loaded:',DISC_GROUP_LINKS);
 }
 async function saveDiscGroupLink(groupKey,url){
   DISC_GROUP_LINKS[groupKey]=url;
@@ -7642,7 +7643,7 @@ function deleteMonCargo(id){
 
   <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
     <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()" style="flex:1">
-    <button onclick="document.getElementById('group-links-modal').style.display='flex'" title="Editar links de grupos" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font-weight:600">⚙️ Links</button>
+    <button onclick="document.getElementById('modal-leg-link').value=DISC_GROUP_LINKS.leg||'';document.getElementById('modal-esp-link').value=DISC_GROUP_LINKS.esp||'';document.getElementById('group-links-modal').style.display='flex'" title="Editar links de grupos" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font-weight:600">⚙️ Links</button>
   </div>
 
   <div id="group-links-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
