@@ -2490,7 +2490,7 @@ function buildCicloHTML(){
             <div class="ciclo-nome">${g.nome}</div>
           </div>
         </div>
-${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=(g.cursos||[]).map(c=>DISC_CADERNOS[c]).find(Boolean)||DISC_CADERNOS[g.nome]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
+${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=DISC_GROUP_LINKS[g.key]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
           <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-shrink:0">
           ${cadUrl
             ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1">🔑</a>`
