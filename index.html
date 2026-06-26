@@ -2456,13 +2456,13 @@ function buildCicloHTML(){
     const {a,t}=getQuestoesTotals(id=>ids.has(id));
     const acpct=t>0?Math.round(a/t*100):null;
     const cursoLinks=(g.cursos||[]).map(c=>{
-      if(!DISC_LINKS[c])return '';
-      const cKey=c.replace(/'/g,"\\'");
+      const courseLink=DISC_LINKS[c]||'';
       const cadUrl=DISC_CADERNOS[c]||'';
-      const safeVal=cadUrl.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-      return`<div class="ciclo-curso-item" style="display:flex;align-items:center;gap:6px;font-size:11px">
-        <a href="${DISC_LINKS[c]}" target="_blank" rel="noopener" class="ciclo-curso-link" title="Curso ${c}" onclick="event.stopPropagation()">${c}</a>
-        <input type="text" value="${safeVal}" placeholder="🔑" title="Cole a chave do link das questões" onclick="event.stopPropagation()" oninput="saveCursoQuestoes('${cKey}',this.value)" style="width:60px;padding:3px 6px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface)">
+      if(!courseLink&&!cadUrl)return '';
+      return`<div class="ciclo-curso-item" style="display:flex;align-items:center;gap:4px;font-size:11px">
+        ${courseLink?`<a href="${courseLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aula: ${c}" onclick="event.stopPropagation()" style="cursor:pointer;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">📋</a>`:''}
+        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões: ${c}" onclick="event.stopPropagation()" style="cursor:pointer;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">🔑</a>`:''}
+        <span style="font-size:10px;color:var(--muted)">${c}</span>
       </div>`;
     }).filter(Boolean).join('');
     const rows=total
@@ -3376,60 +3376,23 @@ function renderContent() {
     </div>`;
   }
 
-  // Agrupar disciplinas por grupo
-  const grouped = {};
-  const ungrouped = [];
-  discNames.forEach(disc => {
-    const gk = getDiscGroup(disc);
-    if (gk) {
-      if (!grouped[gk]) grouped[gk] = [];
-      grouped[gk].push(disc);
-    } else {
-      ungrouped.push(disc);
-    }
-  });
-
-  // Renderizar grupos + disciplinas soltas
-  const html = [];
-
-  // Renderizar grupos
-  ['leg', 'esp'].forEach(gk => {
-    if (!grouped[gk]) return;
-    const g = DISC_GROUPS[gk];
-    const groupDiscs = grouped[gk];
-    const groupLink = DISC_GROUP_LINKS[gk] || '';
-
-    let groupHtml = `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;background:var(--surface2)">
-      <div style="background:#0a1620;padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
-        <div style="display:flex;gap:6px;align-items:center;flex:1">
-          <span style="font-size:12px;font-weight:700;color:var(--text)">${g.nome}</span>
-        </div>
-        <div style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">
-          ${groupLink?`<a href="${groupLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`:''}
-          <button onclick="_toggleGroupLinksEdit('${gk}')" title="Editar link" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;font-size:14px" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">✏️</button>
-        </div>
+  // Campos para links de grupos
+  const groupsHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2)">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 Legislação - Questões</div>
+        <input type="url" id="group-leg-link" value="${(DISC_GROUP_LINKS.leg||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);margin-bottom:8px">
+        <button onclick="(async()=>{const u=document.getElementById('group-leg-link').value.trim();await saveDiscGroupLink('leg',u);alert('Link salvo!');})();" style="width:100%;padding:6px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px">Salvar</button>
       </div>
-      <div id="gle-${gk}" style="display:none;padding:10px 14px;border-bottom:.5px solid var(--border);background:#0a1a10;display:none;gap:6px;align-items:center">
-        <span style="font-size:11px;color:var(--muted);min-width:110px">🔑 Link das questões:</span>
-        <input type="url" id="dgl-${gk}" value="${groupLink.replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface);color:var(--text)">
-        <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px" onclick="(async()=>{const u=document.getElementById('dgl-${gk}').value.trim();await saveDiscGroupLink('${gk}',u);})()">✓</button>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2)">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📚 Conhecimentos Específicos - Questões</div>
+        <input type="url" id="group-esp-link" value="${(DISC_GROUP_LINKS.esp||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);margin-bottom:8px">
+        <button onclick="(async()=>{const u=document.getElementById('group-esp-link').value.trim();await saveDiscGroupLink('esp',u);alert('Link salvo!');})();" style="width:100%;padding:6px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px">Salvar</button>
       </div>
-      <div style="padding:8px">`;
+    </div>
+  `;
 
-    groupDiscs.forEach((disc, di) => {
-      groupHtml += buildDiscBlock(disc, `${gk}-${di}`);
-    });
-
-    groupHtml += `</div></div>`;
-    html.push(groupHtml);
-  });
-
-  // Renderizar disciplinas soltas
-  ungrouped.forEach((disc, di) => {
-    html.push(buildDiscBlock(disc, di));
-  });
-
-  list.innerHTML = html.join('');
+  list.innerHTML = groupsHtml + discNames.map((disc, di) => buildDiscBlock(disc, di)).join('');
   populateBulkDiscSelect();
 }
 
@@ -3554,7 +3517,7 @@ function _toggleDiscLinksEdit(disc, di) {
   el.style.display = hidden ? 'none' : 'flex';
 }
 
-function _toggleGroupLinksEdit(groupKey) {
+function _toggleGroupLinksEdit(btn, groupKey) {
   const el = document.getElementById('gle-' + groupKey);
   if (!el) return;
   el.style.display = el.style.display === 'none' ? 'flex' : 'none';
