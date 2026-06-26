@@ -3286,6 +3286,13 @@ function renderContent() {
   const discNames = [...baseDiscs, ...customDiscs, ...(infVisible ? [INF] : [])];
   const list = document.getElementById('content-disc-list');
   if (!list) return;
+
+  function getDiscGroup(disc) {
+    for (const [gk, g] of Object.entries(DISC_GROUPS)) {
+      if (g.discs.includes(disc)) return gk;
+    }
+    return null;
+  }
   function buildDiscBlock(disc, di) {
     const topics = getDiscTopics(disc);
     const c = CORES[disc] || '#888';
@@ -3309,20 +3316,6 @@ function renderContent() {
       const tqt = tqData.t||0;
       const tqa = tqData.a||0;
       let statHtml = '';
-      if (tqt > 0 && discTotal > 0) {
-        const barW = Math.round(tqt/maxQ*100);
-        let priorCor, priorLbl;
-        if (tqt >= q75) { priorCor='#ef4444'; priorLbl='ALTA'; }
-        else if (tqt >= q50) { priorCor='#f59e0b'; priorLbl='MÉD'; }
-        else { priorCor='#6b7280'; priorLbl='BAIXA'; }
-        const acertoHtml = tqa>0?`<span style="font-size:9px;color:${tqa/tqt>=.7?'var(--success)':tqa/tqt>=.5?'var(--warn)':'var(--danger)'};font-weight:700">${Math.round(tqa/tqt*100)}%✓</span>`:'';
-        statHtml=`<div class="tstat" title="${tqt} questões · ${Math.round(tqt/discTotal*100)}% do total da disciplina">
-          <span class="tstat-q">${tqt}q</span>
-          <div class="tstat-bar-wrap"><div class="tstat-bar" style="width:${barW}%;background:${priorCor}"></div></div>
-          <span class="tstat-lbl" style="background:${priorCor}1a;color:${priorCor}">${priorLbl}</span>
-          ${acertoHtml}
-        </div>`;
-      }
       return `<div class="content-topic-row ${t.deleted?'deleted':''}" id="ctr-${di}-${realIdx}">
         <span class="ct-btn ct-drag" title="Arrastar">⠿</span>
         <input class="content-topic-input ${t.deleted?'deleted':''}"
@@ -3383,7 +3376,60 @@ function renderContent() {
     </div>`;
   }
 
-  list.innerHTML = discNames.map((disc, di) => buildDiscBlock(disc, di)).join('');
+  // Agrupar disciplinas por grupo
+  const grouped = {};
+  const ungrouped = [];
+  discNames.forEach(disc => {
+    const gk = getDiscGroup(disc);
+    if (gk) {
+      if (!grouped[gk]) grouped[gk] = [];
+      grouped[gk].push(disc);
+    } else {
+      ungrouped.push(disc);
+    }
+  });
+
+  // Renderizar grupos + disciplinas soltas
+  const html = [];
+
+  // Renderizar grupos
+  ['leg', 'esp'].forEach(gk => {
+    if (!grouped[gk]) return;
+    const g = DISC_GROUPS[gk];
+    const groupDiscs = grouped[gk];
+    const groupLink = DISC_GROUP_LINKS[gk] || '';
+
+    let groupHtml = `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;background:var(--surface2)">
+      <div style="background:#0a1620;padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:6px;align-items:center;flex:1">
+          <span style="font-size:12px;font-weight:700;color:var(--text)">${g.nome}</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">
+          ${groupLink?`<a href="${groupLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`:''}
+          <button onclick="_toggleGroupLinksEdit('${gk}')" title="Editar link" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;font-size:14px" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">✏️</button>
+        </div>
+      </div>
+      <div id="gle-${gk}" style="display:none;padding:10px 14px;border-bottom:.5px solid var(--border);background:#0a1a10;display:none;gap:6px;align-items:center">
+        <span style="font-size:11px;color:var(--muted);min-width:110px">🔑 Link das questões:</span>
+        <input type="url" id="dgl-${gk}" value="${groupLink.replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface);color:var(--text)">
+        <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px" onclick="(async()=>{const u=document.getElementById('dgl-${gk}').value.trim();await saveDiscGroupLink('${gk}',u);})()">✓</button>
+      </div>
+      <div style="padding:8px">`;
+
+    groupDiscs.forEach((disc, di) => {
+      groupHtml += buildDiscBlock(disc, `${gk}-${di}`);
+    });
+
+    groupHtml += `</div></div>`;
+    html.push(groupHtml);
+  });
+
+  // Renderizar disciplinas soltas
+  ungrouped.forEach((disc, di) => {
+    html.push(buildDiscBlock(disc, di));
+  });
+
+  list.innerHTML = html.join('');
   populateBulkDiscSelect();
 }
 
@@ -3506,6 +3552,12 @@ function _toggleDiscLinksEdit(disc, di) {
   if (!el) return;
   const hidden = el.classList.toggle('hidden');
   el.style.display = hidden ? 'none' : 'flex';
+}
+
+function _toggleGroupLinksEdit(groupKey) {
+  const el = document.getElementById('gle-' + groupKey);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
 }
 
 
