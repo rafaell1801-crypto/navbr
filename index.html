@@ -1097,6 +1097,7 @@ async function saveDiscGroupLink(groupKey,url){
   const obj={};for(const k in DISC_GROUP_LINKS)obj[k]=DISC_GROUP_LINKS[k];
   try{localStorage.setItem('nav_disc_group_links',JSON.stringify(obj));}catch{}
   await sbUpsert('conteudo',{disc:'__disc_group_links__',topics:obj});
+  render();
 }
 async function saveDiscCadernoLink(disc,url){
   DISC_CADERNOS[disc]=url;
@@ -2505,11 +2506,18 @@ ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:
           <span>${done}/${total} tópicos vistos</span>
           ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
           ${(()=>{
-            let groupLink='';
-            if((g.key==='leg'||g.key==='esp')&&DISC_GROUP_LINKS[g.key]){
-              groupLink=`<a href="${DISC_GROUP_LINKS[g.key].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais de ${g.nome}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);text-decoration:none;padding:4px 8px;background:rgba(62,181,200,.1);border-radius:6px">🔑 Questões Gerais</a>`;
+            let groupEmojis='';
+            if(g.key==='leg'||g.key==='esp'){
+              const courseLink=DISC_LINKS[g.cursos?.[0]]||'';
+              const questLink=DISC_GROUP_LINKS[g.key]||'';
+              if(courseLink){
+                groupEmojis+=`<a href="${courseLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aulas de ${g.nome}" onclick="event.stopPropagation()" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">📋</a>`;
+              }
+              if(questLink){
+                groupEmojis+=`<a href="${questLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais de ${g.nome}" onclick="event.stopPropagation()" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`;
+              }
             }
-            return groupLink+(cursoLinks?`<span class="ciclo-cursos">${cursoLinks}</span>`:'');
+            return groupEmojis;
           })()}
         </div>
         <div class="ciclo-rows">${rows}</div>
@@ -3552,10 +3560,24 @@ function updateTopic(disc, idx, val) {
 
 function toggleDeleteTopic(disc, idx) {
   ensureCustom(disc);
-  customTopics[disc][idx].deleted = !customTopics[disc][idx].deleted;
-  localSave();
-  renderContent();
-  render();
+  const topic = customTopics[disc][idx];
+
+  if (!topic.deleted) {
+    // Pergunta se tem certeza antes de deletar
+    if (confirm(`Tem certeza que quer excluir o tópico "${topic.topico}"?`)) {
+      // Remove completamente do array
+      customTopics[disc].splice(idx, 1);
+      localSave();
+      renderContent();
+      render();
+    }
+  } else {
+    // Restaurar
+    topic.deleted = false;
+    localSave();
+    renderContent();
+    render();
+  }
 }
 
 let newTopicCounter = 10000;
