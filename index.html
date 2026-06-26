@@ -1574,40 +1574,50 @@ function spinTimerM(dir){
   el.textContent=String(((parseInt(el.textContent)+dir)%60+60)%60).padStart(2,'0');
 }
 function openSettings(){
-  const b=customBlocos||DEFAULT_BLOCOS;
-  const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
-  renderHeaderLinksConfig();
-  renderDriveLinksConfig();
-  renderCustomLinkTypesConfig();
-  renderBuiltinIconsConfig();
-  renderTimerIconsConfig();
-  renderCfgTrilhas();
-  const retEl=document.getElementById('cfg-fsrs-ret');if(retEl)retEl.value=Math.round(fsrsCfg.retention*100);
-  const maxEl=document.getElementById('cfg-fsrs-max');if(maxEl)maxEl.value=fsrsCfg.maxInterval;
-  const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
+  try {
+    const b=customBlocos||DEFAULT_BLOCOS;
+    const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
+    try { renderHeaderLinksConfig(); } catch(e) { console.error('renderHeaderLinksConfig error:', e); }
+    try { renderDriveLinksConfig(); } catch(e) { console.error('renderDriveLinksConfig error:', e); }
+    try { renderCustomLinkTypesConfig(); } catch(e) { console.error('renderCustomLinkTypesConfig error:', e); }
+    try { renderBuiltinIconsConfig(); } catch(e) { console.error('renderBuiltinIconsConfig error:', e); }
+    try { renderTimerIconsConfig(); } catch(e) { console.error('renderTimerIconsConfig error:', e); }
+    try { renderCfgTrilhas(); } catch(e) { console.error('renderCfgTrilhas error:', e); }
+    const retEl=document.getElementById('cfg-fsrs-ret');if(retEl)retEl.value=Math.round(fsrsCfg.retention*100);
+    const maxEl=document.getElementById('cfg-fsrs-max');if(maxEl)maxEl.value=fsrsCfg.maxInterval;
+    const vEl=document.getElementById('cfg-verse');if(vEl)vEl.value=appVerse;
 
-  ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
-    const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
-    const m=val.match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
-    if(m){
-      const g=id=>document.getElementById(id);
-      g('spin-'+k+'-sh').textContent=m[1].padStart(2,'0');
-      g('spin-'+k+'-sm').textContent=m[2];
-      g('spin-'+k+'-eh').textContent=m[3].padStart(2,'0');
-      g('spin-'+k+'-em').textContent=m[4];
-    }
-  });
-  const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
-  const thEl=document.getElementById('spin-timer-h'),tmEl=document.getElementById('spin-timer-m');
-  if(thEl)thEl.textContent=String(bh).padStart(2,'0');
-  if(tmEl)tmEl.textContent=String(bm).padStart(2,'0');
-  const hsEl=document.getElementById('spin-hor-start'),heEl=document.getElementById('spin-hor-end');
-  if(hsEl)hsEl.textContent=String(horariosConfig.start).padStart(2,'0');
-  if(heEl)heEl.textContent=String(horariosConfig.end).padStart(2,'0');
-  document.getElementById('settings-modal').classList.remove('hidden');
-  buildTimerEditList('timer-edit-list');
-  calcBlockTotal();
-  renderCfgMonLinkLabels();
+    ['b1','b2','b3','b4','b5'].forEach((k,i)=>{
+      const val=(b&&b[i])||DEFAULT_BLOCOS[i]||'';
+      const m=val.match(/(\d{1,2}):(\d{2})[–\-](\d{1,2}):(\d{2})/);
+      if(m){
+        const g=id=>document.getElementById(id);
+        try { g('spin-'+k+'-sh').textContent=m[1].padStart(2,'0'); } catch(e) {}
+        try { g('spin-'+k+'-sm').textContent=m[2]; } catch(e) {}
+        try { g('spin-'+k+'-eh').textContent=m[3].padStart(2,'0'); } catch(e) {}
+        try { g('spin-'+k+'-em').textContent=m[4]; } catch(e) {}
+      }
+    });
+    try {
+      const bs=getBlockSecs(),bh=Math.floor(bs/3600),bm=Math.floor((bs%3600)/60);
+      const thEl=document.getElementById('spin-timer-h'),tmEl=document.getElementById('spin-timer-m');
+      if(thEl)thEl.textContent=String(bh).padStart(2,'0');
+      if(tmEl)tmEl.textContent=String(bm).padStart(2,'0');
+    } catch(e) { console.error('timer error:', e); }
+
+    const hsEl=document.getElementById('spin-hor-start'),heEl=document.getElementById('spin-hor-end');
+    if(hsEl)hsEl.textContent=String(horariosConfig.start).padStart(2,'0');
+    if(heEl)heEl.textContent=String(horariosConfig.end).padStart(2,'0');
+
+    document.getElementById('settings-modal').classList.remove('hidden');
+
+    try { buildTimerEditList('timer-edit-list'); } catch(e) { console.error('buildTimerEditList error:', e); }
+    try { calcBlockTotal(); } catch(e) { console.error('calcBlockTotal error:', e); }
+    try { renderCfgMonLinkLabels(); } catch(e) { console.error('renderCfgMonLinkLabels error:', e); }
+  } catch(e) {
+    console.error('openSettings error:', e);
+    document.getElementById('settings-modal').classList.remove('hidden');
+  }
 }
 function closeSettings(){document.getElementById('settings-modal').classList.add('hidden');}
 
