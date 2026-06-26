@@ -2430,7 +2430,7 @@ function cicloRowHTML(item){
     <div class="ciclo-compact-row">
       <div class="check-btn ${done?'checked':''}" onclick="toggleItem(${item.id})" style="flex-shrink:0">${chkIcon()}</div>
       <span class="ciclo-topic-text${done?' ciclo-topic-done':''}">${item.topico}</span>
-      <div class="ciclo-links-wrap">${topicFreq[item.id]?`<span style="font-size:11px;font-weight:700;color:#fff;background:rgba(62,181,200,.3);border-radius:6px;padding:2px 7px;white-space:nowrap">${topicFreq[item.id]}%</span>`:''}${(()=>{
+      <div class="ciclo-links-wrap">${topicImportance[item.id]?`<span style="font-size:11px;font-weight:700;color:#fff;background:rgba(62,181,200,.5);border-radius:6px;padding:2px 7px;white-space:nowrap">Imp: ${topicImportance[item.id]}</span>`:''}${(()=>{
         if(item.port){
           // LP: só ícone de resumo
           const u=resumosState[item.id]||'';
@@ -3163,6 +3163,7 @@ setInterval(()=>{if(!document.hidden)syncAll();},60000);
 let customTopics = null;
 // topicFreq: { topicId: pct } — % de incidência em provas, editado na aba Conteúdo
 let topicFreq = {};
+let topicImportance = {};
 
 function getTopicPrioritySet(){
   // Returns Set of topic IDs that together make up the top 60% of cumulative recurrence
@@ -3204,6 +3205,33 @@ async function loadTopicFreq(){
     if(rows){const r=rows.find(function(x){return x.disc==='__topic_freq__';});if(r&&r.topics&&typeof r.topics==='object')topicFreq=r.topics;}
   }catch{}
   renderContent();
+}
+
+function saveTopicImportance(){
+  try{localStorage.setItem('plano_ti',JSON.stringify(topicImportance));}catch{}
+  if(_tiSyncTimer)clearTimeout(_tiSyncTimer);
+  _tiSyncTimer=setTimeout(async function(){
+    try{await sbUpsert('conteudo',{disc:'__topic_importance__',topics:topicImportance});showSync('ok','✓ Importância salva');}catch{}
+  },2000);
+  if(_tiRenderTimer)clearTimeout(_tiRenderTimer);
+  _tiRenderTimer=setTimeout(function(){
+    render();
+    if(!document.getElementById('tab-content')?.classList.contains('hidden')){
+      const openBodies=new Set([...document.querySelectorAll('.content-disc-body.open')].map(el=>el.id.replace('cdb-','')));
+      renderContent();
+      openBodies.forEach(di=>{const b=document.getElementById('cdb-'+di);const ch=document.getElementById('chev-'+di);if(b){b.classList.add('open');if(ch)ch.classList.add('open');}});
+    }
+  },600);
+}
+let _tiRenderTimer=null;
+let _tiSyncTimer=null;
+
+async function loadTopicImportance(){
+  try{const raw=localStorage.getItem('plano_ti');if(raw)topicImportance=JSON.parse(raw)||{};}catch{}
+  try{
+    const rows=await sbGet('conteudo','select=disc,topics');
+    if(rows){const r=rows.find(function(x){return x.disc==='__topic_importance__';});if(r&&r.topics&&typeof r.topics==='object')topicImportance=r.topics;}
+  }catch{}
 }
 
 function getDiscTopics(disc) {
@@ -3341,15 +3369,13 @@ function renderContent() {
           onchange="updateTopic('${disc.replace(/'/g,"\'")}',${realIdx},this.value)"
           style="${done?'text-decoration:line-through;opacity:.45;':''}"
           ${t.deleted?'disabled':''}>
-        ${statHtml}
-        <div style="display:flex;align-items:center;gap:1px;flex-shrink:0">
-          <input type="text" inputmode="numeric" maxlength="3" value="${freqVal}" placeholder="%" title="% de incidência em provas"
-            onchange="const v=parseInt(this.value);if(!this.value||isNaN(v)){delete topicFreq[${t.id}];}else{topicFreq[${t.id}]=Math.min(100,Math.max(0,v));}saveTopicFreq()"
-            style="width:38px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
-          <span style="font-size:9px;color:var(--muted)">%</span>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <input type="number" min="1" max="10" value="${topicImportance[t.id]||''}" placeholder="–" title="Nível de importância (1-10)"
+            onchange="const v=parseInt(this.value);if(!this.value||isNaN(v)||v<1||v>10){delete topicImportance[${t.id}];}else{topicImportance[${t.id}]=v;}saveTopicImportance()"
+            style="width:35px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:10px;font-family:Nunito,sans-serif;text-align:center;outline:none">
+          <span style="font-size:9px;color:var(--muted)">Imp</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-          ${(()=>{const q=questoesState[t.id]||{};const qa=q.a||0,qt=q.t||0;if(qt===0)return'';const pct=Math.round(qa/qt*100);const cor=pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';return`<span style="font-size:11px;font-weight:700;color:${cor};min-width:30px;text-align:right">${pct}%</span>`;})()}
           <div class="ciclo-links-wrap">${renderLinksRow(t.id,disc,'ct')}</div>
           <button class="link-edit-all" onclick="toggleEditAll('ct',${t.id})" title="Editar links">${editIconHTML()}</button>
         </div>
@@ -3394,23 +3420,7 @@ function renderContent() {
     </div>`;
   }
 
-  // Campos para links de grupos
-  const groupsHtml = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2)">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 Legislação - Questões</div>
-        <input type="url" id="group-leg-link" value="${(DISC_GROUP_LINKS.leg||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);margin-bottom:8px">
-        <button onclick="(async()=>{const u=document.getElementById('group-leg-link').value.trim();await saveDiscGroupLink('leg',u);alert('Link salvo!');})();" style="width:100%;padding:6px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px">Salvar</button>
-      </div>
-      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2)">
-        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📚 Conhecimentos Específicos - Questões</div>
-        <input type="url" id="group-esp-link" value="${(DISC_GROUP_LINKS.esp||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);margin-bottom:8px">
-        <button onclick="(async()=>{const u=document.getElementById('group-esp-link').value.trim();await saveDiscGroupLink('esp',u);alert('Link salvo!');})();" style="width:100%;padding:6px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600;font-size:11px">Salvar</button>
-      </div>
-    </div>
-  `;
-
-  list.innerHTML = groupsHtml + discNames.map((disc, di) => buildDiscBlock(disc, di)).join('');
+  list.innerHTML = discNames.map((disc, di) => buildDiscBlock(disc, di)).join('');
   populateBulkDiscSelect();
 }
 
@@ -5134,7 +5144,7 @@ populateDiscSelect();populateSwDisc();loadTodayByDisc();updateTimerUI();_timerBu
 if(typeof Notification!=='undefined'&&Notification.permission==='default')Notification.requestPermission();
 // Set start date input
 const _sd=document.getElementById("cfg-start-date");if(_sd)_sd.value=loadStartDate();
-cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadDiscGroupLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();_loadOrgPadroes();
+cicloQLoad();cicloQHistoryLoad();cicloQDailyReset();render();loadAll();loadCustomTopics();loadTopicFreq();loadTopicImportance();loadCadernos();loadResumos();loadLinksExtras();loadSessoesDiarias();loadDriveLinks();loadDiscCourseLinks();loadDiscCadernos();loadDiscGroupLinks();loadQuestoes();loadVerse();loadAppSettings();loadCustomLinkTypes();loadBuiltinIcons();loadFsrs();loadMonitor();loadOrgTrilhas();_loadOrgPadroes();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
 
 // ─── TRABALHO / MONITOR ──────────────────────────────────────────────────────
@@ -7629,12 +7639,6 @@ function deleteMonCargo(id){
 
 <!-- TAB CONTEÚDO -->
 <div id="tab-content" class="hidden content-page">
-
-  <div class="stats-bar" style="grid-template-columns:repeat(3,1fr);border-radius:12px;border:1px solid var(--border);margin-bottom:4px">
-    <div class="stat"><div class="stat-val" style="color:var(--success)" id="ct-done">–</div><div class="stat-lbl">Concluídos</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--muted)" id="ct-pend">–</div><div class="stat-lbl">A fazer</div></div>
-    <div class="stat"><div class="stat-val" style="color:var(--danger)" id="ct-late">–</div><div class="stat-lbl">Atrasados</div></div>
-  </div>
 
   <input class="content-search" id="content-search" placeholder="🔍 Buscar disciplina ou tópico..." oninput="renderContent()">
   <div id="content-disc-list"></div>
