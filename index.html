@@ -485,7 +485,21 @@ input[type=number]{-moz-appearance:textfield}
       <div class="prog-outer" style="flex:1;height:6px"><div class="prog-inner" id="day-prog-bar" style="width:0%;background:linear-gradient(90deg,#0ea5e9,#2dd4a0)"></div></div>
     </div>
   </div>
+  <div style="display:flex;gap:8px;padding:12px 20px;align-items:center;justify-content:flex-end;border-bottom:1px solid var(--border)">
+    <button onclick="openCicloGroupLinksModal()" title="Editar links dos grupos" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font-weight:600;font-size:12px">⚙️ Links</button>
+  </div>
   <div class="days-list" id="ciclo-list"></div>
+
+  <!-- Modal para editar links dos grupos de ciclo -->
+  <div id="ciclo-group-links-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;color:var(--text)">Editar Links dos Grupos</h3>
+        <button onclick="document.getElementById('ciclo-group-links-modal').style.display='none'" style="border:none;background:transparent;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div id="ciclo-group-links-list"></div>
+    </div>
+  </div>
 </div>
 
 <!-- TAB REVISÕES -->
@@ -2379,6 +2393,24 @@ function toggleCiclo(key){
   if(el)el.classList.toggle('open');
 }
 
+function openCicloGroupLinksModal(){
+  const modal=document.getElementById('ciclo-group-links-modal');
+  const list=document.getElementById('ciclo-group-links-list');
+  if(!modal||!list)return;
+
+  list.innerHTML=CICLO_GRUPOS.map(g=>`
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:6px">📋 ${g.nome} - Questões</label>
+      <div style="display:flex;gap:8px">
+        <input type="url" id="ciclo-link-${g.key}" value="${(DISC_GROUP_LINKS[g.key]||'').replace(/"/g,'&quot;')}" placeholder="cole o link..." style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text)">
+        <button onclick="(async()=>{const u=document.getElementById('ciclo-link-${g.key}').value.trim();await saveDiscGroupLink('${g.key}',u);document.getElementById('ciclo-link-${g.key}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('ciclo-link-${g.key}'))document.getElementById('ciclo-link-${g.key}').style.borderColor='';},1500);})();" style="padding:8px 16px;border:none;background:var(--accent);color:#000;border-radius:6px;cursor:pointer;font-weight:600">✓</button>
+      </div>
+    </div>
+  `).join('');
+
+  modal.style.display='flex';
+}
+
 // ── CICLO DIÁRIO — subtabs Hoje / Próximos ─────────────────────────────────
 // ── RESET DIÁRIO ÀS 4H ─────────────────────────────────────────────────────
 function _cicloDateKey(){
@@ -2464,15 +2496,28 @@ function buildCicloHTML(){
   const byG={lp:[],rlm:[],inf:[...INF_TOPICOS],leg:[],esp:[]};
   agenda.forEach(it=>{const g=cicloGrupoOf(it);(byG[g]||byG.esp).push(it);});
   return CICLO_GRUPOS.map(g=>{
-    // dedup por texto do tópico, preferindo o id que já tem link cadastrado
-    const seen=new Map();
-    (byG[g.key]||[]).forEach(it=>{
-      const key=(it.topico||'').trim();
-      const has=!!(resumosState[it.id]||cadernosState[it.id]);
-      if(!seen.has(key)){seen.set(key,it);}
-      else if(has){const cur=seen.get(key);if(!(resumosState[cur.id]||cadernosState[cur.id]))seen.set(key,it);}
-    });
-    const items=[...seen.values()].sort((a,b)=>{const fa=topicFreq[a.id]||0,fb=topicFreq[b.id]||0;if(fb!==fa)return fb-fa;return a.disc===b.disc?0:(a.disc<b.disc?-1:1);});
+    // Para leg/esp, fazer dedup por disc+topico para manter itens de disciplinas diferentes
+    // Para outros grupos, dedup apenas por topico
+    let items;
+    if(g.key==='leg'||g.key==='esp'){
+      const seen=new Map();
+      (byG[g.key]||[]).forEach(it=>{
+        const key=(it.disc+'|'+it.topico).trim();
+        const has=!!(resumosState[it.id]||cadernosState[it.id]);
+        if(!seen.has(key)){seen.set(key,it);}
+        else if(has){const cur=seen.get(key);if(!(resumosState[cur.id]||cadernosState[cur.id]))seen.set(key,it);}
+      });
+      items=[...seen.values()].sort((a,b)=>{const fa=topicFreq[a.id]||0,fb=topicFreq[b.id]||0;if(fb!==fa)return fb-fa;return a.disc===b.disc?0:(a.disc<b.disc?-1:1);});
+    }else{
+      const seen=new Map();
+      (byG[g.key]||[]).forEach(it=>{
+        const key=(it.topico||'').trim();
+        const has=!!(resumosState[it.id]||cadernosState[it.id]);
+        if(!seen.has(key)){seen.set(key,it);}
+        else if(has){const cur=seen.get(key);if(!(resumosState[cur.id]||cadernosState[cur.id]))seen.set(key,it);}
+      });
+      items=[...seen.values()].sort((a,b)=>{const fa=topicFreq[a.id]||0,fb=topicFreq[b.id]||0;if(fb!==fa)return fb-fa;return a.disc===b.disc?0:(a.disc<b.disc?-1:1);});
+    }
     const total=items.length;
     const done=items.filter(i=>isDone(i.id)).length;
     const ids=new Set(items.map(i=>i.id));
@@ -2484,9 +2529,8 @@ function buildCicloHTML(){
     let disciplineOrder=[];
     if(g.key==='leg'||g.key==='esp'){
       const discs=g.key==='leg'?['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']:['Administração','Matemática Financeira','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira'];
-      discs.forEach(d=>{disciplineGroups[d]=[];});
-      items.forEach(it=>{if(disciplineGroups[it.disc])disciplineGroups[it.disc].push(it);else if(!disciplineGroups[it.disc]&&items.filter(x=>x.disc===it.disc).length>0)disciplineGroups[it.disc]=[it];});
-      disciplineOrder=discs.filter(d=>disciplineGroups[d]&&disciplineGroups[d].length>0);
+      discs.forEach(d=>{disciplineGroups[d]=items.filter(it=>it.disc===d);});
+      disciplineOrder=discs;
     }
 
     const subtabsHTML=(g.key==='leg'||g.key==='esp')?`<div style="display:flex;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto">
@@ -2497,11 +2541,18 @@ function buildCicloHTML(){
     </div>`:'';
 
     const rowsHTML=(g.key==='leg'||g.key==='esp')?disciplineOrder.map(disc=>{
-      const discItems=disciplineGroups[disc];
+      const discItems=disciplineGroups[disc]||[];
       const isActive=(cicloGroupSubtabs[g.key]||disciplineOrder[0])===disc;
       const discRows=discItems.map(it=>cicloRowHTML(it)).join('');
+      const emptyMsg=discItems.length===0?`<div class="ciclo-empty">Sem tópicos cadastrados em ${disc}.</div>`:'';
+      const cadUrl=DISC_CADERNOS[disc]||'';
+      const discLinksHeader=cadUrl?`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+        <span style="font-size:11px;color:var(--muted);font-weight:600">Questões gerais:</span>
+        <a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões de ${disc}" style="cursor:pointer;font-size:14px;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">🔑 Ver todas</a>
+      </div>`:'';
       return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none':''}">
-        <div class="ciclo-rows">${discRows}</div>
+        ${discLinksHeader}
+        <div class="ciclo-rows">${discRows||emptyMsg}</div>
       </div>`;
     }).join(''):(total?items.map(it=>cicloRowHTML(it)).join(''):(g.key==='inf'?`<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`:`<div class="ciclo-empty">Sem tópicos cadastrados.</div>`));
 
