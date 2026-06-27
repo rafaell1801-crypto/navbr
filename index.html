@@ -2545,9 +2545,11 @@ function buildCicloHTML(){
         <span style="font-size:11px;color:var(--muted);font-weight:600">Questões gerais:</span>
         <a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões de ${disc}" style="cursor:pointer;font-size:14px;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">🔑 Ver todas</a>
       </div>`:'';
-      return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none':''}">
+      return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none;':''}border-top:1px solid var(--border)">
         ${discLinksHeader}
-        <div class="ciclo-rows">${discRows||emptyMsg}</div>
+        <div style="border-top:${cadUrl?'none':'1px solid var(--border)'}">
+          ${discRows||emptyMsg}
+        </div>
       </div>`;
     }).join(''):(total?items.map(it=>cicloRowHTML(it)).join(''):(g.key==='inf'?`<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`:`<div class="ciclo-empty">Sem tópicos cadastrados.</div>`));
 
@@ -2612,7 +2614,7 @@ ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:
           })()}
         </div>
         ${subtabsHTML}
-        <div class="ciclo-rows">${rowsHTML}</div>
+        ${(g.key==='leg'||g.key==='esp')?`<div class="ciclo-rows" style="border-top:1px solid var(--border)">${rowsHTML.join('')}</div>`:`<div class="ciclo-rows">${rowsHTML}</div>`}
       </div>
     </div>`;
   }).join('');
