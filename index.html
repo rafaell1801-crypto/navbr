@@ -2052,6 +2052,14 @@ function saveSettings(){
       else delete DISC_LINKS[courseKey];
     }
   });
+  // Links de aulas das disciplinas das sub-abas
+  const subtabAulaRows=document.querySelectorAll('#cfg-subtab-disc-aulas-list .cfg-subtab-disc-aula-row');
+  subtabAulaRows.forEach(row=>{
+    const disc=row.dataset.disc;
+    const url=row.querySelector('.cfg-subtab-disc-aula-url').value.trim();
+    if(url)DISC_LINKS[disc]=url;
+    else delete DISC_LINKS[disc];
+  });
   linkSaves.push(saveDiscLinks());
   // Links dos grupos de ciclo
   const groupRows=document.querySelectorAll('#cfg-group-links-list .cfg-group-link-row');
@@ -2070,15 +2078,6 @@ function saveSettings(){
     if(url)DISC_CADERNOS[disc]=url;
     else delete DISC_CADERNOS[disc];
   });
-  // Links de aulas das disciplinas das sub-abas
-  const subtabAulaRows=document.querySelectorAll('#cfg-subtab-disc-aulas-list .cfg-subtab-disc-aula-row');
-  subtabAulaRows.forEach(row=>{
-    const disc=row.dataset.disc;
-    const url=row.querySelector('.cfg-subtab-disc-aula-url').value.trim();
-    if(url)DISC_LINKS[disc]=url;
-    else delete DISC_LINKS[disc];
-  });
-  linkSaves.push(saveDiscLinks());
   // Links de questões das disciplinas das sub-abas
   const subtabRows=document.querySelectorAll('#cfg-subtab-disc-links-list .cfg-subtab-disc-row');
   subtabRows.forEach(row=>{
