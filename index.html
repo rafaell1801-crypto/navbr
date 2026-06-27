@@ -392,7 +392,6 @@ input[type=number]{-moz-appearance:textfield}
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
-  <button class="tab" onclick="showTab('content')">Tópicos</button>
   <button class="tab" onclick="showTab('trabalho')">Trabalho</button>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
@@ -473,6 +472,8 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-q-inp::-webkit-inner-spin-button,.ciclo-q-inp::-webkit-outer-spin-button{-webkit-appearance:none}
 .ciclo-q-inp::placeholder{color:var(--muted);font-weight:400}
 .ciclo-q-sep{font-size:11px;color:var(--border)}
+.ciclo-subtab{border-color:var(--border)!important;background:var(--surface2)!important;color:var(--text)!important}
+.ciclo-subtab.active{background:var(--accent)!important;color:#000!important;border-color:var(--accent)!important}
 </style>
 <div id="tab-ciclo">
   <div class="prog-wrap">
@@ -2071,10 +2072,10 @@ function _enableSpinEdit(el,max,onChange){
 
 function showTab(t){
   ['ciclo','rev','stats','content','simulados','trabalho'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('hidden',id!==t));
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','simulados','content','trabalho'][i]===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['ciclo','rev','stats','simulados','trabalho'][i]===t));
   const tb=document.querySelector('.timer-bar');if(tb)tb.classList.toggle('hidden',t!=='ciclo');
-  if(t==='rev'){renderRev();populateSwDisc();updateSwUI();}if(t==='stats')renderStats();if(t==='content')renderContent();if(t==='simulados')renderSimulados();
-  if(t==='content')renderContentStats();if(t==='trabalho')renderTrabalho();
+  if(t==='rev'){renderRev();populateSwDisc();updateSwUI();}if(t==='stats')renderStats();if(t==='simulados')renderSimulados();
+  if(t==='trabalho')renderTrabalho();
 }
 let currentSubtab='today';
 function showSubtab(s){
@@ -2082,6 +2083,16 @@ function showSubtab(s){
   ['today','pending','done'].forEach(id=>{
     const list=document.getElementById('days-'+id);if(list)list.classList.toggle('hidden',id!==s);
     const btn=document.getElementById('st-'+id);if(btn)btn.classList.toggle('active',id===s);
+  });
+}
+let cicloGroupSubtabs={'leg':'Noções de Direito Constitucional','esp':'Administração'};
+function showCicloGroupSubtab(group,disc){
+  cicloGroupSubtabs[group]=disc;
+  document.querySelectorAll(`[data-ciclo-group="${group}"][data-subtab]`).forEach(el=>{
+    el.classList.toggle('hidden',el.getAttribute('data-subtab')!==disc);
+  });
+  document.querySelectorAll(`[data-ciclo-group-btn="${group}"][data-subtab-btn]`).forEach(el=>{
+    el.classList.toggle('active',el.getAttribute('data-subtab-btn')===disc);
   });
 }
 function toggleLate(){document.getElementById('late-body').classList.toggle('hidden');}
@@ -2467,6 +2478,33 @@ function buildCicloHTML(){
     const ids=new Set(items.map(i=>i.id));
     const {a,t}=getQuestoesTotals(id=>ids.has(id));
     const acpct=t>0?Math.round(a/t*100):null;
+
+    // Para grupos com sub-disciplinas, agrupar itens por disciplina
+    let disciplineGroups={};
+    let disciplineOrder=[];
+    if(g.key==='leg'||g.key==='esp'){
+      const discs=g.key==='leg'?['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade']:['Administração','Matemática Financeira','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira'];
+      discs.forEach(d=>{disciplineGroups[d]=[];});
+      items.forEach(it=>{if(disciplineGroups[it.disc])disciplineGroups[it.disc].push(it);else if(!disciplineGroups[it.disc]&&items.filter(x=>x.disc===it.disc).length>0)disciplineGroups[it.disc]=[it];});
+      disciplineOrder=discs.filter(d=>disciplineGroups[d]&&disciplineGroups[d].length>0);
+    }
+
+    const subtabsHTML=(g.key==='leg'||g.key==='esp')?`<div style="display:flex;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto">
+      ${disciplineOrder.map(disc=>{
+        const isActive=(cicloGroupSubtabs[g.key]||disciplineOrder[0])===disc?'active':'';
+        return `<button class="ciclo-subtab ${isActive}" data-ciclo-group-btn="${g.key}" data-subtab-btn="${disc}" onclick="showCicloGroupSubtab('${g.key}','${disc.replace(/'/g,"\\'")}')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:${isActive?'var(--accent)':'var(--surface2)'};color:${isActive?'#000':'var(--text)'};cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:all .15s">${disc}</button>`;
+      }).join('')}
+    </div>`:'';
+
+    const rowsHTML=(g.key==='leg'||g.key==='esp')?disciplineOrder.map(disc=>{
+      const discItems=disciplineGroups[disc];
+      const isActive=(cicloGroupSubtabs[g.key]||disciplineOrder[0])===disc;
+      const discRows=discItems.map(it=>cicloRowHTML(it)).join('');
+      return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none':''}">
+        <div class="ciclo-rows">${discRows}</div>
+      </div>`;
+    }).join(''):(total?items.map(it=>cicloRowHTML(it)).join(''):(g.key==='inf'?`<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`:`<div class="ciclo-empty">Sem tópicos cadastrados.</div>`));
+
     const cursoLinks=(g.cursos||[]).map(c=>{
       const courseLink=DISC_LINKS[c]||'';
       const cadUrl=DISC_CADERNOS[c]||'';
@@ -2477,11 +2515,7 @@ function buildCicloHTML(){
         <span style="font-size:10px;color:var(--muted)">${c}</span>
       </div>`;
     }).filter(Boolean).join('');
-    const rows=total
-      ? items.map(it=>cicloRowHTML(it)).join('')
-      : (g.key==='inf'
-          ? `<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`
-          : `<div class="ciclo-empty">Sem tópicos cadastrados.</div>`);
+
     return`<div class="ciclo-disc" id="ciclo-g-${g.key}" style="--gc:${g.cor}">
       <div class="ciclo-head" onclick="toggleCiclo('${g.key}')">
         <div class="ciclo-head-main">
@@ -2494,7 +2528,7 @@ ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:
           <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-shrink:0">
           ${cadUrl
             ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1">🔑</a>`
-            :`<span title="Caderno não cadastrado — adicione na aba Tópicos" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.3;cursor:default">🔑</span>`}
+            :`<span title="Caderno não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.3;cursor:default">🔑</span>`}
           <div class="ciclo-quota" style="cursor:default;min-width:60px"><b>${g.quota}</b> q/dia</div>
           </div>
           <div class="ciclo-q-block">
@@ -2531,7 +2565,8 @@ ${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:
             return groupEmojis;
           })()}
         </div>
-        <div class="ciclo-rows">${rows}</div>
+        ${subtabsHTML}
+        <div class="ciclo-rows">${rowsHTML}</div>
       </div>
     </div>`;
   }).join('');
