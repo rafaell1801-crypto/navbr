@@ -437,7 +437,7 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-intro b{color:var(--text)}
 .ciclo-disc{border:1px solid var(--border);border-left:4px solid var(--gc,#888);border-radius:10px;background:var(--surface);overflow:hidden}
 #ciclo-list{gap:5px;padding-top:8px;padding-bottom:8px}
-.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 12px;cursor:pointer;user-select:none}
+.ciclo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px;cursor:pointer;user-select:none}
 .ciclo-head:hover .ciclo-nome{color:var(--accent)}
 .ciclo-head-main{display:flex;align-items:center;gap:8px;min-width:0}
 .ciclo-dot{width:10px;height:10px;border-radius:2px;background:var(--gc,#888);flex-shrink:0}
@@ -456,8 +456,8 @@ input[type=number]{-moz-appearance:textfield}
 .ciclo-rows{border-top:1px solid var(--border)}
 .ciclo-cell{border-bottom:1px solid var(--border)}
 .ciclo-cell:last-child{border-bottom:none}
-.ciclo-empty{padding:18px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
-.ciclo-compact-row{display:flex;align-items:center;gap:9px;padding:8px 14px;min-width:0}
+.ciclo-empty{padding:24px 15px;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+.ciclo-compact-row{display:flex;align-items:center;gap:9px;padding:6px 14px;min-width:0}
 .ciclo-topic-text{flex:1;font-size:13px;font-weight:400;color:#e8f4f8;line-height:1.3;min-width:0}
 .ciclo-topic-done{opacity:.4}
 .ciclo-links-wrap{flex-shrink:0;display:flex;align-items:center;gap:5px}
@@ -587,9 +587,29 @@ input[type=number]{-moz-appearance:textfield}
           <div id="cfg-drive-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
         <div class="modal-section">
+          <h3>Links de Questões por Disciplina</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link do caderno de questões de cada disciplina. Aparece como ícone 🔑 no topo de cada sub-aba dentro dos grupos.</p>
+          <div id="cfg-disc-questions-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="modal-section">
+          <h3>Links de Aulas dos Grupos</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da playlist ou aula principal de cada grupo. Aparece como ícone 📋 no topo de cada aba.</p>
+          <div id="cfg-group-aulas-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="modal-section">
           <h3>Links de Questões dos Grupos</h3>
-          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link do caderno de questões gerais de cada grupo de ciclo. Aparece no topo de cada aba.</p>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link do caderno de questões gerais de cada grupo de ciclo. Aparece como ícone 🔑 no topo de cada aba.</p>
           <div id="cfg-group-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="modal-section">
+          <h3>Links de Aulas das Disciplinas (Sub-abas)</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link da aula de cada disciplina dentro das sub-abas. Aparece como ícone 📋 no topo de cada sub-aba.</p>
+          <div id="cfg-subtab-disc-aulas-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div class="modal-section">
+          <h3>Links de Questões das Disciplinas (Sub-abas)</h3>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px">Cole o link do caderno de questões de cada disciplina dentro das sub-abas. Aparece como ícone 🔑 no topo de cada sub-aba.</p>
+          <div id="cfg-subtab-disc-links-list" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
         <div class="modal-section">
           <h3>Tipos de link personalizados</h3>
@@ -1082,6 +1102,11 @@ async function saveDiscCourseLink(disc,url){
   const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
   try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
   await sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
+}
+async function saveDiscLinks(){
+  const obj={};for(const k in DISC_LINKS)obj[k]=DISC_LINKS[k];
+  try{localStorage.setItem('nav_disc_course_links',JSON.stringify(obj));}catch{}
+  return sbUpsert('conteudo',{disc:'__disc_links__',topics:obj});
 }
 async function loadDiscCadernos(){
   try{const s=localStorage.getItem('nav_disc_cadernos');if(s)Object.assign(DISC_CADERNOS,JSON.parse(s));}catch{}
@@ -1586,7 +1611,11 @@ function openSettings(){
     const sdEl=document.getElementById('cfg-start-date');if(sdEl)sdEl.value=loadStartDate();
     try { renderHeaderLinksConfig(); } catch(e) { console.error('renderHeaderLinksConfig error:', e); }
     try { renderDriveLinksConfig(); } catch(e) { console.error('renderDriveLinksConfig error:', e); }
+    try { renderDiscQuestionsLinksConfig(); } catch(e) { console.error('renderDiscQuestionsLinksConfig error:', e); }
+    try { renderGroupAulasLinksConfig(); } catch(e) { console.error('renderGroupAulasLinksConfig error:', e); }
     try { renderGroupLinksConfig(); } catch(e) { console.error('renderGroupLinksConfig error:', e); }
+    try { renderSubtabDiscAulasLinksConfig(); } catch(e) { console.error('renderSubtabDiscAulasLinksConfig error:', e); }
+    try { renderSubtabDiscLinksConfig(); } catch(e) { console.error('renderSubtabDiscLinksConfig error:', e); }
     try { renderCustomLinkTypesConfig(); } catch(e) { console.error('renderCustomLinkTypesConfig error:', e); }
     try { renderBuiltinIconsConfig(); } catch(e) { console.error('renderBuiltinIconsConfig error:', e); }
     try { renderTimerIconsConfig(); } catch(e) { console.error('renderTimerIconsConfig error:', e); }
@@ -1836,6 +1865,18 @@ function renderDriveLinksConfig(){
   }).join('');
 }
 
+function renderGroupAulasLinksConfig(){
+  const wrap=document.getElementById('cfg-group-aulas-list');if(!wrap)return;
+  wrap.innerHTML=CICLO_GRUPOS.map(g=>{
+    const url=(DISC_LINKS[g.cursos?.[0]]||'').replace(/"/g,'&quot;');
+    return `<div class="cfg-group-aula-row" data-group="${g.key}" style="display:flex;gap:6px;align-items:center">
+      <span style="width:9px;height:9px;border-radius:2px;background:${g.cor};flex-shrink:0"></span>
+      <span style="font-size:11px;width:200px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${g.nome}">${g.nome}</span>
+      <input class="cfg-group-aula-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    </div>`;
+  }).join('');
+}
+
 function renderGroupLinksConfig(){
   const wrap=document.getElementById('cfg-group-links-list');if(!wrap)return;
   wrap.innerHTML=CICLO_GRUPOS.map(g=>{
@@ -1844,6 +1885,48 @@ function renderGroupLinksConfig(){
       <span style="width:9px;height:9px;border-radius:2px;background:${g.cor};flex-shrink:0"></span>
       <span style="font-size:11px;width:200px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${g.nome}">${g.nome}</span>
       <input class="cfg-group-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    </div>`;
+  }).join('');
+}
+
+function renderDiscQuestionsLinksConfig(){
+  const wrap=document.getElementById('cfg-disc-questions-list');if(!wrap)return;
+  const discs=getActiveDiscs();
+  wrap.innerHTML=discs.map(disc=>{
+    const url=(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;');
+    const c=CORES[disc]||'#888';
+    return `<div class="cfg-disc-q-row" data-disc="${disc}" style="display:flex;gap:6px;align-items:center">
+      <span style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="font-size:11px;width:200px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
+      <input class="cfg-disc-q-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    </div>`;
+  }).join('');
+}
+
+function renderSubtabDiscAulasLinksConfig(){
+  const wrap=document.getElementById('cfg-subtab-disc-aulas-list');if(!wrap)return;
+  const subtabDiscs=['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade','Administração','Matemática Financeira','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira'];
+  wrap.innerHTML=subtabDiscs.map(disc=>{
+    const url=(DISC_LINKS[disc]||'').replace(/"/g,'&quot;');
+    const c=CORES[disc]||'#888';
+    return `<div class="cfg-subtab-disc-aula-row" data-disc="${disc}" style="display:flex;gap:6px;align-items:center">
+      <span style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="font-size:11px;width:240px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
+      <input class="cfg-subtab-disc-aula-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
+    </div>`;
+  }).join('');
+}
+
+function renderSubtabDiscLinksConfig(){
+  const wrap=document.getElementById('cfg-subtab-disc-links-list');if(!wrap)return;
+  const subtabDiscs=['Noções de Direito Constitucional','Noções de Direito Administrativo','Noções de Ética e Integridade','Administração','Matemática Financeira','Teoria Econômica Aplicada','Orçamento Público e Análise Financeira'];
+  wrap.innerHTML=subtabDiscs.map(disc=>{
+    const url=(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;');
+    const c=CORES[disc]||'#888';
+    return `<div class="cfg-subtab-disc-row" data-disc="${disc}" style="display:flex;gap:6px;align-items:center">
+      <span style="width:9px;height:9px;border-radius:2px;background:${c};flex-shrink:0"></span>
+      <span style="font-size:11px;width:240px;flex-shrink:0;color:#c8e6f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${disc}">${disc}</span>
+      <input class="cfg-subtab-disc-url" type="url" placeholder="https://..." value="${url}" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface2);color:var(--text)">
     </div>`;
   }).join('');
 }
@@ -1958,6 +2041,18 @@ function saveSettings(){
     else delete driveLinks[disc];
   });
   linkSaves.push(saveDriveLinks());
+  // Links de aulas dos grupos
+  const groupAulaRows=document.querySelectorAll('#cfg-group-aulas-list .cfg-group-aula-row');
+  groupAulaRows.forEach(row=>{
+    const group=row.dataset.group;
+    const url=row.querySelector('.cfg-group-aula-url').value.trim();
+    const courseKey=CICLO_GRUPOS.find(g=>g.key===group)?.cursos?.[0];
+    if(courseKey){
+      if(url)DISC_LINKS[courseKey]=url;
+      else delete DISC_LINKS[courseKey];
+    }
+  });
+  linkSaves.push(saveDiscLinks());
   // Links dos grupos de ciclo
   const groupRows=document.querySelectorAll('#cfg-group-links-list .cfg-group-link-row');
   groupRows.forEach(row=>{
@@ -1967,6 +2062,32 @@ function saveSettings(){
     else delete DISC_GROUP_LINKS[group];
   });
   linkSaves.push(sbUpsert('settings',{id:'disc_group_links',data:DISC_GROUP_LINKS}));
+  // Links de questões das disciplinas
+  const discQRows=document.querySelectorAll('#cfg-disc-questions-list .cfg-disc-q-row');
+  discQRows.forEach(row=>{
+    const disc=row.dataset.disc;
+    const url=row.querySelector('.cfg-disc-q-url').value.trim();
+    if(url)DISC_CADERNOS[disc]=url;
+    else delete DISC_CADERNOS[disc];
+  });
+  // Links de aulas das disciplinas das sub-abas
+  const subtabAulaRows=document.querySelectorAll('#cfg-subtab-disc-aulas-list .cfg-subtab-disc-aula-row');
+  subtabAulaRows.forEach(row=>{
+    const disc=row.dataset.disc;
+    const url=row.querySelector('.cfg-subtab-disc-aula-url').value.trim();
+    if(url)DISC_LINKS[disc]=url;
+    else delete DISC_LINKS[disc];
+  });
+  linkSaves.push(saveDiscLinks());
+  // Links de questões das disciplinas das sub-abas
+  const subtabRows=document.querySelectorAll('#cfg-subtab-disc-links-list .cfg-subtab-disc-row');
+  subtabRows.forEach(row=>{
+    const disc=row.dataset.disc;
+    const url=row.querySelector('.cfg-subtab-disc-url').value.trim();
+    if(url)DISC_CADERNOS[disc]=url;
+    else delete DISC_CADERNOS[disc];
+  });
+  linkSaves.push(_sbSaveCadernos());
   // Tipos de link personalizados
   const newTypes=[];
   document.querySelectorAll('#cfg-clt-list .cfg-clt-row').forEach(row=>{
@@ -1997,9 +2118,8 @@ function saveSettings(){
   // Versículo
   const vEl=document.getElementById('cfg-verse');
   if(vEl){const newVerse=vEl.value.trim();if(newVerse!==appVerse){appVerse=newVerse;applyVerseToUI();linkSaves.push(saveVerse());}}
-  Promise.all(linkSaves).then(()=>showSync('ok','✓ Salvo'));
+  Promise.all(linkSaves).then(()=>{showSync('ok','✓ Salvo');closeSettings();render();renderRev();_timerButtonsUpdate();applyLateIcon();});
   renderXLinks();
-  closeSettings();render();renderRev();_timerButtonsUpdate();applyLateIcon();
 }
 async function applyTimerEdit(disc){
   const safeId='et-'+disc.replace(/[^a-zA-Z0-9]/g,'_');
@@ -2116,7 +2236,7 @@ let cicloGroupSubtabs={'leg':'Noções de Direito Constitucional','esp':'Adminis
 function showCicloGroupSubtab(group,disc){
   cicloGroupSubtabs[group]=disc;
   document.querySelectorAll(`[data-ciclo-group="${group}"][data-subtab]`).forEach(el=>{
-    el.classList.toggle('hidden',el.getAttribute('data-subtab')!==disc);
+    el.style.display=el.getAttribute('data-subtab')===disc?'':'none';
   });
   document.querySelectorAll(`[data-ciclo-group-btn="${group}"][data-subtab-btn]`).forEach(el=>{
     el.classList.toggle('active',el.getAttribute('data-subtab-btn')===disc);
@@ -2541,15 +2661,14 @@ function buildCicloHTML(){
       const discRows=discItems.map(it=>cicloRowHTML(it)).join('');
       const emptyMsg=discItems.length===0?`<div class="ciclo-empty">Sem tópicos cadastrados em ${disc}.</div>`:'';
       const cadUrl=DISC_CADERNOS[disc]||'';
-      const discLinksHeader=cadUrl?`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
-        <span style="font-size:11px;color:var(--muted);font-weight:600">Questões gerais:</span>
-        <a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões de ${disc}" style="cursor:pointer;font-size:14px;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">🔑 Ver todas</a>
+      const auleLink=DISC_LINKS[disc]||'';
+      const discLinksHeader=(auleLink||cadUrl)?`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
+        ${auleLink?`<a href="${auleLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aulas de ${disc}" style="cursor:pointer;font-size:16px;opacity:1;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📋</a>`:`<span title="Link de aula não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">📋</span>`}
+        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões de ${disc}" style="cursor:pointer;font-size:16px;opacity:1;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">🔑</a>`:`<span title="Link de questões não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">🔑</span>`}
       </div>`:'';
-      return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none;':''}border-top:1px solid var(--border)">
+      return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none;':''}${!isActive?'':'border-top:1px solid var(--border)'}">
         ${discLinksHeader}
-        <div style="border-top:${cadUrl?'none':'1px solid var(--border)'}">
-          ${discRows||emptyMsg}
-        </div>
+        ${discRows||emptyMsg}
       </div>`;
     }).join(''):(total?items.map(it=>cicloRowHTML(it)).join(''):(g.key==='inf'?`<div class="ciclo-empty">Sem tópicos de Informática ainda.<br>Me envie os tópicos e os links que eu cadastro.</div>`:`<div class="ciclo-empty">Sem tópicos cadastrados.</div>`));
 
@@ -2572,49 +2691,29 @@ function buildCicloHTML(){
             <div class="ciclo-nome">${g.nome}</div>
           </div>
         </div>
-${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:{feitas:typeof cicloQState[g.key]==='number'?cicloQState[g.key]:0,acertos:0};const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;const cadUrl=DISC_GROUP_LINKS[g.key]||'';return`<div style="display:flex;align-items:center;gap:8px;flex-shrink:0" onclick="event.stopPropagation()">
-          <div style="display:flex;flex-direction:row;align-items:center;gap:6px;flex-shrink:0">
-          ${cadUrl
-            ?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1">🔑</a>`
-            :`<span title="Caderno não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.3;cursor:default">🔑</span>`}
-          <div class="ciclo-quota" style="cursor:default;min-width:60px"><b>${g.quota}</b> q/dia</div>
-          </div>
-          <div class="ciclo-q-block">
-            <div class="ciclo-q-field">
-              <span class="ciclo-q-lbl">Feitas</span>
-              <input class="ciclo-q-inp" type="number" min="0" value="${f||g.quota}" style="color:#7dd3fc" oninput="cicloQSet('${g.key}','feitas',this.value)">
+        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0" onclick="event.stopPropagation()">
+          <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:8px;padding:4px 8px">
+            <div style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted);font-weight:600">
+              <span style="color:#7dd3fc">FEITAS</span>
+              <input class="ciclo-q-inp" type="number" min="0" value="${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:0;return s.feitas||g.quota;})()}" style="width:32px;color:#7dd3fc;font-weight:700" onfocus="this.select()" oninput="cicloQSet('${g.key}','feitas',this.value)">
             </div>
-            <span class="ciclo-q-sep">|</span>
-            <div class="ciclo-q-field">
-              <span class="ciclo-q-lbl">Acertos</span>
-              <input class="ciclo-q-inp" type="number" min="0" value="${a||''}" placeholder="0" oninput="cicloQSet('${g.key}','acertos',this.value)">
+            <span style="color:var(--border)">|</span>
+            <div style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted);font-weight:600">
+              <span>ACERTOS</span>
+              <input class="ciclo-q-inp" type="number" min="0" value="${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:0;return s.acertos||'';})()}" placeholder="0" style="width:32px;font-weight:700" onfocus="this.select()" oninput="cicloQSet('${g.key}','acertos',this.value)">
             </div>
-            <span class="ciclo-q-sep">|</span>
-            <span id="ciclo-pct-${g.key}" style="font-size:12px;font-weight:700;min-width:30px;color:${pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)'}">${pct!==null?pct+'%':'–'}</span>
+            <span style="color:var(--border)">|</span>
+            <span style="font-size:12px;font-weight:700;min-width:28px;color:${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:0;const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return pct===null?'var(--muted)':pct>=70?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';})()}">${(()=>{const s=typeof cicloQState[g.key]==='object'?cicloQState[g.key]:0;const f=s.feitas||g.quota,a=s.acertos||0;const pct=f>0?Math.round(a/f*100):null;return pct!==null?pct+'%':'–';})()}</span>
           </div>
-        </div>`;})()}
+          <div style="display:flex;gap:4px">
+            ${(()=>{const courseLink=DISC_LINKS[g.cursos?.[0]]||'';return courseLink?`<a href="${courseLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aulas de ${g.nome}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1;opacity:1;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📋</a>`:`<span title="Link de aula não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">📋</span>`;})()}
+            ${(()=>{const cadUrl=DISC_GROUP_LINKS[g.key]||'';return cadUrl?`<a href="${cadUrl}" target="_blank" rel="noopener" title="Caderno geral de questões" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;width:22px;text-decoration:none;flex-shrink:0;font-size:16px;line-height:1;opacity:1;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">🔑</a>`:`<span title="Caderno não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">🔑</span>`;})()}
+          </div>
+        </div>
       </div>
       <div class="ciclo-body">
-        <div class="ciclo-meta">
-          <span>${done}/${total} tópicos vistos</span>
-          ${acpct!==null?`<span style="color:${acpct>=70?'var(--success)':acpct>=50?'var(--warn)':'var(--danger)'}">${acpct}% acertos</span>`:''}
-          ${(()=>{
-            let groupEmojis='';
-            if(g.key==='leg'||g.key==='esp'){
-              const courseLink=DISC_LINKS[g.cursos?.[0]]||'';
-              const questLink=DISC_GROUP_LINKS[g.key]||'';
-              if(courseLink){
-                groupEmojis+=`<a href="${courseLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aulas de ${g.nome}" onclick="event.stopPropagation()" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">📋</a>`;
-              }
-              if(questLink){
-                groupEmojis+=`<a href="${questLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões gerais de ${g.nome}" onclick="event.stopPropagation()" style="cursor:pointer;font-size:14px;opacity:.6;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`;
-              }
-            }
-            return groupEmojis;
-          })()}
-        </div>
         ${subtabsHTML}
-        ${(g.key==='leg'||g.key==='esp')?`<div class="ciclo-rows" style="border-top:1px solid var(--border)">${rowsHTML.join('')}</div>`:`<div class="ciclo-rows">${rowsHTML}</div>`}
+        <div class="ciclo-rows">${rowsHTML}</div>
       </div>
     </div>`;
   }).join('');
@@ -3475,8 +3574,8 @@ function renderContent() {
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
         ${nameHtml}
         <div style="display:flex;gap:4px;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
-          ${(DISC_LINKS[disc])?`<a href="${DISC_LINKS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para aula" style="cursor:pointer;font-size:14px;opacity:.6;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">📋</a>`:''}
-          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para questões" style="cursor:pointer;font-size:14px;opacity:.6;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">🔑</a>`:''}
+          ${(DISC_LINKS[disc])?`<a href="${DISC_LINKS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para aula" style="cursor:pointer;font-size:14px;opacity:1;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📋</a>`:''}
+          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para questões" style="cursor:pointer;font-size:14px;opacity:1;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">🔑</a>`:''}
           <button onclick="_toggleDiscLinksEdit('${disc.replace(/'/g,"\\'")}',${di})" title="Editar links" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
         </div>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
