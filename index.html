@@ -2069,7 +2069,7 @@ function saveSettings(){
     if(url)DISC_GROUP_LINKS[group]=url;
     else delete DISC_GROUP_LINKS[group];
   });
-  linkSaves.push(sbUpsert('settings',{id:'disc_group_links',data:DISC_GROUP_LINKS}));
+  linkSaves.push(sbUpsert('conteudo',{disc:'__disc_group_links__',topics:DISC_GROUP_LINKS}));
   // Links de questões das disciplinas
   const discQRows=document.querySelectorAll('#cfg-disc-questions-list .cfg-disc-q-row');
   discQRows.forEach(row=>{
