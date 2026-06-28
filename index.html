@@ -6548,8 +6548,8 @@ function renderOrgDiscs(){
             return`<tr style="border-bottom:1px solid rgba(30,63,92,.4)${i===discs.length-1?';border-bottom:none':''}">
               <td style="padding:6px 10px">
                 ${d.link
-                  ?`<a href="${_esc(d.link)}" target="_blank" style="color:var(--text);font-size:12px;font-weight:600;text-decoration:none" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${_esc(d.nome)||'(sem nome)'}</a>`
-                  :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:12px;font-family:inherit;outline:none">`
+                  ?`<a href="${_esc(d.link)}" target="_blank" style="color:var(--text);font-size:10px;font-weight:600;text-decoration:none" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${_esc(d.nome)||'(sem nome)'}</a>`
+                  :`<input value="${_esc(d.nome)}" oninput="orgDiscChange(${d.id},'nome',this.value)" placeholder="Ex: Português" style="width:100%;background:transparent;border:none;color:var(--text);font-size:10px;font-family:inherit;outline:none">`
                 }
               </td>
               <td style="padding:4px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,${scoreDisc>0?'.8':'.2'})">${scoreStr}</td>
@@ -7788,7 +7788,7 @@ function renderMonitor(){
           </div>
           ${aulaItens.length?`<span style="font-size:9px;color:#7dd3fc;letter-spacing:.2px">${_abbrevAulaItens(aulaItens)}</span>`:''}
           ${intervaloGroups.map(g=>`<span style="font-size:9px;color:#f5a623">${g.intervalo}a/ [${_abbrevMonList(g.itens||[])}]</span>`).join('')}
-          ${finaisItens.length?`<span style="font-size:9px;color:#c4b5fd">F [${_abbrevMonList(finaisItens)}]</span>`:''}
+          ${finaisItens.length?`<span style="font-size:9px;color:#c4b5fd">${_abbrevMonList(finaisItens).replace(/\(/g,' (').replace(/\+/g,' + ')}</span>`:''}
           <span style="font-size:10px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
         </div>
       </div>
