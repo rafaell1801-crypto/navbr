@@ -244,10 +244,10 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito','Segoe UI',syst
 .content-page{padding:14px 20px;display:flex;flex-direction:column;gap:12px}
 .content-search{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface2);color:#fff}
 .content-disc-block{background:#05101a;border:none;border-radius:var(--radius);overflow:hidden}
-.content-disc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
-.content-disc-header.open{border-bottom:1px solid var(--border)}
-.content-disc-title{font-size:13px;font-weight:700;flex:1}
-.content-disc-title-link{font-size:13px;font-weight:700;flex:1;color:#c8e6f0;text-decoration:none;transition:color .15s}
+.content-disc-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;border-bottom:1px solid #333;background:#000}
+.content-disc-header.open{border-bottom:1px solid #333}
+.content-disc-title{font-size:13px;font-weight:700;flex:1;color:#fff}
+.content-disc-title-link{font-size:13px;font-weight:700;flex:1;color:#fff;text-decoration:none;transition:color .15s}
 .content-disc-title-link:hover{color:var(--accent)}
 .content-disc-meta{font-size:11px;color:var(--muted)}
 .content-disc-chevron{font-size:12px;color:var(--muted);transition:transform .2s}
@@ -392,7 +392,7 @@ input[type=number]{-moz-appearance:textfield}
   <button class="tab" onclick="showTab('rev')">Revisões<span id="rev-alert" class="hidden" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px">!</span></button>
   <button class="tab" onclick="showTab('stats')">Estatísticas</button>
   <button class="tab" onclick="showTab('simulados')">Simulados</button>
-  <button class="tab" onclick="showTab('trabalho')">Trabalho</button>
+  <div id="trab-main-tabs" style="display:flex;gap:0"></div>
   <button class="settings-btn" onclick="openSettings()" title="Configurações"><img src="config.png" id="config-icon" alt="⚙" style="width:20px;height:20px;object-fit:contain;display:block"></button>
 </div>
 
@@ -2663,7 +2663,7 @@ function buildCicloHTML(){
       const auleLink=DISC_LINKS[disc]||'';
       const discLinksHeader=(auleLink||cadUrl)?`<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2)">
         ${auleLink?`<a href="${auleLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aulas de ${disc}" style="cursor:pointer;font-size:16px;opacity:1;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📋</a>`:`<span title="Link de aula não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">📋</span>`}
-        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões de ${disc}" style="cursor:pointer;font-size:16px;opacity:1;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">🔑</a>`:`<span title="Link de questões não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">🔑</span>`}
+        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Docs de ${disc}" style="cursor:pointer;font-size:16px;opacity:1;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📄</a>`:`<span title="Link de docs não cadastrado" style="display:inline-flex;align-items:center;justify-content:center;width:22px;flex-shrink:0;font-size:16px;line-height:1;opacity:.12;cursor:default">📄</span>`}
       </div>`:'';
       return `<div data-ciclo-group="${g.key}" data-subtab="${disc}" style="${!isActive?'display:none;':''}${!isActive?'':'border-top:1px solid var(--border)'}">
         ${discLinksHeader}
@@ -2677,7 +2677,7 @@ function buildCicloHTML(){
       if(!courseLink&&!cadUrl)return '';
       return`<div class="ciclo-curso-item" style="display:flex;align-items:center;gap:4px;font-size:11px">
         ${courseLink?`<a href="${courseLink.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Aula: ${c}" onclick="event.stopPropagation()" style="cursor:pointer;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">📋</a>`:''}
-        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Questões: ${c}" onclick="event.stopPropagation()" style="cursor:pointer;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">🔑</a>`:''}
+        ${cadUrl?`<a href="${cadUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Docs: ${c}" onclick="event.stopPropagation()" style="cursor:pointer;opacity:.7;text-decoration:none" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.7'">📄</a>`:''}
         <span style="font-size:10px;color:var(--muted)">${c}</span>
       </div>`;
     }).filter(Boolean).join('');
@@ -3567,14 +3567,14 @@ function renderContent() {
         }
       </div>`;
     }).join('');
-    const nameHtml = `<span class="content-disc-title" style="color:#c8e6f0;font-weight:600">${disc}</span>`;
+    const nameHtml = `<span class="content-disc-title" style="color:#fff;font-weight:600">${disc}</span>`;
     return `<div class="content-disc-block">
       <div class="content-disc-header" onclick="toggleDiscBlock(${di})">
         <span style="width:12px;height:12px;border-radius:3px;background:${c};display:inline-block;flex-shrink:0"></span>
         ${nameHtml}
         <div style="display:flex;gap:4px;align-items:center;flex-shrink:0" onclick="event.stopPropagation()">
           ${(DISC_LINKS[disc])?`<a href="${DISC_LINKS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para aula" style="cursor:pointer;font-size:14px;opacity:1;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📋</a>`:''}
-          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para questões" style="cursor:pointer;font-size:14px;opacity:1;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">🔑</a>`:''}
+          ${(DISC_CADERNOS[disc])?`<a href="${DISC_CADERNOS[disc].replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="Ir para docs" style="cursor:pointer;font-size:14px;opacity:1;transition:opacity .15s;text-decoration:none;display:inline-flex;align-items:center" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='1'">📄</a>`:''}
           <button onclick="_toggleDiscLinksEdit('${disc.replace(/'/g,"\\'")}',${di})" title="Editar links" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;opacity:.55;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.55'">${editIconHTML()}</button>
         </div>
         <span class="content-disc-chevron" id="chev-${di}">▾</span>
@@ -3587,8 +3587,8 @@ function renderContent() {
             <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px;transition:color .15s;font-weight:300;letter-spacing:.5px" title="Salvar" onclick="(async()=>{const u=document.getElementById('daul-${di}').value.trim();await saveDiscCourseLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('daul-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('daul-${di}'))document.getElementById('daul-${di}').style.borderColor='';},1500);})()">✓</button>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
-            <span style="font-size:11px;color:var(--muted);white-space:nowrap;min-width:110px">🔑 Link das questões:</span>
-            <input type="url" id="dcad-${di}" value="${(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do caderno..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
+            <span style="font-size:11px;color:var(--muted);white-space:nowrap;min-width:110px">📄 Docs:</span>
+            <input type="url" id="dcad-${di}" value="${(DISC_CADERNOS[disc]||'').replace(/"/g,'&quot;')}" placeholder="cole o link do Docs..." style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface2);color:var(--text);transition:border-color .15s" oninput="this.style.borderColor='var(--accent)'">
             <button style="border:none;background:transparent;color:rgba(255,255,255,.3);padding:2px 6px;cursor:pointer;font-size:12px;transition:color .15s;font-weight:300;letter-spacing:.5px" title="Salvar" onclick="(async()=>{const u=document.getElementById('dcad-${di}').value.trim();await saveDiscCadernoLink('${disc.replace(/'/g,"\\'")}',u);document.getElementById('dcad-${di}').style.borderColor='var(--success)';setTimeout(()=>{if(document.getElementById('dcad-${di}'))document.getElementById('dcad-${di}').style.borderColor='';},1500);})()">✓</button>
           </div>
         </div>
@@ -5638,22 +5638,42 @@ function showTrabalhoSubtab(tab){
   if(activeBtn)activeBtn.classList.add('active');
   if(tab!=='monitor'){
     const tid=parseInt(tab);
-    if(tid){const t=orgTrilhas.find(t=>t.id===tid);if(t)orgAbrirTrilha(t.id,true);}
+    if(tid){
+      const t=orgTrilhas.find(t=>t.id===tid);
+      if(t){
+        orgTrilhaAtual=t;
+        orgShowSub('aulas');
+      }
+    }
   }
 }
 function _renderTrabSubtabs(){
-  const bar=document.getElementById('trab-subtabs-bar');if(!bar)return;
-  // remove trilha tabs antigos
-  bar.querySelectorAll('.trab-trilha-btn').forEach(b=>b.remove());
-  const novaBtn=document.getElementById('trab-btn-nova');
+  const mainBar=document.getElementById('trab-main-tabs');if(!mainBar)return;
+  mainBar.innerHTML='';
+  // Monitor
+  const monitorBtn=document.createElement('button');
+  monitorBtn.className='tab trab-trilha-btn';
+  monitorBtn.id='trab-btn-monitor';
+  monitorBtn.textContent='Monitor';
+  monitorBtn.onclick=()=>{showTab('trabalho');showTrabalhoSubtab('monitor');};
+  mainBar.appendChild(monitorBtn);
+  // Trilhas
   orgTrilhas.forEach(t=>{
     const btn=document.createElement('button');
-    btn.className='subtab trab-trilha-btn';
+    btn.className='tab trab-trilha-btn';
     btn.id='trab-btn-'+t.id;
     btn.textContent=t.nome;
-    btn.onclick=()=>showTrabalhoSubtab(String(t.id));
-    bar.insertBefore(btn,novaBtn);
+    btn.onclick=()=>{showTab('trabalho');showTrabalhoSubtab(String(t.id));};
+    mainBar.appendChild(btn);
   });
+  // Botão +
+  const novaBtn=document.createElement('button');
+  novaBtn.className='tab';
+  novaBtn.textContent='+';
+  novaBtn.style.opacity='0.5';
+  novaBtn.style.fontSize='18px';
+  novaBtn.onclick=orgNovaTrilhaTab;
+  mainBar.appendChild(novaBtn);
 }
 function orgNovaTrilhaTab(){
   const nome=prompt('Nome da trilha (ex: PM-PI):');
@@ -5735,45 +5755,38 @@ async function loadOrgTrilhas(){
   let sbData=null;
   // 1. carregar localStorage
   try{const s=localStorage.getItem('nav_org_trilhas');if(s)localData=JSON.parse(s);}catch{}
-  // 2. carregar Supabase — SEMPRE tem prioridade sobre localStorage
+  // 2. carregar Supabase
   try{
     const d=await sbGet('conteudo','select=topics&disc=eq.__org_trilhas__');
     if(d&&d[0]&&d[0].topics&&Array.isArray(d[0].topics)&&d[0].topics.length){
       sbData=d[0].topics;
     }
   }catch{}
-  // 3. escolher fonte: Supabase > localStorage > seed
-  // Critério de "mais completo": mais disciplinas OU mais campos preenchidos
-  function _riqueza(ts){
-    if(!ts||!ts.length)return 0;
-    return ts.reduce((s,t)=>{
-      s+=t.disciplinas?t.disciplinas.length:0;
-      s+=t.plano&&t.plano.inicio?10:0;
-      s+=t.plano&&t.plano.semanas&&t.plano.semanas.length?t.plano.semanas.length*2:0;
-      s+=t.disciplinas?t.disciplinas.filter(d=>d.fmtAula&&d.fmtAula.length).length*3:0;
-      s+=t.disciplinas?t.disciplinas.filter(d=>d.q).length*2:0;
-      return s;
-    },0);
-  }
-  const sbRiq=_riqueza(sbData);
-  const lcRiq=_riqueza(localData);
-  if(sbData&&sbRiq>=lcRiq){
+
+  // PRIORIDADE: localStorage > Supabase > seed
+  if(localData&&localData.length){
+    orgTrilhas=localData;
+  }else if(sbData){
     orgTrilhas=sbData;
     try{localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));}catch{}
-  } else if(localData&&localData.length){
-    orgTrilhas=localData;
-    // sincronizar para Supabase se local for mais rico
-    if(lcRiq>sbRiq)await sbUpsert('conteudo',{disc:'__org_trilhas__',topics:orgTrilhas});
+  }else{
+    orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));
+    await _saveOrgTrilhas();
   }
-  if(!orgTrilhas.length){
+
+  if(!orgTrilhas||!orgTrilhas.length){
     orgTrilhas=JSON.parse(JSON.stringify(_ORG_SEED));
     await _saveOrgTrilhas();
   } else {
     _orgMigrateV2();
   }
-  _renderTrabSubtabs();
   const orgEl=document.getElementById('trab-sub-organizador');
-  if(orgEl&&!orgEl.classList.contains('hidden')&&orgTrilhas.length){orgAbrirTrilha(orgTrilhas[0].id);}
+  if(orgEl&&!orgEl.classList.contains('hidden')&&orgTrilhas.length){
+    _renderTrabSubtabs();
+    orgAbrirTrilha(orgTrilhas[0].id);
+  }else{
+    _renderTrabSubtabs();
+  }
 }
 async function _saveOrgTrilhas(){
   // salvar em ambos sempre
@@ -5912,6 +5925,7 @@ function orgCfgNomeChange(val){
 
 // ── ABA SEMANAL ──────────────────────────────────────────────────────────────
 let _orgSemSel=0; // índice da semana selecionada
+let _orgTarefaFiltro=''; // discId p/ filtrar a tabela de tarefas ('' = todas)
 
 function renderOrgSemanal(){
   const el=document.getElementById('org-sem-content');if(!el)return;
@@ -5980,13 +5994,18 @@ function renderOrgSemanal(){
 
   // tabela de tarefas
   const trilhaCod=String(_orgSemSel).padStart(2,'0');
+  const _ordemDisc={}; // contador de quantas vezes cada disciplina já apareceu
   const tarefaRows=agenda.map((discId,idx)=>{
     const disc=discs.find(d=>d.id==discId);
     const tarefaNum=_orgCalcTarefa(_orgSemSel,idx);
     const cmd=((sem.tasks&&sem.tasks[idx]&&sem.tasks[idx].comando)||'').replace(/"/g,'&quot;');
+    _ordemDisc[discId]=(_ordemDisc[discId]||0)+1;
+    const ordem=_ordemDisc[discId];
+    // filtro por disciplina: mantém número/ordem original, oculta as demais
+    if(_orgTarefaFiltro&&String(discId)!==String(_orgTarefaFiltro))return'';
     return`<tr style="border-top:1px solid rgba(30,63,92,.3)">
       <td style="padding:5px 8px;text-align:center;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">${tarefaNum}</td>
-      <td style="padding:5px 8px;font-size:11px;color:${disc&&disc.link?'var(--accent)':'var(--text)'};white-space:nowrap">${disc?_esc(disc.nome):'—'}</td>
+      <td style="padding:5px 8px;font-size:11px;color:${disc&&disc.link?'var(--accent)':'var(--text)'};white-space:nowrap">${disc?`<span style="color:var(--muted);font-weight:700;margin-right:4px">${ordem}</span>${_esc(disc.nome)}`:'—'}</td>
       <td style="padding:3px 8px;min-width:220px">
         <input value="${cmd}" onchange="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Ação da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
       </td>
@@ -6040,8 +6059,9 @@ function renderOrgSemanal(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
       <!-- Links da semana -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        <div style="padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
           <span style="font-size:11px;font-weight:700;color:var(--text)">🔗 Links</span>
+          <button onclick="orgSemLinkAdd()" title="Adicionar link" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:18px;line-height:1;padding:0;font-family:inherit;font-weight:700">+</button>
         </div>
         <div style="padding:8px 10px">
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
@@ -6064,7 +6084,6 @@ function renderOrgSemanal(){
               </div>`;
             }).join('')}
           </div>
-          <button onclick="orgSemLinkAdd()" style="padding:2px 10px;font-size:11px;font-weight:700;border-radius:5px;border:1px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;width:100%">+ Link</button>
         </div>
       </div>
       <!-- Bloco de notas -->
@@ -6079,6 +6098,13 @@ function renderOrgSemanal(){
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1)">
         <span style="font-size:11px;font-weight:700;color:var(--text)">Resumo de Tarefas — ${_esc(orgTrilhaAtual.nome||'')} S${_orgSemSel+1}</span>
         <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:10px;color:var(--muted)">Disciplina:</span>
+            <select onchange="_orgTarefaFiltro=this.value;renderOrgSemanal()" style="padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);font-family:inherit;outline:none;max-width:170px">
+              <option value="">Todas</option>
+              ${discs.map(d=>`<option value="${d.id}" ${String(d.id)===String(_orgTarefaFiltro)?'selected':''}>${_esc(d.nome)}</option>`).join('')}
+            </select>
+          </div>
           <div style="display:flex;align-items:center;gap:5px">
             <span style="font-size:10px;color:var(--muted)">Tarefa base:</span>
             <input type="number" min="1" value="${orgTrilhaAtual.tarefaBase||1}" onchange="orgSetTarefaBase(this.value)" style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;font-size:11px;background:var(--surface2);color:var(--text);text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield">
@@ -6184,6 +6210,52 @@ function orgSetTarefaBase(val){
   if(!orgTrilhaAtual)return;
   orgTrilhaAtual.tarefaBase=Math.max(1,parseInt(val)||1);
   _scheduleOrgSave();renderOrgSemanal();
+}
+async function orgCopiarTabela(){
+  const sem=_orgGetSem();
+  if(!sem){alert('Nenhuma semana selecionada.');return;}
+  const discs=(orgTrilhaAtual&&orgTrilhaAtual.disciplinas)||[];
+  const agenda=sem.agenda||[];
+
+  // monta as linhas (respeita o filtro de disciplina, se houver)
+  const linhas=[];
+  agenda.forEach((discId,idx)=>{
+    if(_orgTarefaFiltro&&String(discId)!==String(_orgTarefaFiltro))return;
+    const disc=discs.find(d=>d.id==discId);
+    const num=_orgCalcTarefa(_orgSemSel,idx);
+    const nome=disc?disc.nome:'—';
+    const acao=((sem.tasks&&sem.tasks[idx]&&sem.tasks[idx].comando)||'');
+    linhas.push({num,nome,acao});
+  });
+  if(!linhas.length){alert('Não há tarefas para copiar.');return;}
+
+  // estilos no padrão da imagem (cabeçalho índigo, células com bordas)
+  const thBase='background:#2E2F92;color:#ffffff;border:1px solid #2E2F92;padding:0.071in;font-weight:bold;text-align:center;vertical-align:middle;font-family:Montserrat,sans-serif;font-size:10pt;text-decoration:none';
+  const tdNum='border:1px solid #3A3DA8;padding:0.071in;text-align:center;vertical-align:middle;font-family:Montserrat,sans-serif;font-size:9pt;text-decoration:none;width:5.02cm';
+  const tdTxt='border:1px solid #3A3DA8;padding:0.071in;text-align:justify;vertical-align:middle;font-family:Montserrat,sans-serif;font-size:10pt;text-decoration:none';
+  const tdAcao=tdTxt+';width:10.84cm';
+  const corpo=linhas.map(l=>
+    `<tr><td style="${tdNum}">${l.num}</td><td style="${tdTxt}">${_esc(l.nome)}</td><td style="${tdAcao}">${_esc(l.acao)}</td></tr>`
+  ).join('');
+  const html=`<table style="border-collapse:collapse;width:100%">`
+    +`<colgroup><col style="width:5.02cm"><col><col style="width:10.84cm"></colgroup>`
+    +`<thead><tr><th style="${thBase};width:5.02cm">TAREFA</th><th style="${thBase}">DISCIPLINA</th><th style="${thBase};width:10.84cm">AÇÃO</th></tr></thead>`
+    +`<tbody>${corpo}</tbody></table>`;
+  // fallback texto puro (tab-separado)
+  const plain='TAREFA\tDISCIPLINA\tAÇÃO\n'+linhas.map(l=>`${l.num}\t${l.nome}\t${l.acao}`).join('\n');
+
+  const btn=document.getElementById('org-copy-btn');
+  try{
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html':new Blob([html],{type:'text/html'}),
+      'text/plain':new Blob([plain],{type:'text/plain'})
+    })]);
+    if(btn){const t=btn.innerHTML;btn.innerHTML='✓ Copiado!';setTimeout(()=>btn.innerHTML=t,1800);}
+  }catch(e){
+    // fallback: copia só texto
+    try{await navigator.clipboard.writeText(plain);if(btn){const t=btn.innerHTML;btn.innerHTML='✓ Copiado (texto)';setTimeout(()=>btn.innerHTML=t,1800);}}
+    catch(e2){alert('Não foi possível copiar. Tente novamente.');}
+  }
 }
 function _orgCalcTarefa(targetWi,targetIdx){
   const semanas=(orgTrilhaAtual&&orgTrilhaAtual.plano&&orgTrilhaAtual.plano.semanas)||[];
@@ -6349,25 +6421,25 @@ function renderOrgDiscs(){
   });
   const inp=(style,val,type,oninput,attrs='')=>`<input type="${type}" value="${val}" oninput="${oninput}" ${attrs} style="${style}">`;
   el.innerHTML=`
-    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Padrão global: <b style="color:var(--text)">${gTpa}/aula + ${gTpd}/disc.</b> — sobrescreva por disciplina se necessário.</div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Padrão global: <b style="color:#fff">${gTpa}/aula + ${gTpd}/disc.</b> — sobrescreva por disciplina se necessário.</div>
+    <div style="background:#000;border:1px solid #333;border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;color:#fff">
         <thead>
-          <tr style="border-bottom:1px solid var(--border);background:rgba(0,0,0,.15)">
-            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Disciplina</th>
-            <th style="text-align:center;padding:8px 4px;color:rgba(255,255,255,.5);font-weight:600;width:46px" title="Score de prioridade">Score</th>
-            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px">Aulas</th>
-            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas por aula">/aula</th>
-            <th style="text-align:center;padding:8px 4px;color:var(--muted);font-weight:600;width:54px" title="Tarefas finais">/final</th>
-            <th style="text-align:center;padding:8px 4px;color:var(--accent);font-weight:600;width:54px">Total</th>
-            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Formato</th>
+          <tr style="border-bottom:1px solid #333;background:#111">
+            <th style="text-align:left;padding:8px 10px;color:#fff;font-weight:600">Disciplina</th>
+            <th style="text-align:center;padding:8px 4px;color:#ccc;font-weight:600;width:46px" title="Score de prioridade">Score</th>
+            <th style="text-align:center;padding:8px 4px;color:#ccc;font-weight:600;width:54px">Aulas</th>
+            <th style="text-align:center;padding:8px 4px;color:#ccc;font-weight:600;width:54px" title="Tarefas por aula">/aula</th>
+            <th style="text-align:center;padding:8px 4px;color:#ccc;font-weight:600;width:54px" title="Tarefas finais">/final</th>
+            <th style="text-align:center;padding:8px 4px;color:#0f0;font-weight:600;width:54px">Total</th>
+            <th style="text-align:left;padding:8px 10px;color:#ccc;font-weight:600">Formato</th>
             <th style="width:24px"></th>
           </tr>
         </thead>
         <tbody>
           ${sortedDiscs.map((d,i)=>{
             const tpa=_discTpa(d);const tpd=_discTpd(d);const tot=_discTotal(d);
-            const numStyle='width:44px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;';
+            const numStyle='width:44px;background:#222;border:1px solid #333;border-radius:5px;font-size:11px;font-family:inherit;text-align:center;padding:3px 2px;outline:none;color:#fff;';
             const fmtAula=d.fmtAula||[];const fmtFinal=d.fmtFinal||[];
             const isEditing=_orgDiscEditFmt.has(d.id);
             const _CC={Aula:{on:'#7dd3fc',bg:'rgba(125,211,252,.15)',bd:'rgba(125,211,252,.5)'},Final:{on:'#c4b5fd',bg:'rgba(196,181,253,.15)',bd:'rgba(196,181,253,.5)'}};
@@ -6883,17 +6955,22 @@ function _orgRecalcSemanas(){
   p.semanas=semanaDates.map((dt,wi)=>{
     const old=oldSem[wi];
     const passada=new Date(dt+'T00:00:00')<new Date(new Date().toISOString().slice(0,10)+'T00:00:00');
+    const oldManual=old&&old.distManual||[];
+    const ehConcluida=old?!!old.concluida:false;
     return {
       data:dt,
       passada,
-      concluida:old?!!old.concluida:false,
+      concluida:ehConcluida,
       docLink:old?old.docLink||'':'',
       agenda:old?old.agenda||[]:[],
       links:old?old.links||[]:[],
       notas:old?old.notas||'':'',
+      distManual:discs.map((d,di)=>!!oldManual[di]),
       dist:discs.map((d,di)=>{
-        // preserva só se o usuário editou manualmente (valor > 0)
-        if(old&&old.dist&&old.dist[di]>0)return old.dist[di];
+        // semana concluída: preserva o valor existente sempre (não regenera)
+        if(ehConcluida&&old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
+        // preserva se o usuário editou manualmente (inclusive zero)
+        if(oldManual[di]&&old&&old.dist&&old.dist[di]!==undefined)return old.dist[di];
         // Distribute only among non-concluded semanas
         const abertas=semanaDates.filter((_,i)=>!(oldSem[i]&&oldSem[i].concluida)).length||n;
         const base=Math.floor(totalPorDisc[di]/abertas);
@@ -6942,6 +7019,8 @@ function _renderOrgTabela(){
   const totalAulas=discs.reduce((a,d)=>a+(d.aulas||0),0);
   const totalTarefas=discs.reduce((a,d)=>a+_discTotal(d),0);
   const totalSem=semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0);
+  const diferenca=totalTarefas-totalSem;
+  const alertaColor=diferenca!==0?'var(--danger)':'var(--success)';
   if(resumoEl)resumoEl.innerHTML=`
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
@@ -6950,7 +7029,15 @@ function _renderOrgTabela(){
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
         <div style="font-size:18px;font-weight:700;color:var(--accent)">${totalTarefas}</div>
-        <div style="font-size:10px;color:var(--muted)">Tarefas totais</div>
+        <div style="font-size:10px;color:var(--muted)">Tarefas (Disc)</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--accent)">${totalSem}</div>
+        <div style="font-size:10px;color:var(--muted)">Distribuídas</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center;border-color:${alertaColor};${diferenca!==0?'border-width:2px':''}">
+        <div style="font-size:18px;font-weight:700;color:${alertaColor}">${diferenca>0?'+':''}${diferenca}</div>
+        <div style="font-size:10px;color:var(--muted)">Diferença</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;flex:1;min-width:90px;text-align:center">
         <div style="font-size:18px;font-weight:700;color:var(--success)">${totalSem>0?Math.round(totalSem/semanas.length):0}</div>
@@ -6958,11 +7045,11 @@ function _renderOrgTabela(){
       </div>
     </div>`;
 
-  const thStyle='padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;background:var(--surface);position:sticky;top:0;z-index:2';
-  const tdDisc='padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap;background:var(--surface);position:sticky;left:0;z-index:1;border-right:1px solid var(--border);max-width:180px;overflow:hidden;text-overflow:ellipsis';
+  const thStyle='padding:6px 8px;font-size:10px;font-weight:700;color:#aaa;white-space:nowrap;background:#111;position:sticky;top:0;z-index:2;border-bottom:1px solid #333';
+  const tdDisc='padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap;background:#000;color:#fff;position:sticky;left:0;z-index:1;border-right:1px solid #333;min-width:200px';
   const _semDone=(s)=>s.concluida||s.passada;
-  const tdVal=(s)=>`padding:2px 3px;font-size:11px;text-align:center;background:${_semDone(s)?'rgba(0,0,0,.3)':'transparent'};opacity:${_semDone(s)?'.4':'1'}`;
-  const tdLinks='padding:4px 6px;font-size:14px;background:var(--surface);border-left:1px solid var(--border);white-space:nowrap';
+  const tdVal=(s)=>`padding:2px 3px;font-size:11px;text-align:center;background:${_semDone(s)?'rgba(255,255,255,.1)':'transparent'};opacity:${_semDone(s)?'.6':'1'};color:#fff`;
+  const tdLinks='padding:4px 6px;font-size:14px;background:#000;border-left:1px solid #333;white-space:nowrap';
 
   // monitorInfo por disciplina
   const monitores=orgTrilhaAtual.monitores||[];
@@ -6973,9 +7060,9 @@ function _renderOrgTabela(){
 
   // tabela de distribuição
   if(tabelaEl){
-    tabelaEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Distribuição semanal</div>
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
-    <table style="border-collapse:collapse;width:100%">
+    tabelaEl.innerHTML=`<div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:6px">Distribuição semanal</div>
+    <div style="border:1px solid #333;border-radius:10px;overflow:hidden;background:#000">
+    <table style="border-collapse:collapse;width:100%;color:#fff">
       <thead>
         <tr>
           <th style="${thStyle};left:0;z-index:3;border-right:1px solid var(--border);min-width:160px">Disciplina</th>
@@ -6990,7 +7077,7 @@ function _renderOrgTabela(){
               :`<button onclick="orgEditDocLink(${wi})" style="font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;font-family:inherit">+doc</button>`
             }</div>
           </th>`).join('')}
-          <th style="${thStyle};padding:3px 6px">Tot.</th>
+          <th style="${thStyle};padding:3px 6px;min-width:60px">Tarefas</th>
           <th style="${thStyle};border-left:1px solid var(--border);padding:3px 6px">🔗</th>
         </tr>
       </thead>
@@ -7002,34 +7089,56 @@ function _renderOrgTabela(){
           const docs=mon&&mon.docs||[];
           const docsLinks=docs.filter(doc=>doc.link).map((doc,i)=>linkIcon(doc.link,'📄',doc.nome||`Doc ${i+1}`)).join('');
           const driveLink=mon&&mon.driveLink?linkIcon(mon.driveLink,'📁','Drive'):'';
-          const hasLinks=docsLinks||driveLink;
+          const aulaLink=DISC_LINKS[d.id]?linkIcon(DISC_LINKS[d.id],'📋','Aula'):'';
+          const questLink=DISC_CADERNOS[d.id]?linkIcon(DISC_CADERNOS[d.id],'📄','Docs'):'';
+          const discDriveLink=driveLinks[d.id]?linkIcon(driveLinks[d.id],'📁','Drive'):'';
+          const hasLinks=docsLinks||driveLink||aulaLink||questLink||discDriveLink;
           let acc=0;
+          let semanaComTarefasPendentes=null;
+          const discCompleta=(orgTrilhaAtual.discCompleta||{})[d.id]||0;
           return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
-            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}" title="${_esc(d.nome||'')}${monNome}">
-              ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
-              ${monNome?`<span style="color:var(--muted);font-weight:400">${_esc(monNome)}</span>`:''}
+            <td style="${tdDisc};color:${d.link?'var(--accent)':'white'};display:flex;align-items:center;gap:8px;justify-content:space-between" title="${_esc(d.nome||'')}${monNome}">
+              <div style="flex:1">
+                ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
+                ${monNome?`<span style="color:rgba(255,255,255,.6);font-weight:400">${_esc(monNome)}</span>`:''}
+              </div>
+              <input type="number" min="0" value="${discCompleta}" oninput="orgPlanSetDiscCompleta('${d.id}',this.value)" onfocus="this.select()" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:2px;font-family:inherit;flex-shrink:0" placeholder="0" title="Total de tarefas completadas">
             </td>
             ${semanas.map((s,wi)=>{
               const v=s.dist&&s.dist[di]!==undefined?s.dist[di]:0;
               acc+=v;
-              return`<td style="${tdVal(s)};padding:2px 3px">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-                  ${_semDone(s)
-                    ?`<span style="color:var(--muted);font-size:11px">${v}</span>`
-                    :`<input type="number" min="0" value="${v}" oninput="orgPlanSetDist(${wi},${di},this.value)" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:1px;font-family:inherit;outline:none">`
-                  }
-                  <span style="font-size:9px;color:rgba(127,179,200,.4);line-height:1">${acc}</span>
+              const isCompleted=discCompleta>=acc;
+              return`<td style="${tdVal(s)};padding:2px 3px;text-align:center;background:${isCompleted?'rgba(76,175,80,.3)':'transparent'}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+                  <div style="display:flex;align-items:center;gap:2px;justify-content:center">
+                    ${_semDone(s)
+                      ?`<span style="color:var(--muted);font-size:10px;font-weight:600">${v}</span>`
+                      :`<input type="number" min="0" value="${v}" oninput="orgPlanSetDist(${wi},${di},this.value)" onfocus="this.select()" style="width:22px;background:transparent;border:none;color:var(--text);font-size:10px;text-align:center;padding:0;font-family:inherit;outline:none" title="Planejadas">`
+                    }
+                    <span style="color:var(--muted);font-size:8px;font-weight:300">|</span>
+                    <span style="color:#fff;font-size:10px;font-weight:600">${acc}</span>
+                  </div>
                 </div>
               </td>`;
             }).join('')}
-            <td style="${tdVal({})};font-weight:700;color:var(--accent);padding:2px 6px">${rowTotal}</td>
-            <td style="${tdLinks}">${hasLinks?docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}</td>
+            <td style="${tdVal({})};font-weight:700;color:var(--accent);padding:2px 6px;text-align:center;min-width:60px"><span style="color:${rowTotal===_discTotal(d)?'var(--accent)':'#ef4444'}">${rowTotal}</span> <span style="color:var(--muted);font-weight:400">|</span> <span style="color:var(--success)">${_discTotal(d)}</span></td>
+            <td style="${tdLinks};display:flex;align-items:center;gap:4px;justify-content:space-between">
+              <div style="display:flex;gap:3px">
+                ${hasLinks?aulaLink+questLink+discDriveLink+docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}
+              </div>
+              <button onclick="orgEditOrgDiscLinks('${d.id}',${di})" title="Editar links" style="border:none;background:transparent;padding:2px 4px;cursor:pointer;color:var(--muted);transition:color .15s;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:18px;height:18px" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+            </td>
           </tr>`;
         }).join('')}
         <tr style="border-top:2px solid var(--border)">
           <td style="${tdDisc};font-weight:700;color:var(--accent)">Total/semana</td>
           ${semanas.map(s=>{const t=s.dist?s.dist.reduce((a,v)=>a+v,0):0;return`<td style="${tdVal(s)};font-weight:700;color:var(--text);padding:2px 3px">${t}</td>`;}).join('')}
-          <td style="${tdVal({})};font-weight:700;color:var(--success);padding:2px 6px">${semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0)}</td>
+          <td style="${tdVal({})};font-weight:700;color:var(--accent);padding:2px 6px;text-align:center;min-width:60px"><span style="color:var(--accent)">${semanas.reduce((a,s)=>a+(s.dist?s.dist.reduce((b,v)=>b+v,0):0),0)}</span> <span style="color:var(--muted);font-weight:400">|</span> <span style="color:var(--success)">—</span></td>
           <td style="${tdLinks}"></td>
         </tr>
       </tbody>
@@ -7058,10 +7167,14 @@ function _renderOrgTabela(){
           const driveLink=mon&&mon.driveLink?linkIcon(mon.driveLink,'📁','Drive'):'';
           const hasLinks=docsLinks||driveLink;
           const monNome=mon&&mon.nome?` — ${mon.nome}`:'';
+          const discCompleta=(orgTrilhaAtual.discCompleta||{})[d.id]||0;
           return`<tr style="border-top:1px solid rgba(30,63,92,.4)">
-            <td style="${tdDisc};color:${d.link?'var(--accent)':'var(--text)'}" title="${_esc(d.nome||'')}${monNome}">
-              ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
-              ${monNome?`<span style="color:var(--muted);font-weight:400">${_esc(monNome)}</span>`:''}
+            <td style="${tdDisc};color:${d.link?'var(--accent)':'white'};display:flex;align-items:center;gap:8px;justify-content:space-between" title="${_esc(d.nome||'')}${monNome}">
+              <div style="flex:1">
+                ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
+                ${monNome?`<span style="color:rgba(255,255,255,.6);font-weight:400">${_esc(monNome)}</span>`:''}
+              </div>
+              <input type="number" min="0" value="${discCompleta}" oninput="orgPlanSetDiscCompleta('${d.id}',this.value)" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:2px;font-family:inherit;flex-shrink:0" placeholder="0" title="Total de tarefas completadas">
             </td>
             ${semanas.map(s=>{acc+=(s.dist&&s.dist[di]!==undefined?s.dist[di]:0);return`<td style="${tdVal(s)};color:var(--muted);padding:2px 3px">${acc}</td>`;}).join('')}
             <td style="${tdLinks}">${hasLinks?docsLinks+driveLink:'<span style="color:var(--muted);font-size:10px">—</span>'}</td>
@@ -7077,8 +7190,37 @@ function orgPlanSetDist(wi,di,val){
   const s=orgTrilhaAtual.plano.semanas[wi];if(!s)return;
   if(!s.dist)s.dist=[];
   s.dist[di]=parseInt(val)||0;
+  // Marca como editado manualmente (preserva inclusive zeros ao recalcular)
+  if(!s.distManual)s.distManual=[];
+  s.distManual[di]=true;
+
+  // Salva imediatamente no localStorage
+  localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));
+  localStorage.setItem('nav_org_trilhas_bkp',JSON.stringify({ts:Date.now(),data:orgTrilhas}));
+
+  showSync('saving','✓');
+
   _renderOrgTabela();
-  _scheduleOrgSave();
+  setTimeout(()=>_scheduleOrgSave(), 100);
+}
+
+function orgPlanSetDiscCompleta(discId,val){
+  if(!orgTrilhaAtual)return;
+  if(!orgTrilhaAtual.discCompleta)orgTrilhaAtual.discCompleta={};
+  orgTrilhaAtual.discCompleta[discId]=parseInt(val)||0;
+
+  // Encontra e atualiza o objeto na array orgTrilhas (não confia em referência)
+  const trilha=orgTrilhas.find(t=>t.id===orgTrilhaAtual.id);
+  if(trilha){
+    if(!trilha.discCompleta)trilha.discCompleta={};
+    trilha.discCompleta[discId]=parseInt(val)||0;
+  }
+
+  // Salva imediatamente no localStorage
+  localStorage.setItem('nav_org_trilhas',JSON.stringify(orgTrilhas));
+
+  _renderOrgTabela();
+  showSync('saving','✓');
 }
 
 function orgEditDocLink(wi){
@@ -7089,6 +7231,82 @@ function orgEditDocLink(wi){
   s.docLink=url.trim();
   _renderOrgTabela();
   _scheduleOrgSave();
+}
+
+function orgRecalcularDistribuicao(){
+  if(!orgTrilhaAtual||!orgTrilhaAtual.plano)return;
+  if(!confirm('Isso vai recalcular a distribuição de forma igualitária entre as semanas. Suas edições manuais serão perdidas (exceto semanas marcadas como concluídas). Continuar?'))return;
+  const p=orgTrilhaAtual.plano;
+  const discs=orgTrilhaAtual.disciplinas||[];
+  if(!p.semanas||!discs.length)return;
+
+  const semanas=p.semanas;
+  const concluidas=semanas.filter(s=>s.concluida);
+  const abertas=semanas.filter(s=>!s.concluida);
+  if(!abertas.length)return;
+  const numAbertas=abertas.length;
+
+  // Inicializa só as abertas com zeros; marca como manual p/ persistir no reload
+  abertas.forEach(s=>{
+    s.dist=new Array(discs.length).fill(0);
+    s.distManual=new Array(discs.length).fill(true);
+  });
+
+  // Distribui cada disciplina: total da disc MENOS o que já está nas concluídas
+  let offset=0; // rotaciona onde o "resto" cai, p/ equilibrar o total das semanas
+  discs.forEach((d,di)=>{
+    const discTotal=_discTotal(d);
+    // quanto já está alocado em semanas concluídas (não mexe nelas)
+    const jaConcluido=concluidas.reduce((a,s)=>a+(s.dist&&s.dist[di]||0),0);
+    let restantes=Math.max(0,discTotal-jaConcluido);
+
+    // Distribui igualitariamente entre as semanas abertas
+    const base=Math.floor(restantes/numAbertas);
+    const resto=restantes%numAbertas;
+    abertas.forEach((s,si)=>{
+      // o "+1" do resto cai em semanas diferentes a cada disciplina
+      const pos=(si-offset+numAbertas)%numAbertas;
+      s.dist[di]=base+(pos<resto?1:0);
+    });
+    offset=(offset+resto)%numAbertas;
+  });
+
+  _renderOrgTabela();
+  _scheduleOrgSave();
+}
+
+function orgEditOrgDiscLinks(discId, di){
+  const modal=document.getElementById('org-disc-links-modal');
+  if(!modal)return;
+  modal.setAttribute('data-disc-id',discId);
+  modal.setAttribute('data-di',di);
+  const questoes=document.getElementById('org-modal-disc-questoes');
+  const drive=document.getElementById('org-modal-disc-drive');
+  if(questoes)questoes.value=DISC_CADERNOS[discId]||'';
+  if(drive)drive.value=driveLinks[discId]||'';
+  modal.style.display='flex';
+}
+
+function orgCloseDiscLinksModal(){
+  const modal=document.getElementById('org-disc-links-modal');
+  if(modal)modal.style.display='none';
+}
+
+async function orgSaveDiscLinksModal(){
+  const modal=document.getElementById('org-disc-links-modal');
+  const discId=modal.getAttribute('data-disc-id');
+  const questoes=document.getElementById('org-modal-disc-questoes');
+  const drive=document.getElementById('org-modal-disc-drive');
+  if(questoes.value.trim())DISC_CADERNOS[discId]=questoes.value.trim();else delete DISC_CADERNOS[discId];
+  if(drive.value.trim())driveLinks[discId]=drive.value.trim();else delete driveLinks[discId];
+  try{localStorage.setItem('nav_disc_cadernos',JSON.stringify(DISC_CADERNOS));}catch{}
+  try{localStorage.setItem('nav_drive_links',JSON.stringify(driveLinks));}catch{}
+  await Promise.all([
+    sbUpsert('conteudo',{disc:'__disc_cadernos__',topics:DISC_CADERNOS}),
+    sbUpsert('conteudo',{disc:'__drive_links__',topics:driveLinks})
+  ]);
+  orgCloseDiscLinksModal();
+  _renderOrgTabela();
 }
 
 // ── ABA MONITORES ──
@@ -7701,7 +7919,7 @@ function deleteMonCargo(id){
 
 <!-- TAB TRABALHO -->
 <div id="tab-trabalho" class="hidden" style="font-family:'Nunito','Segoe UI',sans-serif">
-  <div class="subtabs" id="trab-subtabs-bar">
+  <div class="subtabs" id="trab-subtabs-bar" style="display:none">
     <button class="subtab active" id="trab-btn-monitor" onclick="showTrabalhoSubtab('monitor')">Monitor</button>
     <!-- trilhas inseridas dinamicamente aqui -->
     <button class="subtab" id="trab-btn-nova" onclick="orgNovaTrilhaTab()" style="opacity:.5;font-size:16px;padding:10px 12px">+</button>
@@ -7751,7 +7969,6 @@ function deleteMonCargo(id){
         <button id="org-sub-btn-aulas" onclick="orgShowSub('aulas')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-family:inherit;transition:background .15s">Disciplinas</button>
         <button id="org-sub-btn-planejamento" onclick="orgShowSub('planejamento')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Planejamento</button>
         <button id="org-sub-btn-semanal" onclick="orgShowSub('semanal')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">Semanal</button>
-        <button id="org-sub-btn-config" onclick="orgShowSub('config')" style="flex:1;padding:5px 8px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:background .15s">⚙</button>
         <div id="org-sub-btn-monitores" style="display:none"></div>
       </div>
       <!-- Disciplinas (Aulas + Monitores combinados) -->
@@ -7763,7 +7980,7 @@ function deleteMonCargo(id){
             <button onclick="orgAddDisc()" style="padding:5px 12px;font-size:11px;font-weight:700;border-radius:7px;border:none;background:var(--surface2);color:var(--accent);cursor:pointer;font-family:inherit;border:1px solid var(--border)">+ Disciplina</button>
           </div>
         </div>
-        <div id="org-disc-list"></div>
+        <div id="org-disc-list" style="color:#fff"></div>
         <div id="org-prioridade-wrap" style="margin-top:16px"></div>
         <div style="margin-top:16px">
           <div id="org-monitores-list"></div>
@@ -7781,6 +7998,7 @@ function deleteMonCargo(id){
               <input id="org-plan-fim" type="date" oninput="orgPlanUpdate()" style="display:block;margin-top:3px;width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit">
             </label>
           </div>
+          <button onclick="orgRecalcularDistribuicao()" style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--accent);border-radius:6px;background:transparent;color:var(--accent);cursor:pointer;font-weight:600;font-family:inherit">🔄 Recalcular Distribuição</button>
         </div>
         <div id="org-plan-resumo" style="margin-bottom:14px"></div>
         <div id="org-plan-tabela" style="overflow-x:auto"></div>
@@ -7940,6 +8158,26 @@ function deleteMonCargo(id){
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeTimerEdit()">Cancelar</button>
       <button class="btn-save" onclick="saveTimerEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- Modal de edição de links da disciplina -->
+<div id="org-disc-links-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)orgCloseDiscLinksModal()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px">Editar links da disciplina</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <label style="display:flex;flex-direction:column;font-size:11px;color:var(--muted)">
+        📄 Docs
+        <input id="org-modal-disc-questoes" type="url" placeholder="https://..." style="margin-top:4px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit">
+      </label>
+      <label style="display:flex;flex-direction:column;font-size:11px;color:var(--muted)">
+        📁 Link da pasta no Google Drive
+        <input id="org-modal-disc-drive" type="url" placeholder="https://drive.google.com/..." style="margin-top:4px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:inherit">
+      </label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="orgCloseDiscLinksModal()" style="padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Cancelar</button>
+      <button onclick="orgSaveDiscLinksModal()" style="padding:6px 12px;font-size:11px;border-radius:6px;border:none;background:var(--accent);color:#000;cursor:pointer;font-weight:700;font-family:inherit">Salvar</button>
     </div>
   </div>
 </div>
