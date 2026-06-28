@@ -1710,12 +1710,32 @@ const ICON_INVERT_PREVIEW={editar:1,atrasados:0};
 function renderCfgTrilhas(){
   const el=document.getElementById('cfg-trilhas-list');if(!el)return;
   if(!orgTrilhas.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">Nenhuma trilha criada.</div>';return;}
-  el.innerHTML=orgTrilhas.map(t=>`
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
-      <input value="${_esc(t.nome)}" onchange="orgCfgRenomearTrilha(${t.id},this.value)"
-        style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;min-width:0">
-      <button onclick="orgCfgExcluirTrilha(${t.id})" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Excluir</button>
-    </div>`).join('');
+  el.innerHTML=orgTrilhas.map(t=>{
+    const discs=t.disciplinas||[];
+    const discInputs=discs.length
+      ? discs.map(d=>`<input value="${_esc(d.nome||'')}" onchange="orgCfgRenomearDisc(${t.id},'${d.id}',this.value)" placeholder="Nome da disciplina" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:inherit;outline:none;padding:5px 8px">`).join('')
+      : '<div style="font-size:11px;color:var(--muted)">Nenhuma disciplina nesta trilha.</div>';
+    return `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input value="${_esc(t.nome)}" onchange="orgCfgRenomearTrilha(${t.id},this.value)"
+          style="flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-weight:700;font-family:inherit;outline:none;min-width:0">
+        <button onclick="orgCfgExcluirTrilha(${t.id})" style="padding:3px 10px;font-size:11px;font-weight:700;border-radius:6px;border:1.5px solid var(--danger);background:transparent;color:var(--danger);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Excluir</button>
+      </div>
+      <details style="margin-top:6px">
+        <summary style="font-size:11px;color:var(--muted);cursor:pointer;outline:none">Nomes das disciplinas (${discs.length})</summary>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">${discInputs}</div>
+      </details>
+    </div>`;}).join('');
+}
+function orgCfgRenomearDisc(trilhaId,discId,val){
+  const t=orgTrilhas.find(t=>t.id===trilhaId);if(!t)return;
+  const d=(t.disciplinas||[]).find(d=>String(d.id)===String(discId));if(!d)return;
+  d.nome=val;
+  _saveOrgTrilhas();
+  if(orgTrilhaAtual&&orgTrilhaAtual.id===trilhaId){
+    try{renderOrgDiscs();_renderOrgTabela();}catch(e){}
+  }
 }
 function orgCfgRenomearTrilha(id,val){
   const t=orgTrilhas.find(t=>t.id===id);if(!t||!val.trim())return;
@@ -5922,6 +5942,12 @@ function orgCfgNomeChange(val){
   document.getElementById('org-detalhe-nome').textContent=val;
   _scheduleOrgSave();
 }
+async function orgCopiarNomeDisc(nome,btn){
+  try{
+    await navigator.clipboard.writeText(nome);
+    if(btn){const orig=btn.style.color;btn.style.color='#2dd4a0';setTimeout(()=>{btn.style.color=orig||'rgba(255,255,255,.4)';},1200);}
+  }catch(e){alert('Não foi possível copiar.');}
+}
 
 // ── ABA SEMANAL ──────────────────────────────────────────────────────────────
 let _orgSemSel=0; // índice da semana selecionada
@@ -7102,6 +7128,9 @@ function _renderOrgTabela(){
                 ${d.link?`<a href="${_esc(d.link)}" target="_blank" style="color:inherit;text-decoration:none">${_esc(d.nome)||'(sem nome)'}</a>`:(_esc(d.nome)||'(sem nome)')}
                 ${monNome?`<span style="color:rgba(255,255,255,.6);font-weight:400">${_esc(monNome)}</span>`:''}
               </div>
+              <button onclick="orgCopiarNomeDisc('${_esc((d.nome||'').replace(/'/g,"\\'"))}',this)" title="Copiar nome da disciplina" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.4)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
               <input type="number" min="0" value="${discCompleta}" oninput="orgPlanSetDiscCompleta('${d.id}',this.value)" onfocus="this.select()" style="width:32px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;text-align:center;padding:2px;font-family:inherit;flex-shrink:0" placeholder="0" title="Total de tarefas completadas">
             </td>
             ${semanas.map((s,wi)=>{
