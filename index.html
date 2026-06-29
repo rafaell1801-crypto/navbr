@@ -724,6 +724,7 @@ input[type=number]{-moz-appearance:textfield}
         <div class="modal-section" style="margin-top:6px;border-top:none;padding-top:0">
           <div id="cfg-trilhas-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
           <button onclick="orgNovaTrilha();closeSettings();" style="width:100%;padding:7px;font-size:12px;font-weight:700;border-radius:8px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-family:inherit">+ Nova trilha</button>
+          <button onclick="orgRestoreSnapshot()" style="width:100%;margin-top:6px;padding:6px;font-size:11px;border-radius:8px;border:1px dashed var(--muted);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">↩ Restaurar snapshot de emergência</button>
         </div>
       </div>
     </details>
@@ -5819,6 +5820,30 @@ function _scheduleOrgSave(){
   _orgSaveTimer=setTimeout(()=>{showSync('saving','▸');_saveOrgTrilhas().then(()=>showSync('ok','✓ Salvo'));},1200);
 }
 
+// snapshot de emergência a cada 60s — protege contra perda por JS quebrado
+setInterval(()=>{
+  try{
+    if(orgTrilhas&&orgTrilhas.length){
+      localStorage.setItem('nav_org_snapshot',JSON.stringify({ts:Date.now(),data:orgTrilhas}));
+    }
+  }catch{}
+},60000);
+
+function orgRestoreSnapshot(){
+  try{
+    const s=localStorage.getItem('nav_org_snapshot');
+    if(!s){alert('Nenhum snapshot disponível.');return;}
+    const snap=JSON.parse(s);
+    const age=Math.round((Date.now()-snap.ts)/60000);
+    if(!confirm(`Restaurar snapshot salvo há ${age} minuto(s)? Os dados atuais serão substituídos.`))return;
+    orgTrilhas=snap.data;
+    _saveOrgTrilhas();
+    if(orgTrilhaAtual){const t=orgTrilhas.find(t=>t.id===orgTrilhaAtual.id);orgTrilhaAtual=t||null;}
+    renderOrgLista();renderCfgTrilhas();
+    alert('Snapshot restaurado com sucesso.');
+  }catch(e){alert('Erro ao restaurar snapshot: '+e.message);}
+}
+
 // ── PADRÕES DE TAREFAS ──
 let orgPadroes=[];
 function _loadOrgPadroes(){try{const s=localStorage.getItem('nav_org_padroes');if(s)orgPadroes=JSON.parse(s);}catch{}}
@@ -6033,7 +6058,7 @@ function renderOrgSemanal(){
       <td style="padding:5px 8px;text-align:center;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap">${tarefaNum}</td>
       <td style="padding:5px 8px;font-size:11px;color:${disc&&disc.link?'var(--accent)':'var(--text)'};white-space:nowrap">${disc?`<span style="color:var(--muted);font-weight:700;margin-right:4px">${ordem}</span>${_esc(disc.nome)}`:'—'}</td>
       <td style="padding:3px 8px;min-width:220px">
-        <input value="${cmd}" onchange="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Ação da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
+        <input value="${cmd}" oninput="orgSetTarefaComando(${_orgSemSel},${idx},this.value)" placeholder="Ação da tarefa…" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(30,63,92,.6);color:var(--text);font-size:11px;font-family:inherit;outline:none;padding:2px 0">
       </td>
     </tr>`;
   }).join('');
