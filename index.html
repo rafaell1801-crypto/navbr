@@ -7448,7 +7448,7 @@ function toggleMonAddDrop(){const d=document.getElementById('mon-add-drop');if(d
 function setMonSort(s){
   _monSort=s;
   document.getElementById('mon-sort-drop').style.display='none';
-  ['oldest','newest','closest'].forEach(k=>{const el=document.getElementById('mon-sort-'+k);if(el)el.style.background=k===s?'rgba(255,255,255,.1)':'transparent';});
+  ['oldest','newest','closest','never'].forEach(k=>{const el=document.getElementById('mon-sort-'+k);if(el)el.style.background=k===s?'rgba(255,255,255,.1)':'transparent';});
   renderMonitor();
 }
 document.addEventListener('click',function(e){
@@ -7489,6 +7489,7 @@ function renderMonitor(){
   let cargos=_monFiltro==='todos'?[...monitorCargos]:monitorCargos.filter(c=>_monTipoNorm(c.tipo)===_monFiltro);
   if(_monSort==='oldest')cargos.sort((a,b)=>{const da=monDaysSince(a.ultimaData)??-1;const db=monDaysSince(b.ultimaData)??-1;return db-da;});
   else if(_monSort==='newest')cargos.sort((a,b)=>{const da=monDaysSince(a.ultimaData)??999999;const db=monDaysSince(b.ultimaData)??999999;return da-db;});
+  else if(_monSort==='never')cargos=cargos.filter(c=>!c.ultimaData);
   else if(_monSort==='closest'){cargos.sort((a,b)=>{
     const ta=calcTotalTarefas(a.numAulas,a.tarefasAulaItens||[],a.tarefasFinaisItens||[],a.tarefasIntervaloGroups||[]);
     const tb=calcTotalTarefas(b.numAulas,b.tarefasAulaItens||[],b.tarefasFinaisItens||[],b.tarefasIntervaloGroups||[]);
@@ -7782,14 +7783,13 @@ function renderMonitor(){
           </div>
         </div>
         <div style="flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <div style="display:flex;gap:8px;font-size:11px">
+          <div style="display:flex;gap:8px;font-size:12px">
             <span style="color:var(--muted)">T <strong style="color:var(--accent)">${feit}/${tot}</strong></span>
             <span style="color:var(--muted)">A <strong style="color:#7dd3fc">${parseInt(cargo.aulasFeitas)||0}/${cargo.numAulas||0}</strong></span>
           </div>
-          ${aulaItens.length?`<span style="font-size:9px;color:#7dd3fc;letter-spacing:.2px">${_abbrevAulaItens(aulaItens)}</span>`:''}
-          ${intervaloGroups.map(g=>`<span style="font-size:9px;color:#f5a623">${g.intervalo}a/ [${_abbrevMonList(g.itens||[])}]</span>`).join('')}
-          ${finaisItens.length?`<span style="font-size:9px;color:#c4b5fd">${_abbrevMonList(finaisItens).replace(/\(/g,' (').replace(/\+/g,' + ')}</span>`:''}
-          <span style="font-size:10px;color:var(--muted)">${isOpen?'▴':'▾'}</span>
+          ${aulaItens.length?`<span style="font-size:10px;color:#7dd3fc;letter-spacing:.2px">${_abbrevAulaItens(aulaItens)}</span>`:''}
+          ${intervaloGroups.map(g=>`<span style="font-size:10px;color:#f5a623">${g.intervalo}a/ [${_abbrevMonList(g.itens||[])}]</span>`).join('')}
+          ${finaisItens.length?`<span style="font-size:10px;color:#c4b5fd">${_abbrevMonList(finaisItens).replace(/\(/g,' (').replace(/\+/g,' + ')}</span>`:'':''}
         </div>
       </div>
       ${bodyHTML}
@@ -7974,6 +7974,7 @@ function deleteMonCargo(id){
           <button onclick="setMonSort('oldest')" class="mon-drop-item" id="mon-sort-oldest">⏳ Sem editar há mais tempo</button>
           <button onclick="setMonSort('newest')" class="mon-drop-item" id="mon-sort-newest">🕐 Editado recentemente</button>
           <button onclick="setMonSort('closest')" class="mon-drop-item" id="mon-sort-closest">🎯 Mais próximo de finalizar</button>
+          <button onclick="setMonSort('never')" class="mon-drop-item" id="mon-sort-never">🚫 Sem edição ainda</button>
         </div>
       </div>
       <div style="position:relative;margin-left:auto">
